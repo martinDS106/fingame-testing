@@ -1,0 +1,470 @@
+import { useMemo, useState } from 'react';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { LinearGradient } from 'expo-linear-gradient';
+import { AlertTriangle, DollarSign, TrendingUp } from 'lucide-react-native';
+import { router } from 'expo-router';
+
+import { BottomNav } from '@/components/BottomNav';
+import { ScreenHeader } from '@/components/ScreenHeader';
+import { Button } from '@/components/ui/Button';
+import { Card } from '@/components/ui/Card';
+import { colors } from '@/theme';
+import { formatNumber } from '@/lib/format';
+import { useUserStore } from '@/stores';
+import { rewardFor } from '@/lib/rewards';
+
+interface LoanSummary {
+  monthlyPayment: number;
+  totalPaid: number;
+  totalInterest: number;
+  affordabilityRatio: number;
+  isAffordable: boolean;
+}
+
+interface AmortRow {
+  month: number;
+  payment: number;
+  interest: number;
+  principal: number;
+  balance: number;
+}
+
+function calcLoan(
+  amount: number,
+  apr: number,
+  years: number,
+  income: number
+): { summary: LoanSummary; schedule: AmortRow[] } {
+  const monthlyRate = apr / 100 / 12;
+  const numPayments = years * 12;
+  const monthlyPayment =
+    numPayments > 0 && monthlyRate > 0
+      ? (amount * monthlyRate * Math.pow(1 + monthlyRate, numPayments)) /
+        (Math.pow(1 + monthlyRate, numPayments) - 1)
+      : amount / Math.max(numPayments, 1);
+  const totalPaid = monthlyPayment * numPayments;
+  const totalInterest = totalPaid - amount;
+  const affordabilityRatio = income > 0 ? (monthlyPayment / income) * 100 : 0;
+
+  // Amortization schedule (monthly breakdown)
+  const schedule: AmortRow[] = [];
+  let balance = amount;
+  for (let m = 1; m <= numPayments; m += 1) {
+    const interest = monthlyRate > 0 ? balance * monthlyRate : 0;
+    const principal = Math.max(0, monthlyPayment - interest);
+    const nextBalance = Math.max(0, balance - principal);
+    schedule.push({
+      month: m,
+      payment: monthlyPayment,
+      interest,
+      principal,
+      balance: nextBalance,
+    });
+    balance = nextBalance;
+    if (balance <= 0) break;
+  }
+
+  return {
+    summary: {
+      monthlyPayment,
+      totalPaid,
+      totalInterest,
+      affordabilityRatio,
+      isAffordable: affordabilityRatio > 0 && affordabilityRatio <= 40,
+    },
+    schedule,
+  };
+}
+
+const AMOUNT_PRESETS = [50_000, 100_000, 250_000, 500_000];
+const APR_PRESETS = [8, 12, 15, 20];
+const TERM_OPTIONS = [1, 3, 5, 10];
+
+export default function LoanCalculatorScreen() {
+  const coins = useUserStore((s) => s.coins);
+  const hasClaimedReward = useUserStore((s) => s.hasClaimedReward);
+  const claimRewardOnce = useUserStore((s) => s.claimRewardOnce);
+
+  const [amount, setAmount] = useState('100000');
+  const [apr, setApr] = useState('12');
+  const [years, setYears] = useState(5);
+  const [income, setIncome] = useState('15000');
+  const [showSchedule, setShowSchedule] = useState(false);
+  const rewardKey = 'loan_calc_reward_v1';
+  const rewarded = hasClaimedReward(rewardKey);
+
+  const { summary, schedule } = useMemo(
+    () =>
+      calcLoan(
+        Number(amount) || 0,
+        Number(apr) || 0,
+        years,
+        Number(income) || 0
+      ),
+    [amount, apr, years, income]
+  );
+
+  const principalPct = summary.totalPaid
+    ? (Number(amount) / summary.totalPaid) * 100
+    : 50;
+  const interestPct = 100 - principalPct;
+
+  return (
+    <View className="flex-1 bg-gray-50">
+      <ScreenHeader
+        title="Loan Calculator"
+        coins={coins}
+        showBack
+        gradient={['#16a34a', '#15803d']}
+      />
+
+      <ScrollView
+        className="flex-1"
+        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        showsVerticalScrollIndicator={false}
+      >
+        <LinearGradient
+          colors={['#22c55e', '#16a34a']}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={{ borderRadius: 16, padding: 24 }}
+        >
+          <Text className="text-white/80 text-sm mb-1">Monthly Installment</Text>
+          <Text className="text-white text-4xl font-bold mb-2">
+            EGP {formatNumber(Math.round(summary.monthlyPayment))}
+          </Text>
+          <View className="flex-row items-center gap-2">
+            <DollarSign size={16} color={colors.white} />
+            <Text className="text-white/90 text-sm">For {years} years</Text>
+          </View>
+        </LinearGradient>
+
+        <Card>
+          <Text className="text-sm text-gray-700 font-medium mb-2">
+            Loan Amount (EGP)
+          </Text>
+          <View className="flex-row items-center gap-2 mb-3">
+            <TextInput
+              value={amount}
+              onChangeText={setAmount}
+              keyboardType="number-pad"
+              className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+            />
+            <Text className="text-sm text-gray-600">EGP</Text>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {AMOUNT_PRESETS.map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => setAmount(String(n))}
+                className={`px-3 py-1.5 rounded-lg border ${
+                  Number(amount) === n
+                    ? 'bg-green-600 border-green-600'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-medium ${
+                    Number(amount) === n ? 'text-white' : 'text-gray-700'
+                  }`}
+                >
+                  {n >= 1000 ? `${n / 1000}K` : n}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+
+        <Card>
+          <Text className="text-sm text-gray-700 font-medium mb-2">
+            Interest Rate (%)
+          </Text>
+          <View className="flex-row items-center gap-2 mb-3">
+            <TextInput
+              value={apr}
+              onChangeText={setApr}
+              keyboardType="decimal-pad"
+              className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+            />
+            <Text className="text-sm text-gray-600">%</Text>
+          </View>
+          <View className="flex-row flex-wrap gap-2">
+            {APR_PRESETS.map((n) => (
+              <Pressable
+                key={n}
+                onPress={() => setApr(String(n))}
+                className={`px-3 py-1.5 rounded-lg border ${
+                  Number(apr) === n
+                    ? 'bg-green-600 border-green-600'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <Text
+                  className={`text-xs font-medium ${
+                    Number(apr) === n ? 'text-white' : 'text-gray-700'
+                  }`}
+                >
+                  {n}%
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+
+        <Card>
+          <Text className="text-sm text-gray-700 font-medium mb-3">
+            Loan Term
+          </Text>
+          <View className="flex-row gap-2">
+            {TERM_OPTIONS.map((y) => (
+              <Pressable
+                key={y}
+                onPress={() => setYears(y)}
+                className={`flex-1 py-2.5 rounded-lg border items-center ${
+                  years === y
+                    ? 'bg-green-600 border-green-600'
+                    : 'bg-white border-gray-200'
+                }`}
+              >
+                <Text
+                  className={`text-sm font-medium ${
+                    years === y ? 'text-white' : 'text-gray-700'
+                  }`}
+                >
+                  {y} {y === 1 ? 'yr' : 'yrs'}
+                </Text>
+              </Pressable>
+            ))}
+          </View>
+        </Card>
+
+        <Card>
+          <Text className="text-sm text-gray-700 font-medium mb-2">
+            Monthly Income (EGP)
+          </Text>
+          <View className="flex-row items-center gap-2">
+            <TextInput
+              value={income}
+              onChangeText={setIncome}
+              keyboardType="number-pad"
+              className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+            />
+            <Text className="text-sm text-gray-600">EGP</Text>
+          </View>
+        </Card>
+
+        <Card>
+          <Text className="text-gray-800 font-semibold mb-3">
+            Payment Breakdown
+          </Text>
+          <View className="gap-2 mb-3">
+            <View className="flex-row justify-between">
+              <Text className="text-sm text-gray-600">Total Amount Paid</Text>
+              <Text className="text-sm text-gray-800 font-medium">
+                EGP {formatNumber(Math.round(summary.totalPaid))}
+              </Text>
+            </View>
+            <View className="flex-row justify-between">
+              <Text className="text-sm text-gray-600">Total Interest</Text>
+              <Text className="text-sm text-orange-600 font-medium">
+                EGP {formatNumber(Math.round(summary.totalInterest))}
+              </Text>
+            </View>
+            <View className="flex-row justify-between pt-2 border-t border-gray-100">
+              <Text className="text-sm text-gray-600">Principal Amount</Text>
+              <Text className="text-sm text-gray-800 font-medium">
+                EGP {formatNumber(Number(amount) || 0)}
+              </Text>
+            </View>
+          </View>
+
+          <View className="flex-row h-8 rounded-lg overflow-hidden mt-1">
+            <View
+              style={{ width: `${principalPct}%`, backgroundColor: '#22c55e' }}
+              className="items-center justify-center"
+            >
+              <Text className="text-xs text-white font-semibold">
+                {Math.round(principalPct)}%
+              </Text>
+            </View>
+            <View
+              style={{ width: `${interestPct}%`, backgroundColor: '#f97316' }}
+              className="items-center justify-center"
+            >
+              <Text className="text-xs text-white font-semibold">
+                {Math.round(interestPct)}%
+              </Text>
+            </View>
+          </View>
+          <View className="flex-row justify-between mt-2">
+            <Text className="text-xs text-gray-600">Principal</Text>
+            <Text className="text-xs text-gray-600">Interest</Text>
+          </View>
+        </Card>
+
+        <Card>
+          <View className="flex-row items-center justify-between mb-2">
+            <Text className="text-gray-800 font-semibold">
+              Amortization Schedule
+            </Text>
+            <Pressable onPress={() => setShowSchedule((v) => !v)}>
+              <Text className="text-primary-700 font-semibold text-sm">
+                {showSchedule ? 'Hide' : 'Show'}
+              </Text>
+            </Pressable>
+          </View>
+          <Text className="text-xs text-gray-500 mb-3">
+            Monthly breakdown of how much goes to interest vs principal.
+          </Text>
+
+          {showSchedule && (
+            <View className="gap-2">
+              <View className="flex-row justify-between">
+                <Text className="text-[11px] text-gray-500 w-[18%]">Month</Text>
+                <Text className="text-[11px] text-gray-500 w-[26%] text-right">
+                  Payment
+                </Text>
+                <Text className="text-[11px] text-gray-500 w-[26%] text-right">
+                  Interest
+                </Text>
+                <Text className="text-[11px] text-gray-500 w-[30%] text-right">
+                  Balance
+                </Text>
+              </View>
+              <View className="h-px bg-gray-200" />
+              {schedule.slice(0, 12).map((r) => (
+                <View key={r.month} className="flex-row justify-between">
+                  <Text className="text-[11px] text-gray-700 w-[18%]">
+                    {r.month}
+                  </Text>
+                  <Text className="text-[11px] text-gray-700 w-[26%] text-right">
+                    {formatNumber(Math.round(r.payment))}
+                  </Text>
+                  <Text className="text-[11px] text-orange-700 w-[26%] text-right">
+                    {formatNumber(Math.round(r.interest))}
+                  </Text>
+                  <Text className="text-[11px] text-gray-700 w-[30%] text-right">
+                    {formatNumber(Math.round(r.balance))}
+                  </Text>
+                </View>
+              ))}
+              {schedule.length > 12 && (
+                <Text className="text-xs text-gray-500 mt-2">
+                  Showing first 12 months only.
+                </Text>
+              )}
+            </View>
+          )}
+
+          <View className="mt-4">
+            <Button
+              variant="primary"
+              fullWidth
+              disabled={rewarded}
+              onPress={() => {
+                const reward = rewardFor('lesson_complete');
+                claimRewardOnce(
+                  rewardKey,
+                  Math.round(reward.coins / 2),
+                  Math.round(reward.xp / 2),
+                  'lesson_complete'
+                );
+              }}
+            >
+              {rewarded ? 'Reward claimed' : 'Claim reward for learning'}
+            </Button>
+            <Text className="text-xs text-gray-500 mt-2 text-center">
+              One-time reward for using the calculator.
+            </Text>
+          </View>
+        </Card>
+
+        <Card
+          className={
+            summary.isAffordable
+              ? 'bg-green-50 border border-green-200'
+              : 'bg-red-50 border border-red-200'
+          }
+        >
+          <View className="flex-row items-start gap-3">
+            {summary.isAffordable ? (
+              <TrendingUp size={22} color="#16a34a" />
+            ) : (
+              <AlertTriangle size={22} color="#dc2626" />
+            )}
+            <View className="flex-1">
+              <Text
+                className={`font-semibold mb-1 ${
+                  summary.isAffordable ? 'text-green-900' : 'text-red-900'
+                }`}
+              >
+                Affordability Check
+              </Text>
+              <Text
+                className={`text-sm mb-2 ${
+                  summary.isAffordable ? 'text-green-700' : 'text-red-700'
+                }`}
+              >
+                Payment is {summary.affordabilityRatio.toFixed(1)}% of monthly
+                income
+              </Text>
+              <View className="bg-white/50 rounded-full h-2 mb-2 overflow-hidden">
+                <View
+                  style={{
+                    width: `${Math.min(100, summary.affordabilityRatio)}%`,
+                    height: '100%',
+                    backgroundColor: summary.isAffordable
+                      ? '#22c55e'
+                      : '#ef4444',
+                  }}
+                />
+              </View>
+              <Text className="text-xs text-gray-700">
+                {summary.isAffordable
+                  ? '✓ Within the recommended 40% threshold'
+                  : '⚠ Exceeds the recommended 40% threshold'}
+              </Text>
+            </View>
+          </View>
+        </Card>
+
+        <Card className="bg-blue-50 border border-blue-200">
+          <Text className="text-gray-800 font-semibold mb-2">💡 Loan Tips</Text>
+          <View className="gap-1">
+            <Text className="text-xs text-gray-700">
+              • Keep payments below 40% of income for safety
+            </Text>
+            <Text className="text-xs text-gray-700">
+              • Shorter terms mean less total interest
+            </Text>
+            <Text className="text-xs text-gray-700">
+              • Compare rates from multiple lenders
+            </Text>
+            <Text className="text-xs text-gray-700">
+              • Extra payments reduce overall interest
+            </Text>
+          </View>
+        </Card>
+
+        <View className="flex-row gap-2">
+          <View className="flex-1">
+            <Button
+              variant="outline"
+              fullWidth
+              onPress={() => router.push('/marketplace/credit-cards')}
+            >
+              Compare Offers
+            </Button>
+          </View>
+          <View className="flex-1">
+            <Button fullWidth onPress={() => router.push('/marketplace-home')}>
+              Find Best Rates
+            </Button>
+          </View>
+        </View>
+      </ScrollView>
+
+      <BottomNav />
+    </View>
+  );
+}
