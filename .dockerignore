@@ -1,0 +1,15 @@
+**/node_modules
+**/dist
+.expo
+.expo-shared
+web-build
+dist
+legacy-web/dist
+legacy-web/node_modules
+backend/.env
+.env
+.env.*
+.git
+.github
+*.log
+*.pem
