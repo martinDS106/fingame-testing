@@ -12,7 +12,7 @@ import {
 
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
-import { Card, PressableCard } from '@/components/ui/Card';
+import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatEGP } from '@/lib/format';
@@ -72,17 +72,35 @@ export default function BusinessSimulationScreen() {
         {
           text: 'Confirm',
           onPress: () => {
-            makeDecision(
-              currentStep,
-              option.id,
-              option.impactOnCash,
-              option.impactOnReputation
-            );
-            completeStep(currentStep);
+            void (async () => {
+              makeDecision(
+                currentStep,
+                option.id,
+                option.impactOnCash,
+                option.impactOnReputation
+              );
+              completeStep(currentStep);
 
-            const reward = rewardFor('lesson_complete');
-            addCoins(reward.coins, 'lesson_complete');
-            addXP(reward.xp);
+              const reward = rewardFor('lesson_complete');
+              const okCoins = await addCoins(reward.coins, 'lesson_complete');
+              if (!okCoins) {
+                Alert.alert(
+                  'Could not save reward',
+                  'Your choice was recorded locally, but coins did not sync.',
+                );
+                return;
+              }
+              const okXp = await addXP(reward.xp);
+              if (!okXp) {
+                await useUserStore
+                  .getState()
+                  .spendCoins(reward.coins, 'lesson_complete');
+                Alert.alert(
+                  'Could not save XP',
+                  'Coins were saved, but XP did not sync.',
+                );
+              }
+            })();
           },
         },
       ]
@@ -119,7 +137,16 @@ export default function BusinessSimulationScreen() {
 
     const report = runMonth(monthlyRevenue, monthlyExpenses);
     const reward = rewardFor('simulation_win');
-    addCoins(Math.round(reward.coins / 4), 'simulation_win');
+    void (async () => {
+      const coinDelta = Math.round(reward.coins / 4);
+      const ok = await addCoins(coinDelta, 'simulation_win');
+      if (!ok) {
+        Alert.alert(
+          'Could not save coins',
+          'Month results were applied locally, but coins did not sync.',
+        );
+      }
+    })();
 
     Alert.alert(
       `Month ${report.month} Closed`,
@@ -153,8 +180,20 @@ export default function BusinessSimulationScreen() {
               Alert.alert('Not enough cash', res.reason ?? '');
               return;
             }
-            addCoins(20, 'simulation_win');
-            Alert.alert('Taxes paid ✅', `Paid ${formatEGP(res.paid)}. +20 coins.`);
+            void (async () => {
+              const ok = await addCoins(20, 'simulation_win');
+              if (!ok) {
+                Alert.alert(
+                  'Could not save coins',
+                  'Taxes were paid locally, but the coin bonus did not sync.',
+                );
+                return;
+              }
+              Alert.alert(
+                'Taxes paid ✅',
+                `Paid ${formatEGP(res.paid)}. +20 coins.`,
+              );
+            })();
           },
         },
       ]

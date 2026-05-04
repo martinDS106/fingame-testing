@@ -7,7 +7,7 @@ import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
-import { pullRedemptions, type RemoteRedemption } from '@/lib/syncService';
+import { pullRedemptions, type RemoteRedemption } from '@/lib/syncServiceApi';
 import { useUserStore } from '@/stores';
 import { useT } from '@/hooks/useT';
 

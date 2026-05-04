@@ -25,9 +25,8 @@ import { PriceChart } from '@/components/investment/PriceChart';
 import { colors } from '@/theme';
 import { formatEGP } from '@/lib/format';
 import { useMarketEngine } from '@/hooks/useMarketEngine';
-import { useInvestmentStore } from '@/stores';
+import { useInvestmentStore, useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
-import { useUserStore } from '@/stores';
 
 type Mode = 'market' | 'limit' | 'stop_loss';
 type Side = 'buy' | 'sell';
@@ -111,11 +110,15 @@ export default function StockDetailScreen() {
         return;
       }
       const reward = Math.round(rewardFor('simulation_win').coins / 10);
-      addCoins(reward, 'simulation_win');
-      Alert.alert(
-        'Trade executed',
-        `${side === 'buy' ? 'Bought' : 'Sold'} ${shares} ${stock.symbol} @ ${formatEGP(stock.price)}\n\n+${reward} coins`
-      );
+      void (async () => {
+        const ok = await addCoins(reward, 'simulation_win');
+        Alert.alert(
+          'Trade executed',
+          `${side === 'buy' ? 'Bought' : 'Sold'} ${shares} ${stock.symbol} @ ${formatEGP(
+            stock.price
+          )}\n\n${ok ? `+${reward} coins` : 'Trade saved locally, but coin reward did not sync.'}`
+        );
+      })();
       setSharesStr('');
       return;
     }

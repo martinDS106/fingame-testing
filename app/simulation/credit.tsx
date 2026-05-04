@@ -89,16 +89,33 @@ export default function CreditSimulationScreen() {
     const def = CREDIT_ACTION_DEFINITIONS[type];
     const result = applyAction(type);
 
-    if (result.delta > 0) {
-      const reward = rewardFor('quiz_correct');
-      addCoins(reward.coins, 'quiz_correct');
-      addXP(reward.xp);
-    }
+    void (async () => {
+      if (result.delta > 0) {
+        const reward = rewardFor('quiz_correct');
+        const okCoins = await addCoins(reward.coins, 'quiz_correct');
+        if (!okCoins) {
+          Alert.alert(
+            'Could not save reward',
+            'Your score changed locally, but coins did not sync.',
+          );
+          return;
+        }
+        const okXp = await addXP(reward.xp);
+        if (!okXp) {
+          await useUserStore.getState().spendCoins(reward.coins, 'quiz_correct');
+          Alert.alert(
+            'Could not save XP',
+            'Coins were saved, but XP did not sync.',
+          );
+          return;
+        }
+      }
 
-    Alert.alert(
-      def.label,
-      `Score ${result.delta >= 0 ? '+' : ''}${result.delta} points\n\n${def.description}`
-    );
+      Alert.alert(
+        def.label,
+        `Score ${result.delta >= 0 ? '+' : ''}${result.delta} points\n\n${def.description}`
+      );
+    })();
   };
 
   const handleReset = () => {

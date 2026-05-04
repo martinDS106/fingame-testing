@@ -51,7 +51,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
       setShares('');
       setError(null);
     }
-  }, [stock?.symbol]);
+  }, [stock]);
 
   const sharesNum = useMemo(() => {
     const n = parseInt(shares, 10);
@@ -61,37 +61,72 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
   const totalCost = stock ? stock.price * sharesNum : 0;
 
   const handleConfirm = () => {
-    if (!stock) return;
-    setError(null);
-    if (sharesNum <= 0) {
-      setError(t('trade.enterValidShares'));
-      return;
-    }
+    void (async () => {
+      if (!stock) return;
+      setError(null);
+      if (sharesNum <= 0) {
+        setError(t('trade.enterValidShares'));
+        return;
+      }
 
-    const result = mode === 'buy' ? buy(stock.symbol, sharesNum) : sell(stock.symbol, sharesNum);
-    if (!result.ok) {
-      setError(result.reason ?? t('trade.failed'));
-      return;
-    }
+      const result =
+        mode === 'buy' ? buy(stock.symbol, sharesNum) : sell(stock.symbol, sharesNum);
+      if (!result.ok) {
+        setError(result.reason ?? t('trade.failed'));
+        return;
+      }
 
-    const action = mode === 'buy' ? t('trade.bought') : t('trade.sold');
-    const reward = rewardFor('simulation_win');
-    const reward_coins = Math.round(reward.coins / 10);
-    addCoins(reward_coins, 'simulation_win');
-    addXP(Math.round(reward.xp / 10));
+      const action = mode === 'buy' ? t('trade.bought') : t('trade.sold');
+      const reward = rewardFor('simulation_win');
+      const reward_coins = Math.round(reward.coins / 10);
+      const reward_xp = Math.round(reward.xp / 10);
+      const okCoins = await addCoins(reward_coins, 'simulation_win');
+      if (!okCoins) {
+        Alert.alert(
+          t('trade.executed'),
+          t('trade.alertBody', {
+            action,
+            qty: sharesNum,
+            symbol: stock.symbol,
+            price: formatEGP(stock.price),
+            coins: 0,
+          }) + '\n\nCould not sync coin reward.',
+        );
+        setShares('');
+        onClose();
+        return;
+      }
+      const okXp = await addXP(reward_xp);
+      if (!okXp) {
+        await useUserStore.getState().spendCoins(reward_coins, 'simulation_win');
+        Alert.alert(
+          t('trade.executed'),
+          t('trade.alertBody', {
+            action,
+            qty: sharesNum,
+            symbol: stock.symbol,
+            price: formatEGP(stock.price),
+            coins: reward_coins,
+          }) + '\n\nCould not sync XP reward.',
+        );
+        setShares('');
+        onClose();
+        return;
+      }
 
-    Alert.alert(
-      t('trade.executed'),
-      t('trade.alertBody', {
-        action,
-        qty: sharesNum,
-        symbol: stock.symbol,
-        price: formatEGP(stock.price),
-        coins: reward_coins,
-      })
-    );
-    setShares('');
-    onClose();
+      Alert.alert(
+        t('trade.executed'),
+        t('trade.alertBody', {
+          action,
+          qty: sharesNum,
+          symbol: stock.symbol,
+          price: formatEGP(stock.price),
+          coins: reward_coins,
+        })
+      );
+      setShares('');
+      onClose();
+    })();
   };
 
   return (

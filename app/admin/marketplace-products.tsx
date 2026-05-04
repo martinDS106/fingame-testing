@@ -20,7 +20,8 @@ import {
   upsertMarketplaceProduct,
   type MarketplaceProductUpsert,
   type RemoteMarketplaceProduct,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
+import { isApiConfigured } from '@/lib/api';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
@@ -58,6 +59,7 @@ const TIER_OPTIONS: { id: Tier; label: string }[] = [
 
 export default function AdminMarketplaceProductsScreen() {
   const allowed = useUserStore((s) => s.isAdmin);
+  const apiMode = isApiConfigured;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -273,6 +275,27 @@ export default function AdminMarketplaceProductsScreen() {
             <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
             <Text className="text-sm text-gray-700">
               This area is restricted to admins.
+            </Text>
+          </Card>
+          <View className="mt-4">
+            <Button variant="outline" fullWidth onPress={() => router.back()}>
+              Go Back
+            </Button>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (apiMode) {
+    return (
+      <View className="flex-1 bg-gray-50">
+        <ScreenHeader title="Admin • Marketplace" showBack />
+        <View className="flex-1 px-4 py-6">
+          <Card className="border border-yellow-200 bg-yellow-50">
+            <Text className="text-gray-900 font-semibold mb-1">Not supported</Text>
+            <Text className="text-sm text-gray-700">
+              Marketplace admin tools are not available in MySQL API mode yet.
             </Text>
           </Card>
           <View className="mt-4">

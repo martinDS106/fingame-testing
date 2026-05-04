@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import { Crown, Medal, Trophy } from 'lucide-react-native';
@@ -8,10 +8,9 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
   pullLeaderboardTop,
-  type RemoteLeaderboardEntry,
   type RemoteProfile,
   adminPullProfiles,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
@@ -25,7 +24,7 @@ export default function AdminLeaderboardScreen() {
   const [users, setUsers] = useState<RemoteProfile[]>([]);
   const [metric, setMetric] = useState<Metric>('coins');
 
-  async function refresh() {
+  const refresh = useCallback(async () => {
     setLoading(true);
     setError(null);
     try {
@@ -56,12 +55,12 @@ export default function AdminLeaderboardScreen() {
     } finally {
       setLoading(false);
     }
-  }
+  }, [metric]);
 
   useEffect(() => {
     if (!allowed) return;
     void refresh();
-  }, [allowed]);
+  }, [allowed, refresh]);
 
   const top = useMemo(() => {
     const sorted = [...users].sort((a, b) => {

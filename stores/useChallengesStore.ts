@@ -4,7 +4,7 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { asyncStorage } from './storage';
 import { useUserStore } from './useUserStore';
 import { rewardFor } from '@/lib/rewards';
-import { upsertProgress } from '@/lib/syncService';
+import { upsertProgress } from '@/lib/syncServiceApi';
 
 export type ChallengeId =
   | 'emergency-fund'
@@ -51,11 +51,14 @@ interface ChallengesState {
 
   isCompleted: (id: ChallengeId) => boolean;
   challengeFor: (id: ChallengeId) => ChallengeScenario | undefined;
-  submit: (challengeId: ChallengeId, optionId: string) => {
+  submit: (
+    challengeId: ChallengeId,
+    optionId: string,
+  ) => Promise<{
     ok: boolean;
     reason?: string;
     attempt?: ChallengeAttempt;
-  };
+  }>;
   reset: () => void;
 }
 
@@ -310,7 +313,7 @@ export const useChallengesStore = create<ChallengesState>()(
       isCompleted: (id) => get().completed.includes(id),
       challengeFor: (id) => get().challenges.find((c) => c.id === id),
 
-      submit: (challengeId, optionId) => {
+      submit: async (challengeId, optionId) => {
         const challenge = get().challengeFor(challengeId);
         if (!challenge) return { ok: false, reason: 'Unknown challenge' };
         if (get().completed.includes(challengeId)) {
@@ -337,11 +340,31 @@ export const useChallengesStore = create<ChallengesState>()(
         const user = useUserStore.getState();
         const baseReward = rewardFor('lesson_complete');
         // Use impacts + a small base to keep consistent economy.
-        user.addCoins(
+        const okCoins = await user.addCoins(
           attempt.coinsDelta + Math.round(baseReward.coins / 10),
           'lesson_complete'
         );
-        user.addXP(attempt.xpDelta + Math.round(baseReward.xp / 10));
+        if (!okCoins) {
+          // Roll back challenge completion if we couldn't persist rewards.
+          set((state) => ({
+            completed: state.completed.filter((id) => id !== challengeId),
+            attempts: state.attempts.filter((a) => a.id !== attempt.id),
+          }));
+          return { ok: false, reason: 'Failed to save coins' };
+        }
+        const okXp = await user.addXP(attempt.xpDelta + Math.round(baseReward.xp / 10));
+        if (!okXp) {
+          // Roll back coins + completion if XP sync failed.
+          await user.spendCoins(
+            attempt.coinsDelta + Math.round(baseReward.coins / 10),
+            'lesson_complete',
+          );
+          set((state) => ({
+            completed: state.completed.filter((id) => id !== challengeId),
+            attempts: state.attempts.filter((a) => a.id !== attempt.id),
+          }));
+          return { ok: false, reason: 'Failed to save XP' };
+        }
 
         const userId = user.remoteUserId;
         if (userId) {

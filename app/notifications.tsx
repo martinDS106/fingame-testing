@@ -11,7 +11,7 @@ import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useUserStore } from '@/stores';
-import { pullRedemptions, type RemoteRedemption } from '@/lib/syncService';
+import { pullRedemptions, type RemoteRedemption } from '@/lib/syncServiceApi';
 
 export default function NotificationsInboxScreen() {
   const { t } = useT();

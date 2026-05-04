@@ -9,7 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
-import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncService';
+import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
 
 function rankBadgeClass(rank: number) {
   if (rank === 1) return 'bg-accent-100';

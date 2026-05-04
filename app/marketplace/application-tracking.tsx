@@ -209,7 +209,6 @@ export default function ApplicationTrackingScreen() {
             {STEP_FLOW.map((step, index) => {
               const isCompleted = index < currentIdx;
               const isCurrent = index === currentIdx;
-              const isPending = index > currentIdx;
               const isLast = index === STEP_FLOW.length - 1;
 
               return (
@@ -290,7 +289,7 @@ export default function ApplicationTrackingScreen() {
             <View className="flex-row gap-2">
               <Text className="text-blue-600 font-semibold">2.</Text>
               <Text className="text-sm text-gray-700 flex-1">
-                You'll receive an email with the decision
+                You will receive an email with the decision
               </Text>
             </View>
             <View className="flex-row gap-2">

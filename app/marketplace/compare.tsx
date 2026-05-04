@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef } from 'react';
-import { Pressable, ScrollView, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { Award, CheckCircle2, XCircle } from 'lucide-react-native';
 import { router } from 'expo-router';
 
@@ -47,11 +47,19 @@ export default function CompareScreen() {
 
   const rewardedRef = useRef(false);
   useEffect(() => {
-    if (cards.length >= 2 && !rewardedRef.current) {
-      rewardedRef.current = true;
+    if (cards.length < 2 || rewardedRef.current) return;
+    void (async () => {
+      const ok = await addCoins(10, 'manual');
+      if (!ok) {
+        Alert.alert(
+          'Could not save reward',
+          'Comparison reward did not sync. Please sign in again and retry.',
+        );
+        return;
+      }
       trackComparison();
-      addCoins(10, 'manual');
-    }
+      rewardedRef.current = true;
+    })();
   }, [cards.length, trackComparison, addCoins]);
 
   function getFeatureValue(

@@ -15,8 +15,8 @@ import { router } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
 import { useT } from '@/hooks/useT';
+import { apiPostJson } from '@/lib/api';
 
 export default function ForgotPasswordScreen() {
   const { t } = useT();
@@ -30,19 +30,22 @@ export default function ForgotPasswordScreen() {
       setError(t('auth.enterEmailAndPassword'));
       return;
     }
-    if (!isSupabaseConfigured) {
-      setError(t('auth.supabaseNotConfiguredTitle'));
-      return;
-    }
     setLoading(true);
     setError(null);
     try {
-      const { error: e } = await supabase.auth.resetPasswordForEmail(email.trim());
-      if (e) {
-        setError(e.message);
-        return;
-      }
+      const res = await apiPostJson<{ ok: true; sent: boolean }, { email: string }>(
+        '/auth/forgot-password',
+        { email: email.trim() },
+        { timeoutMs: 12000 }
+      );
       setSent(true);
+      setError(null);
+      if (res && res.sent === false) {
+        setError('Email is not configured on the server yet (dev mode). Ask the developer to check backend logs for the 6-digit code.');
+      }
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Unknown error';
+      setError(msg);
     } finally {
       setLoading(false);
     }
@@ -63,7 +66,7 @@ export default function ForgotPasswordScreen() {
             <View className="mb-8">
               <Text className="text-3xl text-white font-bold mb-2">Reset password</Text>
               <Text className="text-base text-primary-100">
-                Enter your email and we’ll send a reset link.
+                Enter your email and we’ll send a 6-digit reset code.
               </Text>
             </View>
 
@@ -94,8 +97,22 @@ export default function ForgotPasswordScreen() {
               {sent && (
                 <View className="bg-green-50 border border-green-200 rounded-lg p-3">
                   <Text className="text-sm text-green-800">
-                    Email sent. Check your inbox for the reset link.
+                    If this email exists, a 6-digit reset code has been sent. Check your inbox.
                   </Text>
+                  <View className="mt-3">
+                    <Button
+                      variant="primary"
+                      size="sm"
+                      onPress={() =>
+                        router.push({
+                          pathname: '/(auth)/reset-password',
+                          params: { email: email.trim() },
+                        } as never)
+                      }
+                    >
+                      Enter reset code
+                    </Button>
+                  </View>
                 </View>
               )}
 

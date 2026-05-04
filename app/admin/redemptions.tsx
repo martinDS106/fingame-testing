@@ -15,11 +15,12 @@ import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
+import { isApiConfigured } from '@/lib/api';
 import {
   adminPullRedemptions,
   adminUpdateRedemptionStatus,
   type RemoteRedemption,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 
 type Status = RemoteRedemption['status'];
 
@@ -31,6 +32,7 @@ const STATUS_OPTS: { id: Status; label: string }[] = [
 
 export default function AdminRedemptionsScreen() {
   const allowed = useUserStore((s) => s.isAdmin);
+  const apiMode = isApiConfigured;
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -73,6 +75,27 @@ export default function AdminRedemptionsScreen() {
             <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
             <Text className="text-sm text-gray-700">
               This area is restricted to admins.
+            </Text>
+          </Card>
+          <View className="mt-4">
+            <Button variant="outline" fullWidth onPress={() => router.back()}>
+              Go Back
+            </Button>
+          </View>
+        </View>
+      </View>
+    );
+  }
+
+  if (apiMode) {
+    return (
+      <View className="flex-1 bg-gray-50">
+        <ScreenHeader title="Admin • Redemptions" showBack />
+        <View className="flex-1 px-4 py-6">
+          <Card className="border border-yellow-200 bg-yellow-50">
+            <Text className="text-gray-900 font-semibold mb-1">Not supported</Text>
+            <Text className="text-sm text-gray-700">
+              Redemptions admin tools are not available in MySQL API mode yet.
             </Text>
           </Card>
           <View className="mt-4">

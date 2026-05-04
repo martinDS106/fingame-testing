@@ -9,12 +9,12 @@ import {
   View,
 } from 'react-native';
 import { router } from 'expo-router';
-import { Pencil, Shield, Trash2, X } from 'lucide-react-native';
+import { Pencil, Shield, X } from 'lucide-react-native';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
-import { adminPullProfiles, adminUpdateProfile, type RemoteProfile } from '@/lib/syncService';
+import { adminPullProfiles, adminUpdateProfile, type RemoteProfile } from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 

@@ -11,6 +11,7 @@ import {
   CloudOff,
   CreditCard,
   Globe,
+  History,
   RefreshCw,
   Settings,
   TrendingUp,
@@ -520,6 +521,11 @@ export default function ProfileScreen() {
                   )}` as never
                 )
               }
+            />
+            <SettingItem
+              Icon={History}
+              label="Quiz history"
+              onPress={() => router.push('/quiz-history' as never)}
             />
             {canShowAdminUI && (
               <SettingItem

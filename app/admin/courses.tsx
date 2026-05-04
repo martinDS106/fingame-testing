@@ -20,7 +20,7 @@ import {
   upsertCourse,
   type CourseUpsert,
   type RemoteCourse,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 

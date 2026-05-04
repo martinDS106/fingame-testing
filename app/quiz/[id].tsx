@@ -1,4 +1,4 @@
-import { useMemo, useState } from 'react';
+import { useEffect, useMemo, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react-native';
@@ -16,6 +16,8 @@ export default function QuizPlayScreen() {
   const quiz = useContentStore((s) => s.quizFor(quizId));
   const allQuestions = useContentStore((s) => s.questions);
   const submitAttempt = useContentStore((s) => s.submitAttempt);
+  const syncQuestionsForQuiz = useContentStore((s) => s.syncQuestionsForQuiz);
+  const syncStatus = useContentStore((s) => s.syncStatus);
 
   // IMPORTANT: don't subscribe to store selectors that return new arrays/objects
   // each render (it can cause "Maximum update depth exceeded"). Derive here.
@@ -28,9 +30,18 @@ export default function QuizPlayScreen() {
 
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
+  const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
 
   const current = questions[idx];
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
+
+  useEffect(() => {
+    if (!quizId) return;
+    if (questions.length > 0) return;
+    if (autoSyncAttempted) return;
+    setAutoSyncAttempted(true);
+    void syncQuestionsForQuiz(quizId);
+  }, [quizId, questions.length, autoSyncAttempted, syncQuestionsForQuiz]);
 
   const score = useMemo(() => {
     return questions.reduce((acc, q) => {
@@ -87,17 +98,20 @@ export default function QuizPlayScreen() {
         <ScreenHeader title={quiz.title} showBack showBell={false} />
         <View className="flex-1 items-center justify-center px-8">
           <HelpCircle size={42} color={colors.gray[500]} />
-          <Text className="text-gray-900 font-semibold mt-3">No questions yet</Text>
+          <Text className="text-gray-900 font-semibold mt-3">
+            {syncStatus === 'syncing' ? 'Syncing questions…' : 'No questions yet'}
+          </Text>
           <Text className="text-gray-700 text-sm text-center mt-2">
-            This quiz doesn’t have questions loaded. Try syncing content.
+            This quiz doesn’t have questions loaded yet. Please retry sync.
           </Text>
           <View className="mt-4 w-full">
             <Button
               fullWidth
-              variant="outline"
-              onPress={() => router.push('/coming-soon?title=Sync content' as never)}
+              variant="primary"
+              disabled={syncStatus === 'syncing'}
+              onPress={() => void syncQuestionsForQuiz(quizId)}
             >
-              Learn more
+              Retry sync
             </Button>
           </View>
         </View>
@@ -107,12 +121,22 @@ export default function QuizPlayScreen() {
 
   async function finish() {
     const total = questions.length;
-    await submitAttempt(quizId, score, total);
+    const res = await submitAttempt(quizId, score, total);
+    if (!res.ok) {
+      Alert.alert(
+        'Could not save result',
+        res.error || 'Please sign in again.',
+        [{ text: 'OK' }],
+        { cancelable: true },
+      );
+      return;
+    }
+
     Alert.alert(
       'Quiz complete',
-      `Score: ${score}/${total}`,
+      `Score: ${score}/${total}\n+${res.coinsEarned} coins`,
       [{ text: 'OK', onPress: () => router.back() }],
-      { cancelable: true }
+      { cancelable: true },
     );
   }
 

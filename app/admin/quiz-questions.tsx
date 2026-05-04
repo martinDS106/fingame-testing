@@ -20,7 +20,7 @@ import {
   upsertQuestion,
   type QuestionUpsert,
   type RemoteQuestion,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 

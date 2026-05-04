@@ -206,7 +206,7 @@ export default function LessonPlayerScreen() {
           <View className="bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center gap-2">
             <CheckCircle size={20} color="#16a34a" />
             <Text className="text-green-800 font-medium flex-1">
-              You've already completed this lesson.
+              You have already completed this lesson.
             </Text>
           </View>
         ) : (

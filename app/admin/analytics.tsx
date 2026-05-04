@@ -6,7 +6,7 @@ import { BarChart3, Database, Users } from 'lucide-react-native';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
-import { adminCounts, adminDashboardStats } from '@/lib/syncService';
+import { adminCounts, adminDashboardStats } from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 

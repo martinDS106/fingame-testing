@@ -1,0 +1,250 @@
+// This is your Prisma schema file,
+// learn more about it in the docs: https://pris.ly/d/prisma-schema
+
+// Get a free hosted Postgres database in seconds: `npx create-db`
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "mysql"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String   @id @default(cuid())
+  email        String   @unique
+  passwordHash String
+  isAdmin      Boolean  @default(false)
+  displayName  String   @default("Player")
+  avatar       String?  @db.Text
+  level        String   @default("Beginner")
+  coins        Int      @default(100)
+  xp           Int      @default(0)
+  streak       Int      @default(0)
+  longestStreak Int     @default(0)
+  lastActiveDate DateTime?
+  simCash      Int      @default(100000)
+  createdAt    DateTime @default(now())
+  updatedAt    DateTime @updatedAt
+
+  coinsLog     CoinsLog[]
+  progress     UserProgress[]
+  quizAttempts QuizAttempt[]
+  passwordResets PasswordResetToken[]
+  passwordResetOtps PasswordResetOtp[]
+  investmentHoldings InvestmentHolding[]
+  investmentTrades   InvestmentTrade[]
+  bankingTransactions BankingTransaction[]
+}
+
+model PasswordResetToken {
+  id        String   @id @default(cuid())
+  userId    String
+  tokenHash String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model PasswordResetOtp {
+  id        String   @id @default(cuid())
+  userId    String
+  codeHash  String   @unique @db.VarChar(64)
+  expiresAt DateTime
+  usedAt    DateTime?
+  attempts  Int      @default(0)
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+  @@index([expiresAt])
+}
+
+model CoinsLog {
+  id        String   @id @default(cuid())
+  userId    String
+  amount    Int
+  reason    String   @db.Text
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, createdAt])
+}
+
+model UserProgress {
+  id        String   @id @default(cuid())
+  userId    String
+  kind      String
+  refId     String
+  progress  Decimal  @default(0.0) @db.Decimal(5, 2)
+  completed Boolean  @default(false)
+  updatedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, kind, refId])
+  @@index([userId])
+}
+
+model Course {
+  id            String   @id
+  title         String
+  titleAr       String?  @db.Text
+  description   String?  @db.Text
+  descriptionAr String?  @db.Text
+  topic         String   @default("investing")
+  icon          String?  @default("📚")
+  color         String?  @default("#2563eb")
+  sortOrder     Int      @default(0)
+  coinReward    Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  lessons Lesson[]
+
+  @@index([topic, sortOrder])
+}
+
+model Lesson {
+  id              String   @id
+  courseId        String
+  title           String
+  titleAr         String?  @db.Text
+  summary         String?  @db.Text
+  summaryAr       String?  @db.Text
+  durationMinutes Int      @default(10)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  course Course @relation(fields: [courseId], references: [id], onDelete: Cascade)
+  videos Video[]
+
+  @@index([courseId, sortOrder])
+}
+
+model Video {
+  id              String   @id
+  lessonId        String
+  title           String
+  titleAr         String?  @db.Text
+  url             String   @db.Text
+  thumbnail       String?  @db.Text
+  durationSeconds Int      @default(0)
+  sortOrder       Int      @default(0)
+  createdAt       DateTime @default(now())
+
+  lesson Lesson @relation(fields: [lessonId], references: [id], onDelete: Cascade)
+
+  @@index([lessonId, sortOrder])
+}
+
+model Quiz {
+  id            String   @id
+  title         String
+  titleAr       String?  @db.Text
+  description   String?  @db.Text
+  descriptionAr String?  @db.Text
+  category      String   @default("general")
+  difficulty    String   @default("easy")
+  coinReward    Int      @default(10)
+  createdAt     DateTime @default(now())
+
+  questions Question[]
+  attempts  QuizAttempt[]
+
+  @@index([category])
+}
+
+model Question {
+  id            String   @id
+  quizId        String
+  question      String   @db.Text
+  questionAr    String?  @db.Text
+  options       Json
+  optionsAr     Json?
+  correctIndex  Int
+  explanation   String?  @db.Text
+  explanationAr String?  @db.Text
+  sortOrder     Int      @default(0)
+  createdAt     DateTime @default(now())
+
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([quizId, sortOrder])
+}
+
+model QuizAttempt {
+  id          String   @id @default(cuid())
+  userId      String
+  quizId      String
+  score       Int
+  total       Int
+  coinsEarned Int      @default(0)
+  completedAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+  quiz Quiz @relation(fields: [quizId], references: [id], onDelete: Cascade)
+
+  @@index([userId, completedAt])
+  @@index([quizId])
+}
+
+model StockPrice {
+  symbol    String   @id
+  price     Decimal  @db.Decimal(12, 2)
+  updatedAt DateTime @default(now())
+}
+
+model InvestmentHolding {
+  id        String   @id @default(cuid())
+  userId    String
+  symbol    String
+  shares    Int
+  avgCost   Decimal  @db.Decimal(12, 2)
+  updatedAt DateTime @updatedAt
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, symbol])
+  @@index([userId, updatedAt])
+}
+
+model InvestmentTrade {
+  id        String   @id
+  userId    String
+  symbol    String
+  action    String
+  shares    Int
+  price     Decimal  @db.Decimal(12, 2)
+  orderType String?
+  at        DateTime
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+  @@index([symbol, at])
+}
+
+model BankingTransaction {
+  id        String   @id
+  userId    String
+  accountId String
+  amount    Decimal  @db.Decimal(12, 2)
+  type      String
+  category  String
+  note      String?  @db.Text
+  at        DateTime
+  createdAt DateTime @default(now())
+
+  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
+
+  @@index([userId, at])
+}

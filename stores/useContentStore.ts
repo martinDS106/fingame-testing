@@ -4,17 +4,22 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import {
   pullCourses,
   pullLessons,
+  pullProgress,
   pullQuestions,
   pullQuizzes,
   pullVideos,
+  pullContentBootstrap,
+  pullProfile,
   recordQuizAttempt,
+  remoteProfileToLocal,
   upsertProgress,
   type RemoteCourse,
   type RemoteLesson,
   type RemoteQuestion,
   type RemoteQuiz,
   type RemoteVideo,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
+import { isApiConfigured } from '@/lib/api';
 import { useUserStore } from '@/stores/useUserStore';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
@@ -289,10 +294,20 @@ interface ContentState {
   isVideoWatched: (videoId: string) => boolean;
 
   syncFromCloud: () => Promise<void>;
+  syncQuestionsForQuiz: (quizId: string) => Promise<void>;
   relocalizeFromCache: () => void;
-  completeLesson: (lessonId: string, coinReward?: number) => void;
-  markVideoWatched: (videoId: string, lessonId: string) => void;
-  submitAttempt: (quizId: string, score: number, total: number) => Promise<void>;
+  completeLesson: (lessonId: string, coinReward?: number) => Promise<void>;
+  markVideoWatched: (videoId: string, lessonId: string) => Promise<void>;
+  submitAttempt: (
+    quizId: string,
+    score: number,
+    total: number,
+  ) => Promise<{ ok: true; coinsEarned: number } | { ok: false; error: string }>;
+
+  /** Replace local lesson/quiz/video progress with server rows for the signed-in user. */
+  syncProgressFromServer: () => Promise<void>;
+  /** Clear persisted progress on logout so the next account does not inherit this device state. */
+  resetProgressForLogout: () => void;
 }
 
 export const useContentStore = create<ContentState>()(
@@ -334,27 +349,27 @@ export const useContentStore = create<ContentState>()(
           .sort((a, b) => a.sortOrder - b.sortOrder)[0],
       isVideoWatched: (videoId) => get().watchedVideos.includes(videoId),
 
-      markVideoWatched: (videoId, lessonId) => {
+      markVideoWatched: async (videoId, lessonId) => {
         if (get().watchedVideos.includes(videoId)) return;
         set((state) => ({
           watchedVideos: [...state.watchedVideos, videoId],
         }));
         // Completing the video counts as completing the lesson.
-        get().completeLesson(lessonId, 15);
+        await get().completeLesson(lessonId, 15);
         const userId = useUserStore.getState().remoteUserId;
         if (userId) {
           void upsertProgress(userId, 'video', videoId, 100, true);
         }
       },
 
-      completeLesson: (lessonId, coinReward = 10) => {
+      completeLesson: async (lessonId, coinReward = 10) => {
         if (get().completedLessons.includes(lessonId)) return;
         set((state) => ({
           completedLessons: [...state.completedLessons, lessonId],
         }));
         const userStore = useUserStore.getState();
-        userStore.addCoins(coinReward, 'lesson_complete');
-        userStore.addXP(25);
+        await userStore.addCoins(coinReward, 'lesson_complete');
+        await userStore.addXP(25);
 
         const userId = userStore.remoteUserId;
         if (userId) {
@@ -365,14 +380,12 @@ export const useContentStore = create<ContentState>()(
       syncFromCloud: async () => {
         set({ syncStatus: 'syncing', syncError: null });
         try {
-          const [rawCourses, rawLessons, rawVideos, rawQuizzes, rawQuestions] =
-            await Promise.all([
-              pullCourses(),
-              pullLessons(),
-              pullVideos(),
-              pullQuizzes(),
-              pullQuestions(),
-            ]);
+          const boot = await pullContentBootstrap();
+          const rawCourses = boot?.courses ?? (await pullCourses());
+          const rawLessons = boot?.lessons ?? (await pullLessons());
+          const rawVideos = boot?.videos ?? (await pullVideos());
+          const rawQuizzes = boot?.quizzes ?? (await pullQuizzes());
+          const rawQuestions = boot?.questions ?? [];
 
           if (!rawCourses.length && !rawQuizzes.length) {
             set({ loaded: true, syncStatus: 'success', lastSyncedAt: Date.now() });
@@ -387,12 +400,12 @@ export const useContentStore = create<ContentState>()(
             rawQuestions,
             courses: rawCourses.length
               ? rawCourses.map(adaptCourse)
-              : get().courses,
+              : (get().courses.length ? get().courses : FALLBACK_COURSES),
             lessons: rawLessons.map(adaptLesson),
             videos: rawVideos.map(adaptVideo),
             quizzes: rawQuizzes.length
               ? rawQuizzes.map(adaptQuiz)
-              : get().quizzes,
+              : (get().quizzes.length ? get().quizzes : FALLBACK_QUIZZES),
             questions: rawQuestions.map(adaptQuestion),
             loaded: true,
             lastSyncedAt: Date.now(),
@@ -404,6 +417,33 @@ export const useContentStore = create<ContentState>()(
           const message =
             err instanceof Error ? err.message : 'Unknown sync error';
           set({ loaded: true, syncStatus: 'error', syncError: message });
+        }
+      },
+
+      syncQuestionsForQuiz: async (quizId: string) => {
+        if (!quizId) return;
+        set({ syncStatus: 'syncing', syncError: null });
+        try {
+          const rows = await pullQuestions(quizId);
+          if (!rows.length) {
+            set({ syncStatus: 'success', lastSyncedAt: Date.now() });
+            return;
+          }
+
+          const state = get();
+          const keep = state.rawQuestions.filter((q) => q.quiz_id !== quizId);
+          const nextRaw = [...keep, ...rows];
+          set({
+            rawQuestions: nextRaw,
+            questions: nextRaw.map(adaptQuestion),
+            syncStatus: 'success',
+            syncError: null,
+            lastSyncedAt: Date.now(),
+          });
+        } catch (err) {
+          console.warn('[content] syncQuestionsForQuiz failed', err);
+          const message = err instanceof Error ? err.message : 'Unknown sync error';
+          set({ syncStatus: 'error', syncError: message });
         }
       },
 
@@ -432,26 +472,100 @@ export const useContentStore = create<ContentState>()(
         });
       },
 
+      resetProgressForLogout: () => {
+        set({
+          completedLessons: [],
+          completedQuizzes: [],
+          watchedVideos: [],
+        });
+      },
+
+      syncProgressFromServer: async () => {
+        if (!isApiConfigured) return;
+        if (!useUserStore.getState().remoteUserId) return;
+        try {
+          const rows = await pullProgress();
+          if (rows === null) return;
+          const completedLessons: string[] = [];
+          const completedQuizzes: string[] = [];
+          const watchedVideos: string[] = [];
+          for (const r of rows) {
+            if (!r.completed) continue;
+            if (r.kind === 'lesson') completedLessons.push(r.ref_id);
+            else if (r.kind === 'quiz') completedQuizzes.push(r.ref_id);
+            else if (r.kind === 'video') watchedVideos.push(r.ref_id);
+          }
+          set({
+            completedLessons,
+            completedQuizzes,
+            watchedVideos,
+          });
+        } catch (err) {
+          console.warn('[content] syncProgressFromServer failed', err);
+        }
+      },
+
       submitAttempt: async (quizId, score, total) => {
         const quiz = get().quizFor(quizId);
-        if (!quiz) return;
+        if (!quiz) return { ok: false, error: 'Quiz not found' };
         const ratio = total > 0 ? score / total : 0;
         const coinsEarned = Math.round(quiz.coinReward * ratio);
 
-        if (coinsEarned > 0) {
-          const reason = ratio === 1 ? 'quiz_perfect' : 'quiz_correct';
-          useUserStore.getState().addCoins(coinsEarned, reason);
+        if (!isApiConfigured) {
+          if (coinsEarned > 0) {
+            const reason = ratio === 1 ? 'quiz_perfect' : 'quiz_correct';
+            await useUserStore.getState().addCoins(coinsEarned, reason);
+          }
+          if (!get().completedQuizzes.includes(quizId)) {
+            set((state) => ({
+              completedQuizzes: [...state.completedQuizzes, quizId],
+            }));
+          }
+          return { ok: true, coinsEarned };
         }
+        const userId = useUserStore.getState().remoteUserId;
+        if (!userId) return { ok: false, error: 'Not signed in' };
+
+        const attemptRes = await recordQuizAttempt({ quiz_id: quizId, score, total });
+        if (!attemptRes.ok) {
+          // If auth is expired, don't proceed with follow-up sync calls that can
+          // overwrite local state with older remote values.
+          return { ok: false, error: attemptRes.error };
+        }
+
         if (!get().completedQuizzes.includes(quizId)) {
           set((state) => ({
             completedQuizzes: [...state.completedQuizzes, quizId],
           }));
         }
-        const userId = useUserStore.getState().remoteUserId;
-        if (userId) {
-          await recordQuizAttempt(userId, quizId, score, total, coinsEarned);
-          await upsertProgress(userId, 'quiz', quizId, ratio * 100, true);
+
+        const serverCoins = Number(attemptRes.coinsEarned ?? 0);
+        await upsertProgress(userId, 'quiz', quizId, ratio * 100, true);
+
+        const remote = await pullProfile();
+        if (remote) {
+          const merged = remoteProfileToLocal(remote);
+          useUserStore.setState((state) => {
+            const XP_PER_LEVEL = 500;
+            const nextLevel = Math.max(1, Math.floor(merged.xp / XP_PER_LEVEL) + 1);
+            return {
+              profile: {
+                ...state.profile,
+                ...merged.profile,
+                email: state.profile.email || merged.profile.email,
+              },
+              coins: merged.coins,
+              xp: merged.xp,
+              level: nextLevel,
+              streak: merged.streak,
+              longestStreak: merged.longestStreak,
+              lastActiveDate: merged.lastActiveDate,
+              isAdmin: merged.isAdmin,
+            };
+          });
         }
+
+        return { ok: true, coinsEarned: serverCoins };
       },
     }),
     {

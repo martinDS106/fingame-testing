@@ -1,7 +1,7 @@
 import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
-import { pushBankingTransaction } from '@/lib/syncService';
+import { pushBankingTransaction } from '@/lib/syncServiceApi';
 import { useUserStore } from '@/stores/useUserStore';
 
 import { asyncStorage } from './storage';

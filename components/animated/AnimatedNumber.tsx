@@ -22,6 +22,10 @@ export function AnimatedNumber({
   const [display, setDisplay] = useState(value);
 
   useEffect(() => {
+    setDisplay(value);
+  }, [value]);
+
+  useEffect(() => {
     if (display === value) return;
     const start = display;
     const diff = value - start;
@@ -44,7 +48,7 @@ export function AnimatedNumber({
     return () => {
       if (raf) cancelAnimationFrame(raf);
     };
-  }, [value, duration]);
+  }, [value, duration, display]);
 
   return (
     <Text style={style} {...rest}>

@@ -6,13 +6,13 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
-import { supabase } from '@/lib/supabase';
+import { isApiConfigured } from '@/lib/api';
 import {
   adminDeleteFinTokVideo,
   adminPullFinTokVideos,
   adminUpsertFinTokVideo,
   type RemoteFinTokVideo,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 
 function safeJsonTags(input: string): string[] {
   const raw = input.trim();
@@ -46,6 +46,14 @@ export default function AdminFinTokScreen() {
   const [pickedMime, setPickedMime] = useState<string | null>(null);
 
   async function refresh() {
+    if (isApiConfigured) {
+      setVideos([]);
+      Alert.alert(
+        'Not supported',
+        'FinTok admin is not available in MySQL API mode yet.'
+      );
+      return;
+    }
     setLoading(true);
     try {
       const rows = await adminPullFinTokVideos(500);
@@ -130,7 +138,13 @@ export default function AdminFinTokScreen() {
     Alert.alert('Picked', `Video selected. Now press Save to upload.${hint}`);
   }
 
-  async function uploadToStorage(uri: string): Promise<{ ok: boolean; path?: string; error?: string }> {
+  async function uploadToStorage(
+    uri: string
+  ): Promise<{ ok: boolean; path?: string; error?: string }> {
+    if (isApiConfigured) {
+      void uri;
+      return { ok: false, error: 'FinTok storage is not supported in API mode.' };
+    }
     try {
       const lowerUri = uri.toLowerCase();
       const inferredExt =
@@ -148,14 +162,10 @@ export default function AdminFinTokScreen() {
       const resp = await fetch(uri);
       const blob = await resp.blob();
 
-      const { error } = await supabase.storage
-        .from('fintok')
-        .upload(fileName, blob, {
-          contentType: inferredType,
-          upsert: false,
-        });
-      if (error) return { ok: false, error: error.message };
-      return { ok: true, path: fileName };
+      void fileName;
+      void blob;
+      void inferredType;
+      return { ok: false, error: 'FinTok storage is not supported in API mode.' };
     } catch (e) {
       return { ok: false, error: e instanceof Error ? e.message : 'Upload failed' };
     }
@@ -237,11 +247,7 @@ export default function AdminFinTokScreen() {
               Alert.alert('Delete failed', db.error || 'Unknown error');
               return;
             }
-            try {
-              await supabase.storage.from('fintok').remove([row.storage_path]);
-            } catch {
-              // ignore
-            }
+            // storage delete not supported in API mode
             await refresh();
             if (editing?.id === row.id) openNew();
           } finally {
@@ -292,7 +298,7 @@ export default function AdminFinTokScreen() {
             {editing ? 'Edit video' : 'Create video'}
           </Text>
           <Text className="text-xs text-gray-600 mb-3">
-            Tip: Press "New" to create a new video. If you edit an existing row, Save will
+            Tip: Press &quot;New&quot; to create a new video. If you edit an existing row, Save will
             replace that video.
           </Text>
 

@@ -1,5 +1,5 @@
 import { useMemo, useState } from 'react';
-import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { AlertTriangle, DollarSign, TrendingUp } from 'lucide-react-native';
 import { router } from 'expo-router';
@@ -91,7 +91,8 @@ export default function LoanCalculatorScreen() {
   const [income, setIncome] = useState('15000');
   const [showSchedule, setShowSchedule] = useState(false);
   const rewardKey = 'loan_calc_reward_v1';
-  const rewarded = hasClaimedReward(rewardKey);
+  const [rewardClaimed, setRewardClaimed] = useState(false);
+  const rewarded = rewardClaimed || hasClaimedReward(rewardKey);
 
   const { summary, schedule } = useMemo(
     () =>
@@ -362,13 +363,23 @@ export default function LoanCalculatorScreen() {
               fullWidth
               disabled={rewarded}
               onPress={() => {
-                const reward = rewardFor('lesson_complete');
-                claimRewardOnce(
-                  rewardKey,
-                  Math.round(reward.coins / 2),
-                  Math.round(reward.xp / 2),
-                  'lesson_complete'
-                );
+                void (async () => {
+                  const reward = rewardFor('lesson_complete');
+                  const ok = await claimRewardOnce(
+                    rewardKey,
+                    Math.round(reward.coins / 2),
+                    Math.round(reward.xp / 2),
+                    'lesson_complete'
+                  );
+                  if (!ok) {
+                    Alert.alert(
+                      'Could not claim reward',
+                      'Please sign in again and retry.',
+                    );
+                    return;
+                  }
+                  setRewardClaimed(true);
+                })();
               }}
             >
               {rewarded ? 'Reward claimed' : 'Claim reward for learning'}

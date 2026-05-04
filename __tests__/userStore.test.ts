@@ -19,26 +19,26 @@ describe('useUserStore', () => {
     } as any);
   });
 
-  test('addCoins increases coins and logs entry', () => {
+  test('addCoins increases coins and logs entry', async () => {
     const { addCoins } = useUserStore.getState();
-    addCoins(25, 'manual');
+    await addCoins(25, 'manual');
     const s = useUserStore.getState();
     expect(s.coins).toBe(125);
     expect(s.coinsLog.length).toBe(1);
     expect(s.coinsLog[0].amount).toBe(25);
   });
 
-  test('spendCoins returns false if insufficient', () => {
+  test('spendCoins returns false if insufficient', async () => {
     const { spendCoins } = useUserStore.getState();
-    const ok = spendCoins(999);
+    const ok = await spendCoins(999);
     expect(ok).toBe(false);
     expect(useUserStore.getState().coins).toBe(100);
   });
 
-  test('claimRewardOnce only grants once', () => {
+  test('claimRewardOnce only grants once', async () => {
     const { claimRewardOnce } = useUserStore.getState();
-    const first = claimRewardOnce('reward/x', 10, 25, 'manual');
-    const second = claimRewardOnce('reward/x', 10, 25, 'manual');
+    const first = await claimRewardOnce('reward/x', 10, 25, 'manual');
+    const second = await claimRewardOnce('reward/x', 10, 25, 'manual');
     expect(first).toBe(true);
     expect(second).toBe(false);
     const s = useUserStore.getState();

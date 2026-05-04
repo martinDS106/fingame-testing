@@ -19,7 +19,7 @@ import {
   pullStockPrices,
   upsertStockPrice,
   type RemoteStockPrice,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 

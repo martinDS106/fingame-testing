@@ -23,17 +23,19 @@ export function useDailyCheckIn(
     if (ran.current) return;
     ran.current = true;
 
-    const { newStreak, streakChanged } = checkInDaily();
-    if (streakChanged) {
-      addCoins(DAILY_LOGIN_COINS, 'daily_login');
-      addXP(DAILY_LOGIN_XP);
-      onReward?.({
-        awarded: true,
-        coins: DAILY_LOGIN_COINS,
-        newStreak,
-      });
-    } else {
-      onReward?.({ awarded: false, coins: 0, newStreak });
-    }
+    void (async () => {
+      const { newStreak, streakChanged } = await checkInDaily();
+      if (streakChanged) {
+        await addCoins(DAILY_LOGIN_COINS, 'daily_login');
+        await addXP(DAILY_LOGIN_XP);
+        onReward?.({
+          awarded: true,
+          coins: DAILY_LOGIN_COINS,
+          newStreak,
+        });
+      } else {
+        onReward?.({ awarded: false, coins: 0, newStreak });
+      }
+    })();
   }, [checkInDaily, addCoins, addXP, onReward]);
 }

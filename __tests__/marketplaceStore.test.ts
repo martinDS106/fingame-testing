@@ -1,6 +1,6 @@
 import { useMarketplaceStore } from '@/stores/useMarketplaceStore';
 
-jest.mock('@/lib/syncService', () => ({
+jest.mock('@/lib/syncServiceApi', () => ({
   pullMarketplaceProducts: jest.fn(async () => [
     {
       id: 'x1',

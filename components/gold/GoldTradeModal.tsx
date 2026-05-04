@@ -51,7 +51,7 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
       setGrams('');
       setError(null);
     }
-  }, [metal?.type]);
+  }, [metal]);
 
   const gramsNum = useMemo(() => {
     const n = parseFloat(grams);
@@ -61,37 +61,69 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
   const totalCost = metal ? metal.pricePerGram * gramsNum : 0;
 
   const handleConfirm = () => {
-    if (!metal) return;
-    setError(null);
-    if (gramsNum <= 0) {
-      setError(t('gold.enterValidGrams'));
-      return;
-    }
+    void (async () => {
+      if (!metal) return;
+      setError(null);
+      if (gramsNum <= 0) {
+        setError(t('gold.enterValidGrams'));
+        return;
+      }
 
-    const result =
-      mode === 'buy' ? buy(metal.type, gramsNum) : sell(metal.type, gramsNum);
-    if (!result.ok) {
-      setError(result.reason ?? t('trade.failed'));
-      return;
-    }
+      const result =
+        mode === 'buy' ? buy(metal.type, gramsNum) : sell(metal.type, gramsNum);
+      if (!result.ok) {
+        setError(result.reason ?? t('trade.failed'));
+        return;
+      }
 
-    const action = mode === 'buy' ? t('trade.bought') : t('trade.sold');
-    const reward = rewardFor('simulation_win');
-    const coinsReward = Math.round(reward.coins / 15);
-    addCoins(coinsReward, 'simulation_win');
-    addXP(Math.round(reward.xp / 15));
+      const action = mode === 'buy' ? t('trade.bought') : t('trade.sold');
+      const reward = rewardFor('simulation_win');
+      const coinsReward = Math.round(reward.coins / 15);
+      const xpReward = Math.round(reward.xp / 15);
+      const okCoins = await addCoins(coinsReward, 'simulation_win');
+      if (!okCoins) {
+        Alert.alert(
+          t('trade.executed'),
+          t('gold.alertBody', {
+            action,
+            qty: gramsNum,
+            label: metal.label,
+            coins: 0,
+          }) + '\n\nCould not sync coin reward.',
+        );
+        setGrams('');
+        onClose();
+        return;
+      }
+      const okXp = await addXP(xpReward);
+      if (!okXp) {
+        await useUserStore.getState().spendCoins(coinsReward, 'simulation_win');
+        Alert.alert(
+          t('trade.executed'),
+          t('gold.alertBody', {
+            action,
+            qty: gramsNum,
+            label: metal.label,
+            coins: coinsReward,
+          }) + '\n\nCould not sync XP reward.',
+        );
+        setGrams('');
+        onClose();
+        return;
+      }
 
-    Alert.alert(
-      t('trade.executed'),
-      t('gold.alertBody', {
-        action,
-        qty: gramsNum,
-        label: metal.label,
-        coins: coinsReward,
-      })
-    );
-    setGrams('');
-    onClose();
+      Alert.alert(
+        t('trade.executed'),
+        t('gold.alertBody', {
+          action,
+          qty: gramsNum,
+          label: metal.label,
+          coins: coinsReward,
+        })
+      );
+      setGrams('');
+      onClose();
+    })();
   };
 
   return (

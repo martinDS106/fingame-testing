@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 
-import { isSupabaseConfigured, supabase } from '@/lib/supabase';
+import { isApiConfigured } from '@/lib/api';
 import {
   addFinTokComment,
   pullFinTokComments,
@@ -11,7 +11,7 @@ import {
   setFinTokSave,
   type RemoteFinTokComment,
   type RemoteFinTokVideo,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 
 export interface FinTokVideo extends RemoteFinTokVideo {
   resolved_url: string;
@@ -35,10 +35,9 @@ interface FinTokState {
 
 function resolvePublicUrl(row: RemoteFinTokVideo): string {
   if (row.video_url) return row.video_url;
-  if (!isSupabaseConfigured) return '';
-  const bucket = row.storage_bucket || 'fintok';
-  const path = row.storage_path;
-  return supabase.storage.from(bucket).getPublicUrl(path).data.publicUrl;
+  // Supabase storage is not supported in MySQL API mode.
+  void isApiConfigured;
+  return '';
 }
 
 export const useFintokStore = create<FinTokState>((set, get) => ({
@@ -53,35 +52,18 @@ export const useFintokStore = create<FinTokState>((set, get) => ({
   refresh: async (userId) => {
     set({ loading: true });
     try {
-      if (!isSupabaseConfigured) {
+      if (isApiConfigured) {
         set({
           videos: [],
           likedIds: [],
           savedIds: [],
           lastError:
-            'Supabase not configured. Add EXPO_PUBLIC_SUPABASE_URL and EXPO_PUBLIC_SUPABASE_ANON_KEY.',
+            'FinTok is not available in MySQL API mode yet.',
         });
         return;
       }
 
-      const { data, error } = await supabase
-        .from('fintok_videos')
-        .select('*')
-        .order('sort_order', { ascending: true })
-        .order('created_at', { ascending: false })
-        .limit(200);
-
-      if (error) {
-        set({
-          videos: [],
-          likedIds: [],
-          savedIds: [],
-          lastError: `FinTok load failed: ${error.message}`,
-        });
-        return;
-      }
-
-      const raw = (data ?? []) as RemoteFinTokVideo[];
+      const raw = (await pullFinTokVideos(200)) as RemoteFinTokVideo[];
       const videos: FinTokVideo[] = raw
         .filter((v) => v.is_published)
         .map((v) => ({ ...v, resolved_url: resolvePublicUrl(v) }));

@@ -130,21 +130,23 @@ export default function ChallengeDetailScreen() {
                       {
                         text: 'Choose',
                         onPress: () => {
-                          const res = submit(challenge.id, opt.id);
-                          if (!res.ok) {
-                            Alert.alert('Error', res.reason ?? 'Try again');
-                            return;
-                          }
-                          Alert.alert(
-                            'Result',
-                            `${opt.explanation}\n\n+${challenge.coinReward} coins · +${challenge.xpReward} XP`,
-                            [
-                              {
-                                text: 'Back to list',
-                                onPress: () => router.replace('/challenges' as never),
-                              },
-                            ]
-                          );
+                          void (async () => {
+                            const res = await submit(challenge.id, opt.id);
+                            if (!res.ok) {
+                              Alert.alert('Error', res.reason ?? 'Try again');
+                              return;
+                            }
+                            Alert.alert(
+                              'Result',
+                              `${opt.explanation}\n\n+${challenge.coinReward} coins · +${challenge.xpReward} XP`,
+                              [
+                                {
+                                  text: 'Back to list',
+                                  onPress: () => router.replace('/challenges' as never),
+                                },
+                              ]
+                            );
+                          })();
                         },
                       },
                     ]

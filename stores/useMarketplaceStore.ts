@@ -2,7 +2,7 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { asyncStorage } from './storage';
-import { pullMarketplaceProducts } from '@/lib/syncService';
+import { pullMarketplaceProducts } from '@/lib/syncServiceApi';
 
 export type ProductCategory =
   | 'bank-accounts'

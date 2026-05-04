@@ -1,6 +1,7 @@
 import { useContentStore } from '@/stores/useContentStore';
 
-jest.mock('@/lib/syncService', () => ({
+jest.mock('@/lib/syncServiceApi', () => ({
+  pullContentBootstrap: jest.fn(async () => null),
   pullCourses: jest.fn(async () => [
     {
       id: 'c1',

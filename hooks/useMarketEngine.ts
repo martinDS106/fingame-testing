@@ -2,7 +2,7 @@ import { useEffect } from 'react';
 import { AppState } from 'react-native';
 
 import { useInvestmentStore } from '@/stores';
-import { pullStockPrices } from '@/lib/syncService';
+import { pullStockPrices } from '@/lib/syncServiceApi';
 
 /**
  * useMarketEngine — mounts a ticking interval that advances stock prices

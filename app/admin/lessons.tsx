@@ -20,7 +20,7 @@ import {
   upsertLesson,
   type LessonUpsert,
   type RemoteLesson,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 
@@ -76,7 +76,7 @@ export default function AdminLessonsScreen() {
   useEffect(() => {
     if (!allowed) return;
     setCourseId(courseIdParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [allowed, courseIdParam]);
 
   useEffect(() => {

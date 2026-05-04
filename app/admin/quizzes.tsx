@@ -16,7 +16,7 @@ import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
-import { deleteQuiz, pullQuizzes, upsertQuiz, type RemoteQuiz, type QuizUpsert } from '@/lib/syncService';
+import { deleteQuiz, pullQuizzes, upsertQuiz, type RemoteQuiz, type QuizUpsert } from '@/lib/syncServiceApi';
 
 function safeInt(v: string, fallback = 0): number {
   const n = Number(v);

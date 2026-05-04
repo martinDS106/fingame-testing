@@ -21,8 +21,7 @@ import {
   Share2,
   TrendingUp,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
-import { useLocalSearchParams } from 'expo-router';
+import { router, useLocalSearchParams } from 'expo-router';
 
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/ui/Button';
@@ -589,10 +588,27 @@ export default function FinTokScreen() {
 
     setActiveVideoId((prev) => (prev === id ? prev : id));
     if (!watchedIds.has(id)) {
-      watchedIds.add(id);
-      const reward = rewardFor('watch_video');
-      addCoins(reward.coins, 'watch_video');
-      addXP(reward.xp);
+      void (async () => {
+        const reward = rewardFor('watch_video');
+        const okCoins = await addCoins(reward.coins, 'watch_video');
+        if (!okCoins) {
+          Alert.alert(
+            'Could not save reward',
+            'Your watch progress was not saved. Please sign in again and retry.',
+          );
+          return;
+        }
+        const okXp = await addXP(reward.xp);
+        if (!okXp) {
+          await useUserStore.getState().spendCoins(reward.coins, 'watch_video');
+          Alert.alert(
+            'Could not save XP',
+            'Coins were saved, but XP did not sync. Please try again.',
+          );
+          return;
+        }
+        watchedIds.add(id);
+      })();
     }
   }).current;
 

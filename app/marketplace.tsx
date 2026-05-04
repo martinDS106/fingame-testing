@@ -19,7 +19,7 @@ import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
 import { useUserStore } from '@/stores';
 import { useT } from '@/hooks/useT';
-import { createRedemption } from '@/lib/syncService';
+import { createRedemption } from '@/lib/syncServiceApi';
 
 interface Reward {
   id: number;
@@ -130,7 +130,7 @@ export default function MarketplaceScreen() {
         {
           text: t('rewards.redeem'),
           onPress: async () => {
-            const ok = spendCoins(reward.points);
+            const ok = await spendCoins(reward.points);
             if (!ok) {
               Alert.alert(t('rewards.oops'), t('rewards.notEnoughCoins'));
               return;

@@ -3,8 +3,10 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 
 import {
   pushInvestmentTrade,
+  pullInvestmentPortfolio,
+  setInvestmentCash,
   upsertInvestmentHolding,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 import { useUserStore } from '@/stores/useUserStore';
 
 import { asyncStorage } from './storage';
@@ -19,6 +21,12 @@ function syncHolding(holding: { symbol: string; shares: number; avgCost: number 
   const userId = useUserStore.getState().remoteUserId;
   if (!userId) return;
   void upsertInvestmentHolding(userId, holding);
+}
+
+function syncCash(cash: number) {
+  const userId = useUserStore.getState().remoteUserId;
+  if (!userId) return;
+  void setInvestmentCash(userId, cash);
 }
 
 export type StockSector = 'Banking' | 'Telecom' | 'Industrial' | 'Consumer' | 'Energy';
@@ -79,6 +87,8 @@ interface InvestmentState {
   sell: (symbol: string, shares: number) => { ok: boolean; reason?: string };
   updatePrices: (nextPrices: Record<string, number>) => void;
   addCash: (amount: number) => void;
+
+  pullRemote: () => Promise<void>;
 
   // Market engine
   tickMarket: () => void;
@@ -233,6 +243,7 @@ export const useInvestmentStore = create<InvestmentState>()(
           trades: [trade, ...state.trades].slice(0, 200),
         });
         syncTrade(trade);
+        syncCash(state.cash - cost);
         const updated = newHoldings.find((h) => h.symbol === symbol);
         if (updated) syncHolding(updated);
         return { ok: true };
@@ -268,6 +279,7 @@ export const useInvestmentStore = create<InvestmentState>()(
           trades: [trade, ...state.trades].slice(0, 200),
         });
         syncTrade(trade);
+        syncCash(state.cash + proceeds);
         const remaining = newHoldings.find((h) => h.symbol === symbol);
         syncHolding(
           remaining ?? { symbol, shares: 0, avgCost: holding.avgCost }
@@ -289,7 +301,33 @@ export const useInvestmentStore = create<InvestmentState>()(
 
       addCash: (amount) => {
         if (amount <= 0) return;
-        set((state) => ({ cash: state.cash + amount }));
+        set((state) => {
+          const next = state.cash + amount;
+          syncCash(next);
+          return { cash: next };
+        });
+      },
+
+      pullRemote: async () => {
+        const data = await pullInvestmentPortfolio();
+        if (!data) return;
+        set({
+          cash: Math.max(0, Math.floor(Number(data.cash ?? 0))),
+          holdings: (data.holdings ?? []).map((h) => ({
+            symbol: String(h.symbol ?? '').toUpperCase(),
+            shares: Math.max(0, Math.floor(Number(h.shares ?? 0))),
+            avgCost: Number(h.avgCost ?? 0),
+          })),
+          trades: (data.trades ?? []).map((t) => ({
+            id: String(t.id ?? ''),
+            symbol: String(t.symbol ?? '').toUpperCase(),
+            action: t.action === 'sell' ? 'sell' : 'buy',
+            shares: Math.max(0, Math.floor(Number(t.shares ?? 0))),
+            price: Number(t.price ?? 0),
+            orderType: t.orderType,
+            at: Math.max(0, Math.floor(Number(t.at ?? Date.now()))),
+          })),
+        });
       },
 
       tickMarket: () => {

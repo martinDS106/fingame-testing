@@ -8,8 +8,11 @@ import { router } from 'expo-router';
 import { FadeInView } from '@/components/animated';
 import { colors } from '@/theme';
 import { useAuthStore } from '@/stores';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isApiConfigured } from '@/lib/api';
 import { useT } from '@/hooks/useT';
+
+/** Email/password auth: Nest API and/or Supabase (UI shows signup/login if either is available). */
+const canUseAccountAuth = isApiConfigured;
 
 export default function WelcomeScreen() {
   const status = useAuthStore((s) => s.status);
@@ -60,7 +63,7 @@ export default function WelcomeScreen() {
           <View className="w-full max-w-md gap-3">
             <Pressable
               onPress={() => {
-                if (isSupabaseConfigured) {
+                if (canUseAccountAuth) {
                   router.push('/(auth)/signup');
                 } else {
                   router.push('/dashboard');
@@ -79,13 +82,13 @@ export default function WelcomeScreen() {
               ]}
             >
               <Text className="text-lg text-primary-900 font-semibold">
-                {isSupabaseConfigured
+                {canUseAccountAuth
                   ? t('welcome.getStarted')
                   : t('welcome.startLearning')}
               </Text>
             </Pressable>
 
-            {isSupabaseConfigured && (
+            {canUseAccountAuth && (
               <Pressable
                 onPress={() => router.push('/(auth)/login')}
                 className="bg-white/10 border border-white/30 py-4 rounded-full items-center active:bg-white/20"

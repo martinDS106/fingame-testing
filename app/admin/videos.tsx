@@ -20,7 +20,9 @@ import {
   upsertVideo,
   type RemoteVideo,
   type VideoUpsert,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
+import * as ImagePicker from 'expo-image-picker';
+import { getApiBaseUrl, getApiAccessToken } from '@/lib/api';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 
@@ -76,7 +78,7 @@ export default function AdminVideosScreen() {
   useEffect(() => {
     if (!allowed) return;
     setLessonId(lessonIdParam);
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+     
   }, [allowed, lessonIdParam]);
 
   useEffect(() => {
@@ -162,6 +164,54 @@ export default function AdminVideosScreen() {
     await refresh();
     // Refresh in-app content store so user screens reflect changes immediately.
     void syncContent();
+  }
+
+  async function pickAndUploadVideo() {
+    try {
+      const token = getApiAccessToken();
+      const base = getApiBaseUrl();
+      if (!token || !base) {
+        Alert.alert('Not signed in', 'Please sign in again.');
+        return;
+      }
+
+      const picked = await ImagePicker.launchImageLibraryAsync({
+        mediaTypes: ImagePicker.MediaTypeOptions.Videos,
+        allowsMultipleSelection: false,
+        quality: 1,
+      });
+      if (picked.canceled) return;
+      const asset = picked.assets?.[0];
+      if (!asset?.uri) return;
+
+      setLoading(true);
+      setError(null);
+
+      const form = new FormData();
+      form.append('file', {
+        uri: asset.uri,
+        name: asset.fileName ?? 'video.mp4',
+        type: asset.mimeType ?? 'video/mp4',
+      } as any);
+
+      const res = await fetch(`${base}/admin/videos/upload`, {
+        method: 'POST',
+        headers: { Authorization: `Bearer ${token}` },
+        body: form,
+      });
+      const json = (await res.json()) as { ok?: boolean; url?: string; error?: string };
+      if (!res.ok || !json.ok || !json.url) {
+        throw new Error(json.error ?? `HTTP ${res.status}`);
+      }
+
+      setDraft((d) => ({ ...d, url: `${base}${json.url}` }));
+    } catch (e) {
+      const msg = e instanceof Error ? e.message : 'Upload failed';
+      setError(msg);
+      Alert.alert('Upload failed', msg);
+    } finally {
+      setLoading(false);
+    }
   }
 
   function confirmDelete(v: RemoteVideo) {
@@ -390,6 +440,16 @@ export default function AdminVideosScreen() {
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
                 />
+                <View className="mt-2">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onPress={pickAndUploadVideo}
+                    disabled={loading}
+                  >
+                    Upload video file
+                  </Button>
+                </View>
               </Card>
 
               <Card className="border border-gray-200" padded>

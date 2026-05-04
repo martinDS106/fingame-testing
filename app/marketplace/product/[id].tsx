@@ -126,9 +126,18 @@ export default function ProductDetailScreen() {
 
   const handleApply = () => {
     if (!product) return;
-    const appId = submitApplication(product.id);
-    addCoins(100, 'manual');
-    router.push(`/marketplace/application-tracking?id=${appId}`);
+    void (async () => {
+      const appId = submitApplication(product.id);
+      const ok = await addCoins(100, 'manual');
+      if (!ok) {
+        Alert.alert(
+          'Could not save reward',
+          'Your application was created locally, but the coin reward did not sync.',
+        );
+        return;
+      }
+      router.push(`/marketplace/application-tracking?id=${appId}`);
+    })();
   };
 
   const handleSubmitReview = () => {
@@ -136,11 +145,20 @@ export default function ProductDetailScreen() {
       Alert.alert('Review too short', 'Please write at least 5 characters.');
       return;
     }
-    addReview(product.id, reviewRating, reviewInput.trim());
-    addCoins(25, 'manual');
-    setReviewInput('');
-    setReviewRating(5);
-    Alert.alert('Thank you!', 'You earned +25 coins for your review.');
+    void (async () => {
+      const ok = await addCoins(25, 'manual');
+      if (!ok) {
+        Alert.alert(
+          'Could not save reward',
+          'Please sign in again and retry submitting your review.',
+        );
+        return;
+      }
+      addReview(product.id, reviewRating, reviewInput.trim());
+      setReviewInput('');
+      setReviewRating(5);
+      Alert.alert('Thank you!', 'You earned +25 coins for your review.');
+    })();
   };
 
   const avgRating = product?.rating ?? 0;

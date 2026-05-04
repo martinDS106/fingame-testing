@@ -2,12 +2,13 @@ import { create } from 'zustand';
 import { createJSONStorage, persist } from 'zustand/middleware';
 
 import { asyncStorage } from './storage';
+import { isApiConfigured } from '@/lib/api';
 import {
   logCoinChange,
   pullProfile,
   pushProfile,
   remoteProfileToLocal,
-} from '@/lib/syncService';
+} from '@/lib/syncServiceApi';
 
 export type UserLevel =
   | 'Beginner'
@@ -58,18 +59,18 @@ interface UserState {
   syncStatus: SyncStatus;
   lastSyncedAt: number | null;
 
-  addCoins: (amount: number, reason: CoinsReason) => void;
-  spendCoins: (amount: number, reason?: CoinsReason) => boolean;
-  addXP: (amount: number) => void;
+  addCoins: (amount: number, reason: CoinsReason) => Promise<boolean>;
+  spendCoins: (amount: number, reason?: CoinsReason) => Promise<boolean>;
+  addXP: (amount: number) => Promise<boolean>;
   hasClaimedReward: (key: string) => boolean;
   claimRewardOnce: (
     key: string,
     coins: number,
     xp: number,
     reason?: CoinsReason
-  ) => boolean;
-  checkInDaily: () => { newStreak: number; streakChanged: boolean };
-  resetStreak: () => void;
+  ) => Promise<boolean>;
+  checkInDaily: () => Promise<{ newStreak: number; streakChanged: boolean }>;
+  resetStreak: () => Promise<void>;
   updateProfile: (patch: Partial<UserProfile>) => void;
   hydrate: () => void;
 
@@ -120,71 +121,107 @@ export const useUserStore = create<UserState>()(
       syncStatus: 'idle',
       lastSyncedAt: null,
 
-      addCoins: (amount, reason) => {
-        if (amount <= 0) return;
+      addCoins: async (amount, reason) => {
+        if (amount <= 0) return true;
         const entry: CoinsLogEntry = {
           id: `${Date.now()}-${Math.random().toString(36).slice(2, 8)}`,
           amount,
           reason,
           at: Date.now(),
         };
-        set((state) => ({
-          coins: state.coins + amount,
-          coinsLog: [entry, ...state.coinsLog].slice(0, 100),
-        }));
 
-        const { remoteUserId } = get();
-        if (remoteUserId) {
-          logCoinChange(remoteUserId, amount, reason).catch(() => undefined);
-          pushProfile(remoteUserId, { coins: get().coins }).catch(
-            () => undefined
-          );
-        }
-      },
-
-      spendCoins: (amount, reason = 'manual') => {
-        if (amount <= 0) return true;
-        const { coins } = get();
-        if (coins < amount) return false;
-        set({ coins: coins - amount });
-
-        const { remoteUserId } = get();
-        if (remoteUserId) {
-          logCoinChange(remoteUserId, -amount, reason).catch(() => undefined);
-          pushProfile(remoteUserId, { coins: get().coins }).catch(
-            () => undefined
-          );
-        }
-        return true;
-      },
-
-      addXP: (amount) => {
-        if (amount <= 0) return;
-        set((state) => {
-          const newXP = state.xp + amount;
-          return { xp: newXP, level: computeLevel(newXP) };
+        const prev = get();
+        const nextCoins = prev.coins + amount;
+        set({
+          coins: nextCoins,
+          coinsLog: [entry, ...prev.coinsLog].slice(0, 100),
         });
 
-        const { remoteUserId, xp } = get();
-        if (remoteUserId) {
-          pushProfile(remoteUserId, { xp }).catch(() => undefined);
-        }
+        const { remoteUserId } = get();
+        if (!remoteUserId || !isApiConfigured) return true;
+
+        const res = await logCoinChange(amount, reason);
+        if (res.ok) return true;
+
+        // Roll back optimistic UI if server rejected the change.
+        set({
+          coins: prev.coins,
+          coinsLog: prev.coinsLog,
+        });
+        return false;
+      },
+
+      spendCoins: async (amount, reason = 'manual') => {
+        if (amount <= 0) return true;
+        const prev = get();
+        if (prev.coins < amount) return false;
+
+        set({ coins: prev.coins - amount });
+
+        const { remoteUserId } = get();
+        if (!remoteUserId || !isApiConfigured) return true;
+
+        const res = await logCoinChange(-amount, reason);
+        if (res.ok) return true;
+
+        set({ coins: prev.coins });
+        return false;
+      },
+
+      addXP: async (amount) => {
+        if (amount <= 0) return true;
+        const prev = get();
+        const newXP = prev.xp + amount;
+        set({ xp: newXP, level: computeLevel(newXP) });
+
+        const { remoteUserId } = get();
+        if (!remoteUserId || !isApiConfigured) return true;
+
+        const res = await pushProfile({ xp: newXP });
+        if (res.ok) return true;
+
+        set({ xp: prev.xp, level: computeLevel(prev.xp) });
+        return false;
       },
 
       hasClaimedReward: (key) => get().claimedRewards.includes(key),
 
-      claimRewardOnce: (key, coins, xp, reason = 'lesson_complete') => {
+      claimRewardOnce: async (key, coins, xp, reason = 'lesson_complete') => {
         if (!key) return false;
         if (get().claimedRewards.includes(key)) return false;
+
+        const prevClaimed = get().claimedRewards;
         set((state) => ({
           claimedRewards: [...state.claimedRewards, key].slice(0, 200),
         }));
-        if (coins > 0) get().addCoins(coins, reason);
-        if (xp > 0) get().addXP(xp);
-        return true;
+
+        try {
+          if (coins > 0) {
+            const okCoins = await get().addCoins(coins, reason);
+            if (!okCoins) {
+              set({ claimedRewards: prevClaimed });
+              return false;
+            }
+          }
+          if (xp > 0) {
+            const okXp = await get().addXP(xp);
+            if (!okXp) {
+              // Best-effort rollback: remove coins if we added them.
+              if (coins > 0) {
+                await get().spendCoins(coins, reason);
+              }
+              set({ claimedRewards: prevClaimed });
+              return false;
+            }
+          }
+          return true;
+        } catch {
+          set({ claimedRewards: prevClaimed });
+          return false;
+        }
       },
 
-      checkInDaily: () => {
+      checkInDaily: async () => {
         const today = todayStamp();
         const state = get();
         const last = state.lastActiveDate;
@@ -202,6 +239,7 @@ export const useUserStore = create<UserState>()(
         }
 
         const newLongest = Math.max(state.longestStreak, newStreak);
+        const prev = get();
         set({
           streak: newStreak,
           longestStreak: newLongest,
@@ -209,22 +247,35 @@ export const useUserStore = create<UserState>()(
         });
 
         const { remoteUserId } = get();
-        if (remoteUserId) {
-          pushProfile(remoteUserId, {
-            streak: newStreak,
-            longest_streak: newLongest,
-            last_active_date: today,
-          }).catch(() => undefined);
+        if (!remoteUserId || !isApiConfigured) {
+          return { newStreak, streakChanged: true };
         }
 
-        return { newStreak, streakChanged: true };
+        const res = await pushProfile({
+          streak: newStreak,
+          longest_streak: newLongest,
+          last_active_date: today,
+        });
+        if (res.ok) return { newStreak, streakChanged: true };
+
+        // Roll back if server rejected the update.
+        set({
+          streak: prev.streak,
+          longestStreak: prev.longestStreak,
+          lastActiveDate: prev.lastActiveDate,
+        });
+        return { newStreak: prev.streak, streakChanged: false };
       },
 
-      resetStreak: () => {
+      resetStreak: async () => {
+        const prev = get();
         set({ streak: 0 });
         const { remoteUserId } = get();
-        if (remoteUserId) {
-          pushProfile(remoteUserId, { streak: 0 }).catch(() => undefined);
+        if (!remoteUserId || !isApiConfigured) return;
+
+        const res = await pushProfile({ streak: 0 });
+        if (!res.ok) {
+          set({ streak: prev.streak });
         }
       },
 
@@ -233,11 +284,11 @@ export const useUserStore = create<UserState>()(
 
         const { remoteUserId, profile } = get();
         if (remoteUserId) {
-          pushProfile(remoteUserId, {
+          void pushProfile({
             display_name: profile.name,
             avatar: profile.avatar,
             level: profile.level,
-          }).catch(() => undefined);
+          });
         }
       },
 
@@ -269,7 +320,7 @@ export const useUserStore = create<UserState>()(
             });
           } else {
             const s = get();
-            await pushProfile(userId, {
+            await pushProfile({
               display_name: s.profile.name,
               avatar: s.profile.avatar,
               level: s.profile.level,
@@ -293,6 +344,15 @@ export const useUserStore = create<UserState>()(
         if (prevId && prevId !== userId) {
           console.info('[user] switched cloud user', prevId, '→', userId);
         }
+
+        // Lesson/quiz/video IDs are shared across all users; local persisted progress must
+        // match the signed-in account or a new user will appear "already completed".
+        try {
+          const { useContentStore } = await import('./useContentStore');
+          await useContentStore.getState().syncProgressFromServer();
+        } catch (e) {
+          console.warn('[user] syncProgressFromServer failed', e);
+        }
       },
 
       unbindFromUser: () => {
@@ -307,7 +367,7 @@ export const useUserStore = create<UserState>()(
         const s = get();
         if (!s.remoteUserId) return;
         set({ syncStatus: 'syncing' });
-        const ok = await pushProfile(s.remoteUserId, {
+        const res = await pushProfile({
           display_name: s.profile.name,
           avatar: s.profile.avatar,
           level: s.profile.level,
@@ -318,8 +378,8 @@ export const useUserStore = create<UserState>()(
           last_active_date: s.lastActiveDate,
         });
         set({
-          syncStatus: ok ? 'synced' : 'error',
-          lastSyncedAt: ok ? Date.now() : s.lastSyncedAt,
+          syncStatus: res.ok ? 'synced' : 'error',
+          lastSyncedAt: res.ok ? Date.now() : s.lastSyncedAt,
         });
       },
     }),

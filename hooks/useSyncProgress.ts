@@ -1,8 +1,7 @@
 import { useCallback } from 'react';
 
-import { upsertProgress } from '@/lib/syncService';
+import { upsertProgress, type RemoteProgress } from '@/lib/syncServiceApi';
 import { useUserStore } from '@/stores';
-import type { RemoteProgress } from '@/lib/syncService';
 
 type Kind = RemoteProgress['kind'];
 

@@ -16,7 +16,7 @@ import { Link, router } from 'expo-router';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
 import { useAuthStore } from '@/stores';
-import { isSupabaseConfigured } from '@/lib/supabase';
+import { isApiConfigured } from '@/lib/api';
 import { useT } from '@/hooks/useT';
 
 export default function LoginScreen() {
@@ -76,7 +76,7 @@ export default function LoginScreen() {
               </Text>
             </View>
 
-            {!isSupabaseConfigured && (
+            {!isApiConfigured && (
               <View className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 mb-4">
                 <Text className="text-yellow-900 text-sm">
                   {t('auth.supabaseNotConfiguredTitle')}{' '}
@@ -154,7 +154,9 @@ export default function LoginScreen() {
                 className="items-center"
                 hitSlop={8}
               >
-                <Text className="text-primary-700 font-semibold">Forgot password?</Text>
+                <Text className="text-primary-700 font-semibold">
+                  Forgot password?
+                </Text>
               </Pressable>
             </View>
 
