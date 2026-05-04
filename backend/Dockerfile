@@ -6,7 +6,9 @@ RUN apt-get update && apt-get install -y --no-install-recommends openssl ca-cert
   && rm -rf /var/lib/apt/lists/*
 
 COPY package.json package-lock.json ./
-RUN npm ci --include=dev
+# Don't run package scripts during install (our repo has a postinstall that
+# requires source files, which aren't copied yet in this layer).
+RUN npm ci --include=dev --ignore-scripts
 
 COPY prisma ./prisma
 COPY src ./src
