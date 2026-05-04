@@ -21,5 +21,5 @@ RUN npm run prisma:generate && npm run build
 ENV NODE_ENV=production
 EXPOSE 3001
 
-CMD ["sh", "-c", "ls -la && (ls -la dist || true) && npm run build && npx prisma migrate deploy && node dist/main.js"]
+CMD ["sh", "-c", "set -e; echo '[boot] pwd:'; pwd; echo '[boot] ls:'; ls -la; echo '[boot] ls dist:'; ls -la dist || true; echo '[boot] ensure build'; npm run build; echo '[boot] migrate'; npx prisma migrate deploy; if [ -f dist/main.js ]; then echo '[boot] start dist/main.js'; node dist/main.js; elif [ -f dist/main ]; then echo '[boot] start dist/main'; node dist/main; elif [ -f dist/src/main.js ]; then echo '[boot] start dist/src/main.js'; node dist/src/main.js; else echo '[boot] ERROR: cannot find built entrypoint'; echo '[boot] dist contents:'; ls -R dist || true; exit 1; fi"]
 
