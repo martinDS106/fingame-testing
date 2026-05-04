@@ -1,4 +1,4 @@
 [build]
-  command = "npm ci && npx expo export -p web"
+  command = "npm ci && npx expo export -p web && node scripts/patch-expo-web-modules.mjs"
   publish = "dist"
 
