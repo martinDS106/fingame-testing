@@ -21,5 +21,5 @@ RUN npm run prisma:generate && npm run build
 ENV NODE_ENV=production
 EXPOSE 3001
 
-CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main"]
+CMD ["sh", "-c", "ls -la && (ls -la dist || true) && npm run build && npx prisma migrate deploy && node dist/main.js"]
 
