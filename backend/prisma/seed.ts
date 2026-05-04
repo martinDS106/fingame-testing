@@ -162,6 +162,11 @@ async function main() {
   // Re-runnable via upsert to avoid duplicates.
 
   const seedsPath = path.resolve(__dirname, '../../supabase/seeds.sql');
+  if (!fs.existsSync(seedsPath)) {
+    throw new Error(
+      `[seed] seeds.sql not found at ${seedsPath}. Ensure supabase/seeds.sql is present in the runtime image.`,
+    );
+  }
   const sql = stripLineComments(fs.readFileSync(seedsPath, 'utf8'));
 
   // Courses

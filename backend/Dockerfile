@@ -15,6 +15,7 @@ RUN npm ci --include=dev --ignore-scripts
 COPY backend/prisma ./prisma
 COPY backend/src ./src
 COPY backend/nest-cli.json backend/tsconfig.json backend/tsconfig.build.json backend/prisma.config.ts ./
+COPY supabase/seeds.sql /app/supabase/seeds.sql
 
 RUN npm run prisma:generate && npm run build
 
