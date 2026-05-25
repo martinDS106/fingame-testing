@@ -7,10 +7,14 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { adminCounts, adminDashboardStats } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
 export default function AdminAnalyticsScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
 
   const [loading, setLoading] = useState(false);
@@ -55,12 +59,14 @@ export default function AdminAnalyticsScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -75,7 +81,7 @@ export default function AdminAnalyticsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Analytics"
         showBack
@@ -84,15 +90,20 @@ export default function AdminAnalyticsScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-1">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 4 })}>
             <BarChart3 size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">Snapshot</Text>
+            <Text className="text-gray-900 font-semibold" style={ta}>
+              Snapshot
+            </Text>
           </View>
-          <Text className="text-sm text-gray-600">{subtitle}</Text>
+          <Text className="text-sm text-gray-600" style={ta}>
+            {subtitle}
+          </Text>
           <View className="mt-3">
             <Button variant="outline" fullWidth onPress={refresh} disabled={loading}>
               Refresh
@@ -102,23 +113,29 @@ export default function AdminAnalyticsScreen() {
 
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
         {counts && (
           <>
             <Card>
-              <View className="flex-row items-center gap-2 mb-2">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                 <Users size={18} color={colors.gray[700]} />
-                <Text className="text-gray-900 font-semibold">Users</Text>
+                <Text className="text-gray-900 font-semibold" style={ta}>
+                  Users
+                </Text>
               </View>
-              <Text className="text-3xl text-gray-900 font-bold">
+              <Text className="text-3xl text-gray-900 font-bold" style={ta}>
                 {counts.users}
               </Text>
               {stats && (
-                <Text className="text-xs text-gray-500 mt-1">
+                <Text className="text-xs text-gray-500 mt-1" style={ta}>
                   Active (7d): {stats.users_active_7d}
                 </Text>
               )}
@@ -126,18 +143,20 @@ export default function AdminAnalyticsScreen() {
 
             {stats && (
               <Card>
-                <View className="flex-row items-center gap-2 mb-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                   <Database size={18} color={colors.gray[700]} />
-                  <Text className="text-gray-900 font-semibold">Points</Text>
+                  <Text className="text-gray-900 font-semibold" style={ta}>
+                    Points
+                  </Text>
                 </View>
                 <View className="gap-1">
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Total coins: {stats.coins_total}
                   </Text>
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Total XP: {stats.xp_total}
                   </Text>
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Quiz attempts: {stats.quiz_attempts_total}
                   </Text>
                 </View>
@@ -146,21 +165,23 @@ export default function AdminAnalyticsScreen() {
 
             {stats && (
               <Card>
-                <View className="flex-row items-center gap-2 mb-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                   <Database size={18} color={colors.gray[700]} />
-                  <Text className="text-gray-900 font-semibold">Redemptions</Text>
+                  <Text className="text-gray-900 font-semibold" style={ta}>
+                    Redemptions
+                  </Text>
                 </View>
                 <View className="gap-1">
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Total: {stats.redemptions_total}
                   </Text>
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Pending: {stats.redemptions_pending}
                   </Text>
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Fulfilled: {stats.redemptions_fulfilled}
                   </Text>
-                  <Text className="text-sm text-gray-700">
+                  <Text className="text-sm text-gray-700" style={ta}>
                     Rejected: {stats.redemptions_rejected}
                   </Text>
                 </View>
@@ -168,27 +189,29 @@ export default function AdminAnalyticsScreen() {
             )}
 
             <Card>
-              <View className="flex-row items-center gap-2 mb-2">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                 <Database size={18} color={colors.gray[700]} />
-                <Text className="text-gray-900 font-semibold">Content</Text>
+                <Text className="text-gray-900 font-semibold" style={ta}>
+                  Content
+                </Text>
               </View>
               <View className="gap-1">
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Courses: {counts.courses}
                 </Text>
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Lessons: {counts.lessons}
                 </Text>
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Videos: {counts.videos}
                 </Text>
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Quizzes: {counts.quizzes}
                 </Text>
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Questions: {counts.questions}
                 </Text>
-                <Text className="text-sm text-gray-700">
+                <Text className="text-sm text-gray-700" style={ta}>
                   Marketplace products: {counts.marketplaceProducts}
                 </Text>
               </View>
@@ -199,4 +222,3 @@ export default function AdminAnalyticsScreen() {
     </View>
   );
 }
-

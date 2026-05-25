@@ -6,50 +6,45 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
+import { useProfileGamification } from '@/hooks/useProfileGamification';
 import { useT } from '@/hooks/useT';
-
-type Achievement = {
-  id: number;
-  title: string;
-  icon: string;
-  earned: boolean;
-};
-
-// Keep in sync with Profile achievements for now.
-const achievements: Achievement[] = [
-  { id: 1, title: 'First Course', icon: '🎓', earned: true },
-  { id: 2, title: 'Quiz Master', icon: '🏆', earned: true },
-  { id: 3, title: 'Trading Pro', icon: '📈', earned: true },
-  { id: 4, title: 'Streak King', icon: '🔥', earned: false },
-  { id: 5, title: 'Top 10', icon: '⭐', earned: false },
-  { id: 6, title: 'Perfect Score', icon: '💯', earned: false },
-];
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 
 export default function BadgesScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
+  const { achievements } = useProfileGamification();
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('profile.viewAllBadges')} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View
+            className="mb-2"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+          >
             <Award size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">
+            <Text style={ta} className="text-gray-900 font-semibold">
               {t('profile.viewAllBadges')}
             </Text>
           </View>
-          <Text className="text-sm text-gray-700">
+          <Text style={ta} className="text-sm text-gray-700">
             Earn badges by completing courses, quizzes, and simulations.
           </Text>
         </Card>
 
-        <View className="flex-row flex-wrap gap-3">
+        <View
+          style={rtlRowMerge(rtl, {
+            flexWrap: 'wrap',
+            gap: 12,
+          })}
+        >
           {achievements.map((achievement) => (
             <View key={achievement.id} style={{ width: '48%' }}>
               {achievement.earned ? (
@@ -69,14 +64,26 @@ export default function BadgesScreen() {
                   }}
                 >
                   <Text className="text-3xl mb-1">{achievement.icon}</Text>
-                  <Text className="text-xs text-primary-900 text-center font-medium">
+                  <Text
+                    className="text-xs text-primary-900 font-medium"
+                    style={{
+                      textAlign: 'center',
+                      writingDirection: rtl ? 'rtl' : 'ltr',
+                    }}
+                  >
                     {achievement.title}
                   </Text>
                 </LinearGradient>
               ) : (
                 <View className="p-4 rounded-2xl bg-white border border-gray-200 items-center">
                   <Text className="text-3xl mb-1 opacity-40">{achievement.icon}</Text>
-                  <Text className="text-xs text-gray-700 text-center opacity-70">
+                  <Text
+                    className="text-xs text-gray-700 opacity-70"
+                    style={{
+                      textAlign: 'center',
+                      writingDirection: rtl ? 'rtl' : 'ltr',
+                    }}
+                  >
                     {achievement.title}
                   </Text>
                 </View>
@@ -90,4 +97,3 @@ export default function BadgesScreen() {
     </View>
   );
 }
-

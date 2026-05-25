@@ -13,6 +13,8 @@ import {
   adminUpsertFinTokVideo,
   type RemoteFinTokVideo,
 } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 
 function safeJsonTags(input: string): string[] {
   const raw = input.trim();
@@ -24,6 +26,8 @@ function safeJsonTags(input: string): string[] {
 }
 
 export default function AdminFinTokScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [loading, setLoading] = useState(false);
   const [videos, setVideos] = useState<RemoteFinTokVideo[]>([]);
   const [query, setQuery] = useState('');
@@ -259,7 +263,7 @@ export default function AdminFinTokScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Admin • FinTok"
         showBack
@@ -268,25 +272,31 @@ export default function AdminFinTokScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <Text className="text-gray-900 font-semibold mb-2">FinTok videos</Text>
+          <Text className="text-gray-900 font-semibold mb-2" style={ta}>
+            FinTok videos
+          </Text>
           <TextInput
             value={query}
             onChangeText={setQuery}
             placeholder="Search…"
             placeholderTextColor="#9ca3af"
-            style={{
-              borderWidth: 1,
-              borderColor: '#e5e7eb',
-              borderRadius: 12,
-              paddingHorizontal: 12,
-              paddingVertical: 10,
-            }}
+            style={[
+              ta,
+              {
+                borderWidth: 1,
+                borderColor: '#e5e7eb',
+                borderRadius: 12,
+                paddingHorizontal: 12,
+                paddingVertical: 10,
+              },
+            ]}
           />
-          <View className="mt-3 flex-row gap-2">
+          <View className="mt-3" style={rtlRowMerge(rtl, { gap: 8 })}>
             <Button fullWidth onPress={openNew}>
               New
             </Button>
@@ -294,142 +304,177 @@ export default function AdminFinTokScreen() {
         </Card>
 
         <Card>
-          <Text className="text-gray-900 font-semibold mb-3">
+          <Text className="text-gray-900 font-semibold mb-3" style={ta}>
             {editing ? 'Edit video' : 'Create video'}
           </Text>
-          <Text className="text-xs text-gray-600 mb-3">
+          <Text className="text-xs text-gray-600 mb-3" style={ta}>
             Tip: Press &quot;New&quot; to create a new video. If you edit an existing row, Save will
             replace that video.
           </Text>
 
           <View style={{ gap: 10 }}>
             <View>
-              <Text className="text-xs text-gray-600 mb-1">Title (EN)</Text>
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                Title (EN)
+              </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
                 placeholder="Title"
                 placeholderTextColor="#9ca3af"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
+                style={[
+                  ta,
+                  {
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                  },
+                ]}
               />
             </View>
 
             <View>
-              <Text className="text-xs text-gray-600 mb-1">Title (AR)</Text>
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                Title (AR)
+              </Text>
               <TextInput
                 value={titleAr}
                 onChangeText={setTitleAr}
                 placeholder="العنوان"
                 placeholderTextColor="#9ca3af"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
+                style={[
+                  ta,
+                  {
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                  },
+                ]}
               />
             </View>
 
-            <View className="flex-row gap-2">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
               <View style={{ flex: 1 }}>
-                <Text className="text-xs text-gray-600 mb-1">Creator (EN)</Text>
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                  Creator (EN)
+                </Text>
                 <TextInput
                   value={creatorName}
                   onChangeText={setCreatorName}
                   placeholder="Creator name"
                   placeholderTextColor="#9ca3af"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                  }}
+                  style={[
+                    ta,
+                    {
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    },
+                  ]}
                 />
               </View>
               <View style={{ width: 70 }}>
-                <Text className="text-xs text-gray-600 mb-1">Avatar</Text>
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                  Avatar
+                </Text>
                 <TextInput
                   value={creatorAvatar}
                   onChangeText={setCreatorAvatar}
                   placeholder="👨‍🏫"
                   placeholderTextColor="#9ca3af"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    textAlign: 'center',
-                  }}
+                  style={[
+                    ta,
+                    {
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      textAlign: 'center',
+                    },
+                  ]}
                 />
               </View>
             </View>
 
             <View>
-              <Text className="text-xs text-gray-600 mb-1">Creator (AR)</Text>
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                Creator (AR)
+              </Text>
               <TextInput
                 value={creatorNameAr}
                 onChangeText={setCreatorNameAr}
                 placeholder="اسم المُعلم"
                 placeholderTextColor="#9ca3af"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
+                style={[
+                  ta,
+                  {
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                  },
+                ]}
               />
             </View>
 
             <View>
-              <Text className="text-xs text-gray-600 mb-1">Caption (EN)</Text>
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                Caption (EN)
+              </Text>
               <TextInput
                 value={caption}
                 onChangeText={setCaption}
                 placeholder="Caption"
                 placeholderTextColor="#9ca3af"
                 multiline
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  minHeight: 70,
-                }}
+                style={[
+                  ta,
+                  {
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    minHeight: 70,
+                  },
+                ]}
               />
             </View>
 
             <View>
-              <Text className="text-xs text-gray-600 mb-1">Caption (AR)</Text>
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                Caption (AR)
+              </Text>
               <TextInput
                 value={captionAr}
                 onChangeText={setCaptionAr}
                 placeholder="الوصف"
                 placeholderTextColor="#9ca3af"
                 multiline
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                  minHeight: 70,
-                }}
+                style={[
+                  ta,
+                  {
+                    borderWidth: 1,
+                    borderColor: '#e5e7eb',
+                    borderRadius: 12,
+                    paddingHorizontal: 12,
+                    paddingVertical: 10,
+                    minHeight: 70,
+                  },
+                ]}
               />
             </View>
 
             <View>
-              <Text className="text-xs text-gray-600 mb-1">
+              <Text className="text-xs text-gray-600 mb-1" style={ta}>
                 Tags (comma separated)
               </Text>
               <TextInput
@@ -437,54 +482,67 @@ export default function AdminFinTokScreen() {
                 onChangeText={setTags}
                 placeholder="budget, investing, credit"
                 placeholderTextColor="#9ca3af"
-                style={{
-                  borderWidth: 1,
-                  borderColor: '#e5e7eb',
-                  borderRadius: 12,
-                  paddingHorizontal: 12,
-                  paddingVertical: 10,
-                }}
-              />
-            </View>
-
-            <View className="flex-row gap-2">
-              <View style={{ flex: 1 }}>
-                <Text className="text-xs text-gray-600 mb-1">Simulation route</Text>
-                <TextInput
-                  value={simulationRoute}
-                  onChangeText={setSimulationRoute}
-                  placeholder="/simulation/banking"
-                  placeholderTextColor="#9ca3af"
-                  style={{
+                style={[
+                  ta,
+                  {
                     borderWidth: 1,
                     borderColor: '#e5e7eb',
                     borderRadius: 12,
                     paddingHorizontal: 12,
                     paddingVertical: 10,
-                  }}
+                  },
+                ]}
+              />
+            </View>
+
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
+              <View style={{ flex: 1 }}>
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                  Simulation route
+                </Text>
+                <TextInput
+                  value={simulationRoute}
+                  onChangeText={setSimulationRoute}
+                  placeholder="/simulation/banking"
+                  placeholderTextColor="#9ca3af"
+                  style={[
+                    ta,
+                    {
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    },
+                  ]}
                 />
               </View>
               <View style={{ width: 90 }}>
-                <Text className="text-xs text-gray-600 mb-1">Sort</Text>
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                  Sort
+                </Text>
                 <TextInput
                   value={sortOrder}
                   onChangeText={setSortOrder}
                   keyboardType="numeric"
                   placeholder="0"
                   placeholderTextColor="#9ca3af"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                    textAlign: 'center',
-                  }}
+                  style={[
+                    ta,
+                    {
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                      textAlign: 'center',
+                    },
+                  ]}
                 />
               </View>
             </View>
 
-            <View className="flex-row gap-2">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
               <Button variant="outline" fullWidth onPress={pickVideo}>
                 {pickedUri ? 'Video picked' : 'Pick video'}
               </Button>
@@ -498,7 +556,7 @@ export default function AdminFinTokScreen() {
             </View>
 
             {!!pickedUri && (
-              <Text className="text-xs text-gray-600">
+              <Text className="text-xs text-gray-600" style={ta}>
                 Selected: {pickedUri.split('/').pop() ?? pickedUri}
               </Text>
             )}
@@ -510,19 +568,19 @@ export default function AdminFinTokScreen() {
         </Card>
 
         <Card>
-          <Text className="text-gray-900 font-semibold mb-2">
+          <Text className="text-gray-900 font-semibold mb-2" style={ta}>
             Library ({filtered.length})
           </Text>
           {filtered.map((v) => (
             <View key={v.id} className="py-2 border-t border-gray-100">
-              <Text className="text-sm text-gray-900 font-medium" numberOfLines={1}>
+              <Text className="text-sm text-gray-900 font-medium" numberOfLines={1} style={ta}>
                 {v.title}
               </Text>
-              <Text className="text-xs text-gray-500" numberOfLines={1}>
+              <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                 {v.is_published ? 'Published' : 'Draft'} · sort {v.sort_order} ·{' '}
                 {v.storage_path}
               </Text>
-              <View className="flex-row gap-2 mt-2">
+              <View className="mt-2" style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Button size="sm" variant="outline" onPress={() => openEdit(v)}>
                   Edit
                 </Button>

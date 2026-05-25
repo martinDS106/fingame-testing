@@ -22,6 +22,7 @@ import {
 } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl, rtlRow } from '@/lib/rtlStyle';
 
 type TradeMode = 'buy' | 'sell';
 
@@ -31,7 +32,8 @@ interface TradeModalProps {
 }
 
 export function TradeModal({ stock, onClose }: TradeModalProps) {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [mode, setMode] = useState<TradeMode>('buy');
   const [shares, setShares] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -145,13 +147,19 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
-            <View className="bg-white rounded-t-3xl p-5 pb-8">
-              <View className="flex-row items-center justify-between mb-4">
+            <View className="bg-white rounded-t-3xl p-5 pb-8" style={rtlRootDirection(rtl)}>
+              <View
+                className="mb-4"
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                })}
+              >
                 <View>
-                  <Text className="text-xl text-gray-900 font-bold">
+                  <Text style={ta} className="text-xl text-gray-900 font-bold">
                     {stock?.symbol}
                   </Text>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text style={ta} className="text-xs text-gray-500" numberOfLines={1}>
                     {stock?.name}
                   </Text>
                 </View>
@@ -164,22 +172,29 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                 </Pressable>
               </View>
 
-              <View className="bg-gray-50 rounded-xl p-3 mb-4 flex-row justify-between">
+              <View
+                className="bg-gray-50 rounded-xl p-3 mb-4"
+                style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}
+              >
                 <View>
-                  <Text className="text-xs text-gray-600">{t('trade.price')}</Text>
-                  <Text className="text-lg text-gray-900 font-semibold">
+                  <Text style={ta} className="text-xs text-gray-600">
+                    {t('trade.price')}
+                  </Text>
+                  <Text style={ta} className="text-lg text-gray-900 font-semibold">
                     {formatEGP(stock?.price ?? 0)}
                   </Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-xs text-gray-600">{t('trade.cash')}</Text>
-                  <Text className="text-lg text-primary-700 font-semibold">
+                  <Text style={ta} className="text-xs text-gray-600">
+                    {t('trade.cash')}
+                  </Text>
+                  <Text style={ta} className="text-lg text-primary-700 font-semibold">
                     {formatEGP(cash)}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mb-4">
+              <View className="mb-4" style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Pressable
                   onPress={() => setMode('buy')}
                   className={`flex-1 items-center py-3 rounded-xl border ${
@@ -189,6 +204,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                   }`}
                 >
                   <Text
+                    style={ta}
                     className={
                       mode === 'buy'
                         ? 'text-white font-semibold'
@@ -207,6 +223,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                   }`}
                 >
                   <Text
+                    style={ta}
                     className={
                       mode === 'sell'
                         ? 'text-white font-semibold'
@@ -220,8 +237,10 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
 
               {holding && (
                 <View className="bg-blue-50 rounded-lg p-3 mb-3">
-                  <Text className="text-xs text-gray-600">{t('trade.youOwn')}</Text>
-                  <Text className="text-sm text-primary-700 font-semibold">
+                  <Text style={ta} className="text-xs text-gray-600">
+                    {t('trade.youOwn')}
+                  </Text>
+                  <Text style={ta} className="text-sm text-primary-700 font-semibold">
                     {t('trade.sharesAtAvg', {
                       shares: holding.shares,
                       avgPrice: formatEGP(holding.avgCost),
@@ -230,7 +249,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                 </View>
               )}
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
+              <Text style={ta} className="text-sm text-gray-700 mb-2 font-medium">
                 {t('trade.numberOfShares')}
               </Text>
               <TextInput
@@ -240,12 +259,20 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                 placeholder="0"
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-2xl text-gray-900 mb-3"
+                style={{
+                  textAlign: rtl ? 'right' : 'left',
+                  writingDirection: rtl ? 'rtl' : 'ltr',
+                }}
               />
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
+                style={rtlRootDirection(rtl)}
+                contentContainerStyle={mergeScrollContentRtl(rtl, {
+                  gap: 8,
+                  ...rtlRow(rtl),
+                })}
               >
                 {[1, 5, 10, 25, 50].map((p) => (
                   <Pressable
@@ -253,23 +280,30 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
                     onPress={() => setShares(String(p))}
                     className="px-4 py-2 rounded-full bg-gray-100"
                   >
-                    <Text className="text-gray-800 font-medium">{p}</Text>
+                    <Text style={ta} className="text-gray-800 font-medium">
+                      {p}
+                    </Text>
                   </Pressable>
                 ))}
               </ScrollView>
 
-              <View className="bg-gray-50 rounded-lg p-3 mt-4 flex-row justify-between">
-                <Text className="text-sm text-gray-600">
+              <View
+                className="bg-gray-50 rounded-lg p-3 mt-4"
+                style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}
+              >
+                <Text style={ta} className="text-sm text-gray-600">
                   {mode === 'buy' ? t('trade.totalCost') : t('trade.proceeds')}
                 </Text>
-                <Text className="text-base text-gray-900 font-semibold">
+                <Text style={ta} className="text-base text-gray-900 font-semibold">
                   {formatEGP(totalCost)}
                 </Text>
               </View>
 
               {error && (
                 <View className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                  <Text className="text-sm text-red-700">{error}</Text>
+                  <Text style={ta} className="text-sm text-red-700">
+                    {error}
+                  </Text>
                 </View>
               )}
 

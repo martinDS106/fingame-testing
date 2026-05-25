@@ -20,6 +20,8 @@ import {
   upsertStockPrice,
   type RemoteStockPrice,
 } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
@@ -29,6 +31,8 @@ function safeNumber(v: string, fallback = 0): number {
 }
 
 export default function AdminStockPricesScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
 
   const [loading, setLoading] = useState(false);
@@ -123,12 +127,14 @@ export default function AdminStockPricesScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -143,7 +149,7 @@ export default function AdminStockPricesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Stock Prices"
         showBack
@@ -151,10 +157,12 @@ export default function AdminStockPricesScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Overrides</Text>
-            <Text className="text-sm text-gray-800 font-semibold">
+            <Text className="text-xs text-gray-500" style={ta}>
+              Overrides
+            </Text>
+            <Text className="text-sm text-gray-800 font-semibold" style={ta}>
               {visible.length} rows
             </Text>
           </View>
@@ -171,13 +179,16 @@ export default function AdminStockPricesScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="COMI, ETEL…"
             autoCapitalize="characters"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
           <View className="mt-3">
             <Button variant="outline" fullWidth onPress={refresh} disabled={loading}>
@@ -189,29 +200,42 @@ export default function AdminStockPricesScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
         {!error &&
           visible.map((r) => (
             <PressableCard key={r.symbol} onPress={() => openEdit(r)}>
-              <View className="flex-row items-start justify-between gap-3">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
                 <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold">{r.symbol}</Text>
-                  <Text className="text-xs text-gray-500">
+                  <Text className="text-gray-900 font-semibold" style={ta}>
+                    {r.symbol}
+                  </Text>
+                  <Text className="text-xs text-gray-500" style={ta}>
                     price: {r.price} · updated:{' '}
                     {new Date(r.updated_at).toLocaleString()}
                   </Text>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -247,8 +271,8 @@ export default function AdminStockPricesScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
                 {editing ? 'Edit price' : 'New override'}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -257,31 +281,38 @@ export default function AdminStockPricesScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">symbol</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  symbol
+                </Text>
                 <TextInput
                   value={draft.symbol}
                   onChangeText={(v) => setDraft((s) => ({ ...s, symbol: v }))}
                   placeholder="COMI"
                   autoCapitalize="characters"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">price</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  price
+                </Text>
                 <TextInput
                   value={draft.price}
                   onChangeText={(v) => setDraft((s) => ({ ...s, price: v }))}
                   keyboardType="numeric"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

@@ -1,6 +1,9 @@
 import { forwardRef, type ReactNode } from 'react';
 import { Pressable, Text, View, type PressableProps } from 'react-native';
 
+import { useRTL } from '@/hooks/useRTL';
+import { rtlTextStyle, rtlRow } from '@/lib/rtlStyle';
+
 export type ButtonVariant =
   | 'primary'
   | 'secondary'
@@ -70,6 +73,11 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
 ) {
   const v = variantClasses[variant];
   const s = sizeClasses[size];
+  const rtl = useRTL();
+  const ta = rtlTextStyle(rtl);
+
+  const startIcon = rtl ? rightIcon : leftIcon;
+  const endIcon = rtl ? leftIcon : rightIcon;
 
   return (
     <Pressable
@@ -77,16 +85,19 @@ export const Button = forwardRef<View, ButtonProps>(function Button(
       disabled={disabled}
       className={`${v.container} ${s.container} ${fullWidth ? 'w-full' : ''} ${
         disabled ? 'opacity-50' : ''
-      } flex-row items-center justify-center gap-2 ${className}`}
+      } items-center justify-center gap-2 ${className}`}
+      style={rtlRow(rtl)}
       {...props}
     >
-      {leftIcon}
+      {startIcon}
       {typeof children === 'string' ? (
-        <Text className={`${v.text} ${s.text} font-semibold`}>{children}</Text>
+        <Text className={`${v.text} ${s.text} font-semibold`} style={ta}>
+          {children}
+        </Text>
       ) : (
         children
       )}
-      {rightIcon}
+      {endIcon}
     </Pressable>
   );
 });

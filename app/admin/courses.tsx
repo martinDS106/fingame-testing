@@ -21,6 +21,8 @@ import {
   type CourseUpsert,
   type RemoteCourse,
 } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 
@@ -37,6 +39,8 @@ type SortKey = 'sort_order' | 'title' | 'coin_reward';
 type SortDir = 'asc' | 'desc';
 
 export default function AdminCoursesScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const syncContent = useContentStore((s) => s.syncFromCloud);
 
@@ -207,12 +211,14 @@ export default function AdminCoursesScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -227,7 +233,7 @@ export default function AdminCoursesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Courses"
         showBack
@@ -235,10 +241,14 @@ export default function AdminCoursesScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Content</Text>
-            <Text className="text-sm text-gray-800 font-semibold">{subtitle}</Text>
+            <Text className="text-xs text-gray-500" style={ta}>
+              Content
+            </Text>
+            <Text className="text-sm text-gray-800 font-semibold" style={ta}>
+              {subtitle}
+            </Text>
           </View>
           <Button
             size="sm"
@@ -253,18 +263,23 @@ export default function AdminCoursesScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by id or title…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
 
           <View className="mt-3">
-            <Text className="text-xs text-gray-500 mb-2">Sort</Text>
-            <View className="flex-row gap-2 flex-wrap">
+            <Text className="text-xs text-gray-500 mb-2" style={ta}>
+              Sort
+            </Text>
+            <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
               {(
                 [
                   { id: 'sort_order', label: 'Sort order' },
@@ -287,6 +302,7 @@ export default function AdminCoursesScreen() {
                       className={`text-sm font-medium ${
                         active ? 'text-white' : 'text-gray-800'
                       }`}
+                      style={ta}
                     >
                       {opt.label}
                     </Text>
@@ -298,7 +314,7 @@ export default function AdminCoursesScreen() {
                 onPress={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
                 className="px-3 py-2 rounded-lg border bg-white border-gray-200"
               >
-                <Text className="text-sm font-medium text-gray-800">
+                <Text className="text-sm font-medium text-gray-800" style={ta}>
                   {sortDir === 'asc' ? 'Asc' : 'Desc'}
                 </Text>
               </Pressable>
@@ -323,13 +339,18 @@ export default function AdminCoursesScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
             <View className="mt-3">
               <Button variant="outline" fullWidth onPress={refresh}>
                 Retry
@@ -341,22 +362,32 @@ export default function AdminCoursesScreen() {
         {!error &&
           visible.map((c) => (
             <PressableCard key={c.id} onPress={() => openEdit(c)}>
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-row items-center gap-3 flex-1">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
                   <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center">
                     <Text className="text-xl">{c.icon ?? '📚'}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                    <Text
+                      className="text-gray-900 font-semibold"
+                      numberOfLines={1}
+                      style={ta}
+                    >
                       {c.title}
                     </Text>
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                    <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                       {c.id} · reward: {c.coin_reward} · order: {c.sort_order}
                     </Text>
                   </View>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -365,7 +396,7 @@ export default function AdminCoursesScreen() {
                     hitSlop={8}
                     className="px-3 py-2 rounded-lg bg-gray-900 border border-gray-800"
                   >
-                    <Text className="text-white text-xs font-semibold">
+                    <Text className="text-white text-xs font-semibold" style={ta}>
                       Lessons
                     </Text>
                   </Pressable>
@@ -404,8 +435,8 @@ export default function AdminCoursesScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
                 {editing ? 'Edit course' : 'New course'}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -414,62 +445,78 @@ export default function AdminCoursesScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">id (slug)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  id (slug)
+                </Text>
                 <TextInput
                   value={draft.id}
                   onChangeText={(v) => setDraft((s) => ({ ...s, id: v }))}
                   placeholder="investing-basics"
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title
+                </Text>
                 <TextInput
                   value={draft.title}
                   onChangeText={(v) => setDraft((s) => ({ ...s, title: v }))}
                   placeholder="Investing Basics"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title (ar)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title (ar)
+                </Text>
                 <TextInput
                   value={draft.titleAr}
                   onChangeText={(v) => setDraft((s) => ({ ...s, titleAr: v }))}
                   placeholder="أساسيات الاستثمار"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">description</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  description
+                </Text>
                 <TextInput
                   value={draft.description}
                   onChangeText={(v) => setDraft((s) => ({ ...s, description: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">description (ar)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  description (ar)
+                </Text>
                 <TextInput
                   value={draft.descriptionAr}
                   onChangeText={(v) => setDraft((s) => ({ ...s, descriptionAr: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
                   topic (saving / investing / budgeting)
                 </Text>
                 <TextInput
@@ -478,51 +525,64 @@ export default function AdminCoursesScreen() {
                   autoCapitalize="none"
                   placeholder="investing"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="w-24 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">icon</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    icon
+                  </Text>
                   <TextInput
                     value={draft.icon}
                     onChangeText={(v) => setDraft((s) => ({ ...s, icon: v }))}
                     className="px-3 py-2 rounded-lg border border-gray-200 text-center"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">color</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    color
+                  </Text>
                   <TextInput
                     value={draft.color}
                     onChangeText={(v) => setDraft((s) => ({ ...s, color: v }))}
                     autoCapitalize="none"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">sort order</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    sort order
+                  </Text>
                   <TextInput
                     value={draft.sortOrder}
                     onChangeText={(v) => setDraft((s) => ({ ...s, sortOrder: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">coin reward</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    coin reward
+                  </Text>
                   <TextInput
                     value={draft.coinReward}
                     onChangeText={(v) => setDraft((s) => ({ ...s, coinReward: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

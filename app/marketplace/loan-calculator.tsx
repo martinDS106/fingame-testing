@@ -10,6 +10,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 
@@ -81,6 +83,8 @@ const APR_PRESETS = [8, 12, 15, 20];
 const TERM_OPTIONS = [1, 3, 5, 10];
 
 export default function LoanCalculatorScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const coins = useUserStore((s) => s.coins);
   const hasClaimedReward = useUserStore((s) => s.hasClaimedReward);
   const claimRewardOnce = useUserStore((s) => s.claimRewardOnce);
@@ -111,7 +115,7 @@ export default function LoanCalculatorScreen() {
   const interestPct = 100 - principalPct;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Loan Calculator"
         coins={coins}
@@ -121,7 +125,8 @@ export default function LoanCalculatorScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -130,30 +135,37 @@ export default function LoanCalculatorScreen() {
           end={{ x: 1, y: 1 }}
           style={{ borderRadius: 16, padding: 24 }}
         >
-          <Text className="text-white/80 text-sm mb-1">Monthly Installment</Text>
-          <Text className="text-white text-4xl font-bold mb-2">
+          <Text className="text-white/80 text-sm mb-1" style={ta}>
+            Monthly Installment
+          </Text>
+          <Text className="text-white text-4xl font-bold mb-2" style={ta}>
             EGP {formatNumber(Math.round(summary.monthlyPayment))}
           </Text>
-          <View className="flex-row items-center gap-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
             <DollarSign size={16} color={colors.white} />
-            <Text className="text-white/90 text-sm">For {years} years</Text>
+            <Text className="text-white/90 text-sm" style={ta}>
+              For {years} years
+            </Text>
           </View>
         </LinearGradient>
 
         <Card>
-          <Text className="text-sm text-gray-700 font-medium mb-2">
+          <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
             Loan Amount (EGP)
           </Text>
-          <View className="flex-row items-center gap-2 mb-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 12 })}>
             <TextInput
               value={amount}
               onChangeText={setAmount}
               keyboardType="number-pad"
               className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+              style={ta}
             />
-            <Text className="text-sm text-gray-600">EGP</Text>
+            <Text className="text-sm text-gray-600" style={ta}>
+              EGP
+            </Text>
           </View>
-          <View className="flex-row flex-wrap gap-2">
+          <View style={rtlRowMerge(rtl, { flexWrap: 'wrap', gap: 8 })}>
             {AMOUNT_PRESETS.map((n) => (
               <Pressable
                 key={n}
@@ -168,6 +180,7 @@ export default function LoanCalculatorScreen() {
                   className={`text-xs font-medium ${
                     Number(amount) === n ? 'text-white' : 'text-gray-700'
                   }`}
+                  style={ta}
                 >
                   {n >= 1000 ? `${n / 1000}K` : n}
                 </Text>
@@ -177,19 +190,22 @@ export default function LoanCalculatorScreen() {
         </Card>
 
         <Card>
-          <Text className="text-sm text-gray-700 font-medium mb-2">
+          <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
             Interest Rate (%)
           </Text>
-          <View className="flex-row items-center gap-2 mb-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 12 })}>
             <TextInput
               value={apr}
               onChangeText={setApr}
               keyboardType="decimal-pad"
               className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+              style={ta}
             />
-            <Text className="text-sm text-gray-600">%</Text>
+            <Text className="text-sm text-gray-600" style={ta}>
+              %
+            </Text>
           </View>
-          <View className="flex-row flex-wrap gap-2">
+          <View style={rtlRowMerge(rtl, { flexWrap: 'wrap', gap: 8 })}>
             {APR_PRESETS.map((n) => (
               <Pressable
                 key={n}
@@ -204,6 +220,7 @@ export default function LoanCalculatorScreen() {
                   className={`text-xs font-medium ${
                     Number(apr) === n ? 'text-white' : 'text-gray-700'
                   }`}
+                  style={ta}
                 >
                   {n}%
                 </Text>
@@ -213,10 +230,10 @@ export default function LoanCalculatorScreen() {
         </Card>
 
         <Card>
-          <Text className="text-sm text-gray-700 font-medium mb-3">
+          <Text className="text-sm text-gray-700 font-medium mb-3" style={ta}>
             Loan Term
           </Text>
-          <View className="flex-row gap-2">
+          <View style={rtlRowMerge(rtl, { gap: 8 })}>
             {TERM_OPTIONS.map((y) => (
               <Pressable
                 key={y}
@@ -231,6 +248,7 @@ export default function LoanCalculatorScreen() {
                   className={`text-sm font-medium ${
                     years === y ? 'text-white' : 'text-gray-700'
                   }`}
+                  style={ta}
                 >
                   {y} {y === 1 ? 'yr' : 'yrs'}
                 </Text>
@@ -240,51 +258,67 @@ export default function LoanCalculatorScreen() {
         </Card>
 
         <Card>
-          <Text className="text-sm text-gray-700 font-medium mb-2">
+          <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
             Monthly Income (EGP)
           </Text>
-          <View className="flex-row items-center gap-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
             <TextInput
               value={income}
               onChangeText={setIncome}
               keyboardType="number-pad"
               className="flex-1 bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+              style={ta}
             />
-            <Text className="text-sm text-gray-600">EGP</Text>
+            <Text className="text-sm text-gray-600" style={ta}>
+              EGP
+            </Text>
           </View>
         </Card>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
             Payment Breakdown
           </Text>
           <View className="gap-2 mb-3">
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Total Amount Paid</Text>
-              <Text className="text-sm text-gray-800 font-medium">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                Total Amount Paid
+              </Text>
+              <Text className="text-sm text-gray-800 font-medium" style={ta}>
                 EGP {formatNumber(Math.round(summary.totalPaid))}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Total Interest</Text>
-              <Text className="text-sm text-orange-600 font-medium">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                Total Interest
+              </Text>
+              <Text className="text-sm text-orange-600 font-medium" style={ta}>
                 EGP {formatNumber(Math.round(summary.totalInterest))}
               </Text>
             </View>
-            <View className="flex-row justify-between pt-2 border-t border-gray-100">
-              <Text className="text-sm text-gray-600">Principal Amount</Text>
-              <Text className="text-sm text-gray-800 font-medium">
+            <View
+              style={rtlRowMerge(rtl, {
+                justifyContent: 'space-between',
+                paddingTop: 8,
+                borderTopWidth: 1,
+                borderTopColor: '#f3f4f6',
+              })}
+            >
+              <Text className="text-sm text-gray-600" style={ta}>
+                Principal Amount
+              </Text>
+              <Text className="text-sm text-gray-800 font-medium" style={ta}>
                 EGP {formatNumber(Number(amount) || 0)}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row h-8 rounded-lg overflow-hidden mt-1">
+          <View style={rtlRowMerge(rtl, { height: 32, borderRadius: 8, overflow: 'hidden', marginTop: 4 })}>
             <View
               style={{ width: `${principalPct}%`, backgroundColor: '#22c55e' }}
               className="items-center justify-center"
             >
-              <Text className="text-xs text-white font-semibold">
+              <Text className="text-xs text-white font-semibold" style={ta}>
                 {Math.round(principalPct)}%
               </Text>
             </View>
@@ -292,65 +326,80 @@ export default function LoanCalculatorScreen() {
               style={{ width: `${interestPct}%`, backgroundColor: '#f97316' }}
               className="items-center justify-center"
             >
-              <Text className="text-xs text-white font-semibold">
+              <Text className="text-xs text-white font-semibold" style={ta}>
                 {Math.round(interestPct)}%
               </Text>
             </View>
           </View>
-          <View className="flex-row justify-between mt-2">
-            <Text className="text-xs text-gray-600">Principal</Text>
-            <Text className="text-xs text-gray-600">Interest</Text>
+          <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginTop: 8 })}>
+            <Text className="text-xs text-gray-600" style={ta}>
+              Principal
+            </Text>
+            <Text className="text-xs text-gray-600" style={ta}>
+              Interest
+            </Text>
           </View>
         </Card>
 
         <Card>
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-800 font-semibold">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
               Amortization Schedule
             </Text>
             <Pressable onPress={() => setShowSchedule((v) => !v)}>
-              <Text className="text-primary-700 font-semibold text-sm">
+              <Text className="text-primary-700 font-semibold text-sm" style={ta}>
                 {showSchedule ? 'Hide' : 'Show'}
               </Text>
             </Pressable>
           </View>
-          <Text className="text-xs text-gray-500 mb-3">
+          <Text className="text-xs text-gray-500 mb-3" style={ta}>
             Monthly breakdown of how much goes to interest vs principal.
           </Text>
 
           {showSchedule && (
             <View className="gap-2">
-              <View className="flex-row justify-between">
-                <Text className="text-[11px] text-gray-500 w-[18%]">Month</Text>
-                <Text className="text-[11px] text-gray-500 w-[26%] text-right">
+              <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+                <Text className="text-[11px] text-gray-500 w-[18%]" style={ta}>
+                  Month
+                </Text>
+                <Text
+                  className="text-[11px] text-gray-500 w-[26%] text-right"
+                  style={ta}
+                >
                   Payment
                 </Text>
-                <Text className="text-[11px] text-gray-500 w-[26%] text-right">
+                <Text
+                  className="text-[11px] text-gray-500 w-[26%] text-right"
+                  style={ta}
+                >
                   Interest
                 </Text>
-                <Text className="text-[11px] text-gray-500 w-[30%] text-right">
+                <Text
+                  className="text-[11px] text-gray-500 w-[30%] text-right"
+                  style={ta}
+                >
                   Balance
                 </Text>
               </View>
               <View className="h-px bg-gray-200" />
               {schedule.slice(0, 12).map((r) => (
-                <View key={r.month} className="flex-row justify-between">
-                  <Text className="text-[11px] text-gray-700 w-[18%]">
+                <View key={r.month} style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+                  <Text className="text-[11px] text-gray-700 w-[18%]" style={ta}>
                     {r.month}
                   </Text>
-                  <Text className="text-[11px] text-gray-700 w-[26%] text-right">
+                  <Text className="text-[11px] text-gray-700 w-[26%] text-right" style={ta}>
                     {formatNumber(Math.round(r.payment))}
                   </Text>
-                  <Text className="text-[11px] text-orange-700 w-[26%] text-right">
+                  <Text className="text-[11px] text-orange-700 w-[26%] text-right" style={ta}>
                     {formatNumber(Math.round(r.interest))}
                   </Text>
-                  <Text className="text-[11px] text-gray-700 w-[30%] text-right">
+                  <Text className="text-[11px] text-gray-700 w-[30%] text-right" style={ta}>
                     {formatNumber(Math.round(r.balance))}
                   </Text>
                 </View>
               ))}
               {schedule.length > 12 && (
-                <Text className="text-xs text-gray-500 mt-2">
+                <Text className="text-xs text-gray-500 mt-2" style={ta}>
                   Showing first 12 months only.
                 </Text>
               )}
@@ -384,7 +433,7 @@ export default function LoanCalculatorScreen() {
             >
               {rewarded ? 'Reward claimed' : 'Claim reward for learning'}
             </Button>
-            <Text className="text-xs text-gray-500 mt-2 text-center">
+            <Text className="text-xs text-gray-500 mt-2 text-center" style={ta}>
               One-time reward for using the calculator.
             </Text>
           </View>
@@ -397,7 +446,7 @@ export default function LoanCalculatorScreen() {
               : 'bg-red-50 border border-red-200'
           }
         >
-          <View className="flex-row items-start gap-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12 })}>
             {summary.isAffordable ? (
               <TrendingUp size={22} color="#16a34a" />
             ) : (
@@ -408,6 +457,7 @@ export default function LoanCalculatorScreen() {
                 className={`font-semibold mb-1 ${
                   summary.isAffordable ? 'text-green-900' : 'text-red-900'
                 }`}
+                style={ta}
               >
                 Affordability Check
               </Text>
@@ -415,6 +465,7 @@ export default function LoanCalculatorScreen() {
                 className={`text-sm mb-2 ${
                   summary.isAffordable ? 'text-green-700' : 'text-red-700'
                 }`}
+                style={ta}
               >
                 Payment is {summary.affordabilityRatio.toFixed(1)}% of monthly
                 income
@@ -430,7 +481,7 @@ export default function LoanCalculatorScreen() {
                   }}
                 />
               </View>
-              <Text className="text-xs text-gray-700">
+              <Text className="text-xs text-gray-700" style={ta}>
                 {summary.isAffordable
                   ? '✓ Within the recommended 40% threshold'
                   : '⚠ Exceeds the recommended 40% threshold'}
@@ -440,24 +491,26 @@ export default function LoanCalculatorScreen() {
         </Card>
 
         <Card className="bg-blue-50 border border-blue-200">
-          <Text className="text-gray-800 font-semibold mb-2">💡 Loan Tips</Text>
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
+            💡 Loan Tips
+          </Text>
           <View className="gap-1">
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Keep payments below 40% of income for safety
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Shorter terms mean less total interest
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Compare rates from multiple lenders
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Extra payments reduce overall interest
             </Text>
           </View>
         </Card>
 
-        <View className="flex-row gap-2">
+        <View style={rtlRowMerge(rtl, { gap: 8 })}>
           <View className="flex-1">
             <Button
               variant="outline"

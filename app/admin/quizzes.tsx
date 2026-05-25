@@ -17,6 +17,8 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useContentStore, useUserStore } from '@/stores';
 import { deleteQuiz, pullQuizzes, upsertQuiz, type RemoteQuiz, type QuizUpsert } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 
 function safeInt(v: string, fallback = 0): number {
   const n = Number(v);
@@ -28,6 +30,8 @@ function normalizeId(v: string): string {
 }
 
 export default function AdminQuizzesScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const syncContent = useContentStore((s) => s.syncFromCloud);
 
@@ -169,12 +173,14 @@ export default function AdminQuizzesScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -189,7 +195,7 @@ export default function AdminQuizzesScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Quizzes"
         showBack
@@ -197,10 +203,12 @@ export default function AdminQuizzesScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Quiz bank</Text>
-            <Text className="text-sm text-gray-800 font-semibold">
+            <Text className="text-xs text-gray-500" style={ta}>
+              Quiz bank
+            </Text>
+            <Text className="text-sm text-gray-800 font-semibold" style={ta}>
               {visible.length} quizzes
             </Text>
           </View>
@@ -217,13 +225,16 @@ export default function AdminQuizzesScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by id/title/category…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
           <View className="mt-3">
             <Button variant="outline" fullWidth onPress={refresh} disabled={loading}>
@@ -235,13 +246,18 @@ export default function AdminQuizzesScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
@@ -251,18 +267,24 @@ export default function AdminQuizzesScreen() {
               key={row.id}
               onPress={() => router.push(`/admin/quiz-questions?quizId=${row.id}`)}
             >
-              <View className="flex-row items-start justify-between gap-3">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
                 <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                  <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                     {row.title}
                   </Text>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                     {row.id} · {row.category} · {row.difficulty} · reward:{' '}
                     {row.coin_reward}
                   </Text>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -298,8 +320,8 @@ export default function AdminQuizzesScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
                 {editing ? 'Edit quiz' : 'New quiz'}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -308,51 +330,66 @@ export default function AdminQuizzesScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">id</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  id
+                </Text>
                 <TextInput
                   value={draft.id}
                   onChangeText={(v) => setDraft((s) => ({ ...s, id: v }))}
                   placeholder="quiz-investing"
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title
+                </Text>
                 <TextInput
                   value={draft.title}
                   onChangeText={(v) => setDraft((s) => ({ ...s, title: v }))}
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title (ar)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title (ar)
+                </Text>
                 <TextInput
                   value={draft.titleAr}
                   onChangeText={(v) => setDraft((s) => ({ ...s, titleAr: v }))}
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">category</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  category
+                </Text>
                 <TextInput
                   value={draft.category}
                   onChangeText={(v) => setDraft((s) => ({ ...s, category: v }))}
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">difficulty</Text>
-                <View className="flex-row gap-2 flex-wrap">
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  difficulty
+                </Text>
+                <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
                   {(['easy', 'medium', 'hard'] as RemoteQuiz['difficulty'][]).map(
                     (d) => (
                       <Button
@@ -369,27 +406,35 @@ export default function AdminQuizzesScreen() {
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">coin reward</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  coin reward
+                </Text>
                 <TextInput
                   value={draft.coinReward}
                   onChangeText={(v) => setDraft((s) => ({ ...s, coinReward: v }))}
                   keyboardType="numeric"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">description</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  description
+                </Text>
                 <TextInput
                   value={draft.description}
                   onChangeText={(v) => setDraft((s) => ({ ...s, description: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">description (ar)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  description (ar)
+                </Text>
                 <TextInput
                   value={draft.descriptionAr}
                   onChangeText={(v) =>
@@ -397,10 +442,11 @@ export default function AdminQuizzesScreen() {
                   }
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

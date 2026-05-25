@@ -42,6 +42,8 @@ interface GoldState {
   buy: (type: MetalType, grams: number) => { ok: boolean; reason?: string };
   sell: (type: MetalType, grams: number) => { ok: boolean; reason?: string };
   updatePrices: (next: Partial<Record<MetalType, number>>) => void;
+  /** Small random walk so the gold screen "live prices" stay in motion. */
+  tickPrices: () => void;
   addCash: (amount: number) => void;
 }
 
@@ -174,6 +176,15 @@ export const useGoldStore = create<GoldState>()(
             return { ...p, pricePerGram: nextPrice, change, changePct };
           }),
         }));
+      },
+
+      tickPrices: () => {
+        const jitter: Partial<Record<MetalType, number>> = {};
+        for (const p of get().prices) {
+          const pct = (Math.random() - 0.5) * 0.012;
+          jitter[p.type] = Math.max(1, Math.round(p.pricePerGram * (1 + pct)));
+        }
+        get().updatePrices(jitter);
       },
 
       addCash: (amount) => {

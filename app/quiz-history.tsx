@@ -8,6 +8,8 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { apiGetJson } from '@/lib/api';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/stores';
 
 type QuizAttemptRow = {
@@ -23,6 +25,8 @@ type QuizAttemptRow = {
 
 export default function QuizHistoryScreen() {
   const remoteUserId = useUserStore((s) => s.remoteUserId);
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,12 +57,14 @@ export default function QuizHistoryScreen() {
 
   if (!remoteUserId) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Quiz history" showBack />
         <View className="flex-1 px-4 py-6">
           <Card>
-            <Text className="text-gray-900 font-semibold mb-1">Sign in required</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Sign in required
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               Please sign in to see your quiz history.
             </Text>
           </Card>
@@ -73,7 +79,7 @@ export default function QuizHistoryScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title="Quiz history" showBack showBell={false} />
 
       <View className="px-4 py-3">
@@ -82,17 +88,21 @@ export default function QuizHistoryScreen() {
         </Button>
         {error && (
           <View className="bg-red-50 border border-red-200 rounded-lg p-3 mt-3">
-            <Text className="text-sm text-red-700">{error}</Text>
+            <Text className="text-sm text-red-700" style={ta}>
+              {error}
+            </Text>
           </View>
         )}
       </View>
 
-      <ScrollView className="flex-1 px-4" contentContainerStyle={{ paddingBottom: 24 }}>
+      <ScrollView className="flex-1 px-4" contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 24 })}>
         {rows.length === 0 ? (
           <Card className="items-center py-10">
             <History size={28} color={colors.gray[500]} />
-            <Text className="text-gray-800 font-semibold mt-3">No attempts yet</Text>
-            <Text className="text-sm text-gray-600 mt-1 text-center">
+            <Text className="text-gray-800 font-semibold mt-3" style={ta}>
+              No attempts yet
+            </Text>
+            <Text className="text-sm text-gray-600 mt-1 text-center" style={ta}>
               Complete a quiz and it will appear here.
             </Text>
           </Card>
@@ -109,25 +119,37 @@ export default function QuizHistoryScreen() {
               const pct = Math.round((r.score / Math.max(1, r.total)) * 100);
               return (
                 <Card key={r.id}>
-                  <View className="flex-row items-start justify-between">
+                  <View
+                    style={rtlRowMerge(rtl, { alignItems: 'flex-start', justifyContent: 'space-between' })}
+                  >
                     <View className="flex-1 pr-3">
-                      <Text className="text-gray-900 font-semibold">
+                      <Text className="text-gray-900 font-semibold" style={ta}>
                         {r.quiz_title || 'Quiz'}
                       </Text>
-                      <Text className="text-xs text-gray-500 mt-1">{when}</Text>
+                      <Text className="text-xs text-gray-500 mt-1" style={ta}>
+                        {when}
+                      </Text>
                     </View>
                     <View className="items-end">
-                      <Text className="text-gray-900 font-semibold">
+                      <Text className="text-gray-900 font-semibold" style={ta}>
                         {r.score}/{r.total}
                       </Text>
-                      <Text className="text-xs text-gray-600">{pct}%</Text>
+                      <Text className="text-xs text-gray-600" style={ta}>
+                        {pct}%
+                      </Text>
                     </View>
                   </View>
-                  <View className="flex-row items-center justify-between mt-3">
-                    <Text className="text-xs text-gray-600">
+                  <View
+                    style={rtlRowMerge(rtl, {
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      marginTop: 12,
+                    })}
+                  >
+                    <Text className="text-xs text-gray-600" style={ta}>
                       Coins earned
                     </Text>
-                    <Text className="text-xs text-gray-900 font-semibold">
+                    <Text className="text-xs text-gray-900 font-semibold" style={ta}>
                       +{r.coins_earned}
                     </Text>
                   </View>
@@ -140,4 +162,3 @@ export default function QuizHistoryScreen() {
     </View>
   );
 }
-

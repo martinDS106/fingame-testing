@@ -17,10 +17,18 @@ import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
 import { useAuthStore } from '@/stores';
 import { isApiConfigured } from '@/lib/api';
+import {
+  mergeScrollContentRtl,
+  rtlMirrorStyle,
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 
 export default function LoginScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [showPw, setShowPw] = useState(false);
@@ -50,9 +58,9 @@ export default function LoginScreen() {
       colors={[colors.primary[500], colors.primary[700]]}
       style={{ flex: 1 }}
     >
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1" style={rtlRootDirection(rtl)}>
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          style={[{ flex: 1 }, rtlRootDirection(rtl)]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <Pressable
@@ -60,25 +68,25 @@ export default function LoginScreen() {
             hitSlop={12}
             className="p-4 active:opacity-60"
           >
-            <ArrowLeft size={24} color={colors.white} />
+            <ArrowLeft size={24} color={colors.white} style={rtlMirrorStyle(rtl)} />
           </Pressable>
 
           <ScrollView
-            contentContainerStyle={{ flexGrow: 1, padding: 24 }}
+            contentContainerStyle={mergeScrollContentRtl(rtl, { flexGrow: 1, padding: 24 })}
             keyboardShouldPersistTaps="handled"
           >
             <View className="mb-8">
-              <Text className="text-4xl text-white font-bold mb-2">
+              <Text className="text-4xl text-white font-bold mb-2" style={ta}>
                 {t('auth.welcomeBack')} 👋
               </Text>
-              <Text className="text-base text-primary-100">
+              <Text className="text-base text-primary-100" style={ta}>
                 {t('auth.signInSubtitle')}
               </Text>
             </View>
 
             {!isApiConfigured && (
               <View className="bg-yellow-100 border border-yellow-300 rounded-xl p-3 mb-4">
-                <Text className="text-yellow-900 text-sm">
+                <Text className="text-yellow-900 text-sm" style={ta}>
                   {t('auth.supabaseNotConfiguredTitle')}{' '}
                   {t('auth.supabaseNotConfiguredLogin')}
                 </Text>
@@ -87,10 +95,13 @@ export default function LoginScreen() {
 
             <View className="bg-white rounded-2xl p-5 gap-4">
               <View>
-                <Text className="text-sm text-gray-700 font-medium mb-2">
+                <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
                   {t('auth.email')}
                 </Text>
-                <View className="flex-row items-center border border-gray-200 rounded-xl px-3">
+                <View
+                  className="items-center border border-gray-200 rounded-xl px-3"
+                  style={rtlRowMerge(rtl, { alignItems: 'center' })}
+                >
                   <Mail size={18} color={colors.gray[500]} />
                   <TextInput
                     value={email}
@@ -101,15 +112,19 @@ export default function LoginScreen() {
                     autoCapitalize="none"
                     autoComplete="email"
                     className="flex-1 px-3 py-3 text-base text-gray-900"
+                    style={ta}
                   />
                 </View>
               </View>
 
               <View>
-                <Text className="text-sm text-gray-700 font-medium mb-2">
+                <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
                   {t('auth.password')}
                 </Text>
-                <View className="flex-row items-center border border-gray-200 rounded-xl px-3">
+                <View
+                  className="items-center border border-gray-200 rounded-xl px-3"
+                  style={rtlRowMerge(rtl, { alignItems: 'center' })}
+                >
                   <Lock size={18} color={colors.gray[500]} />
                   <TextInput
                     value={password}
@@ -119,6 +134,7 @@ export default function LoginScreen() {
                     secureTextEntry={!showPw}
                     autoCapitalize="none"
                     className="flex-1 px-3 py-3 text-base text-gray-900"
+                    style={ta}
                   />
                   <Pressable
                     onPress={() => setShowPw((v) => !v)}
@@ -136,7 +152,9 @@ export default function LoginScreen() {
 
               {error && (
                 <View className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <Text className="text-sm text-red-700">{error}</Text>
+                  <Text className="text-sm text-red-700" style={ta}>
+                    {error}
+                  </Text>
                 </View>
               )}
 
@@ -154,17 +172,21 @@ export default function LoginScreen() {
                 className="items-center"
                 hitSlop={8}
               >
-                <Text className="text-primary-700 font-semibold">
+                <Text className="text-primary-700 font-semibold" style={ta}>
                   Forgot password?
                 </Text>
               </Pressable>
             </View>
 
-            <View className="flex-row items-center justify-center mt-6 gap-1">
-              <Text className="text-primary-100">{t('auth.newHere')}</Text>
+            <View
+              style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'center', gap: 4, marginTop: 24 })}
+            >
+              <Text className="text-primary-100" style={ta}>
+                {t('auth.newHere')}
+              </Text>
               <Link href="/(auth)/signup" asChild>
                 <Pressable hitSlop={8}>
-                  <Text className="text-accent-300 font-semibold">
+                  <Text className="text-accent-300 font-semibold" style={ta}>
                     {t('auth.createAccount')}
                   </Text>
                 </Pressable>
@@ -176,7 +198,7 @@ export default function LoginScreen() {
               className="mt-6 items-center"
               hitSlop={8}
             >
-              <Text className="text-white/80 text-sm">
+              <Text className="text-white/80 text-sm" style={ta}>
                 {t('auth.continueGuestArrow')}
               </Text>
             </Pressable>

@@ -11,10 +11,13 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useUserStore } from '@/stores';
 
 export default function EditProfileScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
+  const inputAlign = rtl ? 'right' : 'left';
   const profile = useUserStore((s) => s.profile);
   const updateProfile = useUserStore((s) => s.updateProfile);
   const pushSnapshot = useUserStore((s) => s.pushSnapshot);
@@ -42,29 +45,36 @@ export default function EditProfileScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('profile.editProfile')} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card className="border border-gray-200 bg-white" padded>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View
+            className="mb-2"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+          >
             <User size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">
+            <Text style={ta} className="text-gray-900 font-semibold">
               {t('profile.editProfile')}
             </Text>
           </View>
-          <Text className="text-sm text-gray-700">
+          <Text style={ta} className="text-sm text-gray-700">
             Update your display name, avatar emoji, and profile photo.
           </Text>
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <Text className="text-xs text-gray-500 mb-2">Profile photo</Text>
-          <View className="flex-row items-center gap-3">
+          <Text style={ta} className="text-xs text-gray-500 mb-2">
+            Profile photo
+          </Text>
+          <View
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
+          >
             <View
               style={{
                 width: 72,
@@ -117,7 +127,7 @@ export default function EditProfileScreen() {
                   onPress={() => setAvatarImageUri(null)}
                   className="active:opacity-60"
                 >
-                  <Text className="text-sm text-red-600 font-semibold">
+                  <Text style={ta} className="text-sm text-red-600 font-semibold">
                     Remove photo
                   </Text>
                 </Pressable>
@@ -127,26 +137,32 @@ export default function EditProfileScreen() {
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <Text className="text-xs text-gray-500 mb-1">Name</Text>
+          <Text style={ta} className="text-xs text-gray-500 mb-1">
+            Name
+          </Text>
           <TextInput
             value={name}
             onChangeText={setName}
             placeholder="Player"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={{ textAlign: inputAlign, writingDirection: rtl ? 'rtl' : 'ltr' }}
           />
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <Text className="text-xs text-gray-500 mb-1">Avatar (emoji)</Text>
+          <Text style={ta} className="text-xs text-gray-500 mb-1">
+            Avatar (emoji)
+          </Text>
           <TextInput
             value={avatar}
             onChangeText={setAvatar}
             placeholder="👤"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={{ textAlign: inputAlign, writingDirection: rtl ? 'rtl' : 'ltr' }}
           />
         </Card>
 
-        <View className="flex-row gap-2">
+        <View style={rtlRowMerge(rtl, { gap: 8 })}>
           <View className="flex-1">
             <Button variant="outline" fullWidth onPress={() => router.back()}>
               Cancel
@@ -161,10 +177,10 @@ export default function EditProfileScreen() {
 
         {!remoteUserId && (
           <Card className="border border-yellow-200 bg-yellow-50" padded>
-            <Text className="text-sm text-gray-800 font-semibold mb-1">
+            <Text style={ta} className="text-sm text-gray-800 font-semibold mb-1">
               Not signed in
             </Text>
-            <Text className="text-sm text-gray-700">
+            <Text style={ta} className="text-sm text-gray-700">
               Changes will be saved locally. Sign in to sync to the cloud.
             </Text>
           </Card>
@@ -175,4 +191,3 @@ export default function EditProfileScreen() {
     </View>
   );
 }
-

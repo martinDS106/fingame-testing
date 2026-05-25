@@ -21,6 +21,8 @@ import {
   type RemoteVideo,
   type VideoUpsert,
 } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import * as ImagePicker from 'expo-image-picker';
 import { getApiBaseUrl, getApiAccessToken } from '@/lib/api';
 import { colors } from '@/theme';
@@ -36,6 +38,8 @@ function normalizeId(v: string): string {
 }
 
 export default function AdminVideosScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const syncContent = useContentStore((s) => s.syncFromCloud);
   const params = useLocalSearchParams<{ lessonId?: string }>();
@@ -237,12 +241,14 @@ export default function AdminVideosScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -257,7 +263,7 @@ export default function AdminVideosScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Videos"
         showBack
@@ -265,9 +271,11 @@ export default function AdminVideosScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Lesson filter</Text>
+            <Text className="text-xs text-gray-500" style={ta}>
+              Lesson filter
+            </Text>
             <TextInput
               value={lessonId}
               onChangeText={setLessonId}
@@ -277,6 +285,7 @@ export default function AdminVideosScreen() {
               className={`px-3 py-2 rounded-lg border border-gray-200 min-w-[140px] ${
                 lessonIdParam ? 'bg-gray-100 text-gray-600' : 'bg-white'
               }`}
+              style={ta}
             />
           </View>
           <View className="gap-2">
@@ -304,46 +313,60 @@ export default function AdminVideosScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by id/title…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
         </View>
       </View>
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
         {!error &&
           visible.map((v) => (
             <PressableCard key={v.id} onPress={() => openEdit(v)}>
-              <View className="flex-row items-start justify-between gap-3">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
                 <View className="flex-1">
-                  <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                  <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                     {v.title}
                   </Text>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                     {v.id} · lesson: {v.lesson_id} · order: {v.sort_order}
                   </Text>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                     {v.url}
                   </Text>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -379,8 +402,8 @@ export default function AdminVideosScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
                 {editing ? 'Edit video' : 'New video'}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -389,56 +412,72 @@ export default function AdminVideosScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">id</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  id
+                </Text>
                 <TextInput
                   value={draft.id}
                   onChangeText={(v) => setDraft((s) => ({ ...s, id: v }))}
                   placeholder="v-ib-1"
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">lesson id</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  lesson id
+                </Text>
                 <TextInput
                   value={draft.lessonId}
                   onChangeText={(v) => setDraft((s) => ({ ...s, lessonId: v }))}
                   placeholder="ib-1"
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title
+                </Text>
                 <TextInput
                   value={draft.title}
                   onChangeText={(v) => setDraft((s) => ({ ...s, title: v }))}
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">title (ar)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  title (ar)
+                </Text>
                 <TextInput
                   value={draft.titleAr}
                   onChangeText={(v) => setDraft((s) => ({ ...s, titleAr: v }))}
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">url</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  url
+                </Text>
                 <TextInput
                   value={draft.url}
                   onChangeText={(v) => setDraft((s) => ({ ...s, url: v }))}
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
                 <View className="mt-2">
                   <Button
@@ -453,37 +492,46 @@ export default function AdminVideosScreen() {
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">thumbnail (optional)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  thumbnail (optional)
+                </Text>
                 <TextInput
                   value={draft.thumbnail}
                   onChangeText={(v) => setDraft((s) => ({ ...s, thumbnail: v }))}
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">duration (sec)</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    duration (sec)
+                  </Text>
                   <TextInput
                     value={draft.duration}
                     onChangeText={(v) => setDraft((s) => ({ ...s, duration: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">sort order</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    sort order
+                  </Text>
                   <TextInput
                     value={draft.sortOrder}
                     onChangeText={(v) => setDraft((s) => ({ ...s, sortOrder: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

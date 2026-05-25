@@ -12,6 +12,7 @@
       "bundleIdentifier": "com.fingame.app"
     },
     "android": {
+      "softwareKeyboardLayoutMode": "resize",
       "package": "com.fingame.app",
       "adaptiveIcon": {
         "backgroundColor": "#2563eb",

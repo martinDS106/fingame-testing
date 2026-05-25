@@ -5,6 +5,7 @@ import { router, usePathname } from 'expo-router';
 import type { ComponentType } from 'react';
 
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRow, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 
 interface NavItem {
@@ -23,21 +24,34 @@ const navItems: NavItem[] = [
 
 export function BottomNav() {
   const pathname = usePathname();
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   return (
     <View
       className="absolute left-0 right-0 bottom-0 bg-white border-t border-gray-200"
-      style={{
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -2 },
-        shadowOpacity: 0.08,
-        shadowRadius: 8,
-        elevation: 8,
-      }}
+      style={[
+        {
+          shadowColor: '#000',
+          shadowOffset: { width: 0, height: -2 },
+          shadowOpacity: 0.08,
+          shadowRadius: 8,
+          elevation: 8,
+        },
+        rtlRootDirection(rtl),
+      ]}
     >
       <SafeAreaView edges={['bottom']}>
-        <View className="flex-row items-center justify-around py-2">
+        <View
+          className="py-2"
+          style={[
+            {
+              alignItems: 'center',
+              justifyContent: 'space-around',
+            },
+            rtlRow(rtl),
+          ]}
+        >
           {navItems.map(({ labelKey, path, Icon }) => {
             const isActive =
               pathname === path || pathname.startsWith(`${path}/`);
@@ -59,7 +73,7 @@ export function BottomNav() {
                 />
                 <Text
                   className="text-[11px] font-medium"
-                  style={{ color }}
+                  style={[ta, { color }]}
                 >
                   {t(labelKey)}
                 </Text>

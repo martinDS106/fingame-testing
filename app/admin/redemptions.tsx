@@ -21,6 +21,8 @@ import {
   adminUpdateRedemptionStatus,
   type RemoteRedemption,
 } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 
 type Status = RemoteRedemption['status'];
 
@@ -31,6 +33,8 @@ const STATUS_OPTS: { id: Status; label: string }[] = [
 ];
 
 export default function AdminRedemptionsScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const apiMode = isApiConfigured;
 
@@ -68,12 +72,14 @@ export default function AdminRedemptionsScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -89,12 +95,14 @@ export default function AdminRedemptionsScreen() {
 
   if (apiMode) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin • Redemptions" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-yellow-200 bg-yellow-50">
-            <Text className="text-gray-900 font-semibold mb-1">Not supported</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Not supported
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               Redemptions admin tools are not available in MySQL API mode yet.
             </Text>
           </Card>
@@ -109,7 +117,7 @@ export default function AdminRedemptionsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Redemptions"
         showBack
@@ -117,10 +125,12 @@ export default function AdminRedemptionsScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Requests</Text>
-            <Text className="text-sm text-gray-800 font-semibold">
+            <Text className="text-xs text-gray-500" style={ta}>
+              Requests
+            </Text>
+            <Text className="text-sm text-gray-800 font-semibold" style={ta}>
               {visible.length} redemptions
             </Text>
           </View>
@@ -138,44 +148,58 @@ export default function AdminRedemptionsScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by user, reward, status…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
         </View>
       </View>
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
         {!error &&
           visible.map((r) => (
             <Card key={r.id} className="border border-gray-200 bg-white" padded>
-              <View className="flex-row items-start justify-between gap-3">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
                 <View className="flex-1">
-                  <View className="flex-row items-center gap-2 mb-1">
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 4 })}>
                     <Gift size={16} color={colors.primary[700]} />
-                    <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                    <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                       {r.reward_title}
                     </Text>
                   </View>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                     user: {r.user_id}
                   </Text>
-                  <Text className="text-xs text-gray-500" numberOfLines={1}>
+                  <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                     cost: {r.cost} · status: {r.status}
                   </Text>
                 </View>
@@ -210,6 +234,7 @@ export default function AdminRedemptionsScreen() {
                           className={`text-xs font-semibold ${
                             active ? 'text-white' : 'text-gray-800'
                           }`}
+                          style={ta}
                         >
                           {opt.label}
                         </Text>
@@ -223,7 +248,7 @@ export default function AdminRedemptionsScreen() {
 
         {!loading && !error && rows.length === 0 && (
           <PressableCard onPress={refresh}>
-            <Text className="text-gray-900 font-semibold">
+            <Text className="text-gray-900 font-semibold" style={ta}>
               No redemptions yet — tap to refresh
             </Text>
           </PressableCard>

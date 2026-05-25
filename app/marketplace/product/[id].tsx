@@ -25,9 +25,13 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useMarketplaceStore, useUserStore } from '@/stores';
 
 function ApprovalMeter({ value }: { value: number }) {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const size = 128;
   const stroke = 10;
   const radius = (size - stroke) / 2;
@@ -59,8 +63,12 @@ function ApprovalMeter({ value }: { value: number }) {
         />
       </Svg>
       <View className="absolute inset-0 items-center justify-center">
-        <Text className="text-3xl text-gray-800 font-bold">{value}%</Text>
-        <Text className="text-xs text-gray-600">Approval</Text>
+        <Text className="text-3xl text-gray-800 font-bold" style={ta}>
+          {value}%
+        </Text>
+        <Text className="text-xs text-gray-600" style={ta}>
+          Approval
+        </Text>
       </View>
     </View>
   );
@@ -78,6 +86,8 @@ function relativeTime(timestamp: number): string {
 
 export default function ProductDetailScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const coins = useUserStore((s) => s.coins);
   const addCoins = useUserStore((s) => s.addCoins);
 
@@ -165,7 +175,7 @@ export default function ProductDetailScreen() {
 
   if (!product) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader
           title="Product Details"
           coins={coins}
@@ -173,7 +183,9 @@ export default function ProductDetailScreen() {
           gradient={['#a855f7', '#9333ea']}
         />
         <View className="flex-1 items-center justify-center p-6">
-          <Text className="text-lg text-gray-800 mb-2">Product not found</Text>
+          <Text className="text-lg text-gray-800 mb-2" style={ta}>
+            Product not found
+          </Text>
           <Button onPress={() => router.back()}>Go Back</Button>
         </View>
         <BottomNav />
@@ -182,7 +194,7 @@ export default function ProductDetailScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Product Details"
         coins={coins}
@@ -192,22 +204,23 @@ export default function ProductDetailScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 110, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 110, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-start gap-4 mb-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 16, marginBottom: 12 })}>
             <View className="w-16 h-16 bg-purple-50 rounded-xl items-center justify-center">
               <Text className="text-4xl">{product.logo}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-lg text-gray-800 font-bold">
+              <Text className="text-lg text-gray-800 font-bold" style={ta}>
                 {product.name}
               </Text>
-              <Text className="text-sm text-gray-600 mb-2">
+              <Text className="text-sm text-gray-600 mb-2" style={ta}>
                 {product.bank}
               </Text>
-              <View className="flex-row items-center gap-1">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}>
                 {Array.from({ length: 5 }).map((_, i) => (
                   <Star
                     key={i}
@@ -216,7 +229,7 @@ export default function ProductDetailScreen() {
                     fill={i < Math.floor(avgRating) ? '#eab308' : 'transparent'}
                   />
                 ))}
-                <Text className="text-xs text-gray-700 ml-1">
+                <Text className="text-xs text-gray-700 ml-1" style={ta}>
                   {avgRating} · {product.reviewsCount} reviews
                 </Text>
               </View>
@@ -232,25 +245,33 @@ export default function ProductDetailScreen() {
         </Card>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">Overview</Text>
-          <View className="flex-row gap-2">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+            Overview
+          </Text>
+          <View style={rtlRowMerge(rtl, { gap: 8 })}>
             <View className="flex-1 p-3 bg-blue-50 rounded-lg items-center">
-              <Text className="text-xs text-gray-600">APR</Text>
-              <Text className="text-lg text-blue-600 font-bold">
+              <Text className="text-xs text-gray-600" style={ta}>
+                APR
+              </Text>
+              <Text className="text-lg text-blue-600 font-bold" style={ta}>
                 {product.apr}%
               </Text>
             </View>
             <View className="flex-1 p-3 bg-purple-50 rounded-lg items-center">
-              <Text className="text-xs text-gray-600">Annual Fee</Text>
-              <Text className="text-lg text-purple-600 font-bold">
+              <Text className="text-xs text-gray-600" style={ta}>
+                Annual Fee
+              </Text>
+              <Text className="text-lg text-purple-600 font-bold" style={ta}>
                 {product.annualFee === 0
                   ? 'Free'
                   : `EGP ${formatNumber(product.annualFee)}`}
               </Text>
             </View>
             <View className="flex-1 p-3 bg-green-50 rounded-lg items-center">
-              <Text className="text-xs text-gray-600">Cashback</Text>
-              <Text className="text-lg text-green-600 font-bold">
+              <Text className="text-xs text-gray-600" style={ta}>
+                Cashback
+              </Text>
+              <Text className="text-lg text-green-600 font-bold" style={ta}>
                 {product.cashback}%
               </Text>
             </View>
@@ -258,27 +279,33 @@ export default function ProductDetailScreen() {
         </Card>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">Pros & Cons</Text>
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+            Pros & Cons
+          </Text>
           <View className="gap-2">
             {product.pros.map((pro) => (
-              <View key={pro} className="flex-row items-start gap-2">
+              <View key={pro} style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 8 })}>
                 <CheckCircle2 size={16} color="#22c55e" />
-                <Text className="text-sm text-gray-700 flex-1">{pro}</Text>
+                <Text className="text-sm text-gray-700 flex-1" style={ta}>
+                  {pro}
+                </Text>
               </View>
             ))}
             {product.cons.map((con) => (
-              <View key={con} className="flex-row items-start gap-2">
+              <View key={con} style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 8 })}>
                 <AlertTriangle size={16} color="#f97316" />
-                <Text className="text-sm text-gray-700 flex-1">{con}</Text>
+                <Text className="text-sm text-gray-700 flex-1" style={ta}>
+                  {con}
+                </Text>
               </View>
             ))}
           </View>
         </Card>
 
         <Card>
-          <View className="flex-row items-center gap-2 mb-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 12 })}>
             <Info size={18} color={colors.primary[600]} />
-            <Text className="text-gray-800 font-semibold">
+            <Text className="text-gray-800 font-semibold" style={ta}>
               Approval Odds Calculator
             </Text>
           </View>
@@ -286,16 +313,19 @@ export default function ProductDetailScreen() {
           {!eligibilityResult ? (
             <View className="gap-3">
               <View>
-                <Text className="text-xs text-gray-600 mb-1">Age</Text>
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
+                  Age
+                </Text>
                 <TextInput
                   value={age}
                   onChangeText={setAge}
                   keyboardType="number-pad"
                   className="bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+                  style={ta}
                 />
               </View>
               <View>
-                <Text className="text-xs text-gray-600 mb-1">
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
                   Monthly Income (EGP)
                 </Text>
                 <TextInput
@@ -303,10 +333,11 @@ export default function ProductDetailScreen() {
                   onChangeText={setIncome}
                   keyboardType="number-pad"
                   className="bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+                  style={ta}
                 />
               </View>
               <View>
-                <Text className="text-xs text-gray-600 mb-1">
+                <Text className="text-xs text-gray-600 mb-1" style={ta}>
                   Credit Score (300–850)
                 </Text>
                 <TextInput
@@ -314,6 +345,7 @@ export default function ProductDetailScreen() {
                   onChangeText={setCreditScore}
                   keyboardType="number-pad"
                   className="bg-gray-50 rounded-lg px-3 py-2.5 text-gray-800"
+                  style={ta}
                 />
               </View>
               <Button fullWidth onPress={calculateEligibility}>
@@ -332,6 +364,7 @@ export default function ProductDetailScreen() {
                         ? 'text-orange-600'
                         : 'text-red-600'
                   }`}
+                  style={ta}
                 >
                   {eligibilityResult.odds >= 70
                     ? 'Excellent chances!'
@@ -348,11 +381,17 @@ export default function ProductDetailScreen() {
               ].map((req) => (
                 <View
                   key={req.label}
-                  className={`flex-row items-center justify-between p-2 rounded ${
-                    req.ok ? 'bg-green-50' : 'bg-red-50'
-                  }`}
+                  style={rtlRowMerge(rtl, {
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    padding: 8,
+                    borderRadius: 8,
+                    backgroundColor: req.ok ? '#f0fdf4' : '#fef2f2',
+                  })}
                 >
-                  <Text className="text-sm text-gray-700">{req.label}</Text>
+                  <Text className="text-sm text-gray-700" style={ta}>
+                    {req.label}
+                  </Text>
                   {req.ok ? (
                     <CheckCircle2 size={18} color="#22c55e" />
                   ) : (
@@ -373,14 +412,18 @@ export default function ProductDetailScreen() {
         </Card>
 
         <Card>
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-800 font-semibold">User Reviews</Text>
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
+              User Reviews
+            </Text>
             <Badge variant="accent">+25 coins</Badge>
           </View>
 
           <View className="gap-2 mb-3 p-3 bg-gray-50 rounded-lg">
-            <Text className="text-xs text-gray-600">Your rating</Text>
-            <View className="flex-row gap-1">
+            <Text className="text-xs text-gray-600" style={ta}>
+              Your rating
+            </Text>
+            <View style={rtlRowMerge(rtl, { gap: 4 })}>
               {[1, 2, 3, 4, 5].map((n) => (
                 <Pressable key={n} onPress={() => setReviewRating(n)}>
                   <Star
@@ -399,6 +442,7 @@ export default function ProductDetailScreen() {
               multiline
               numberOfLines={2}
               className="bg-white rounded-lg px-3 py-2.5 text-gray-800 border border-gray-200 min-h-[60px]"
+              style={ta}
             />
             <Button size="sm" onPress={handleSubmitReview}>
               Submit Review
@@ -407,27 +451,33 @@ export default function ProductDetailScreen() {
 
           <View className="gap-3">
             {reviews.length === 0 ? (
-              <Text className="text-sm text-gray-500 text-center py-4">
+              <Text className="text-sm text-gray-500 text-center py-4" style={ta}>
                 No reviews yet — be the first!
               </Text>
             ) : (
               reviews.map((r) => (
                 <View key={r.id} className="p-3 bg-gray-50 rounded-lg">
-                  <View className="flex-row items-start justify-between mb-2">
-                    <View className="flex-row items-center gap-2">
+                  <View
+                    style={rtlRowMerge(rtl, {
+                      alignItems: 'flex-start',
+                      justifyContent: 'space-between',
+                      marginBottom: 8,
+                    })}
+                  >
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                       <View className="w-8 h-8 bg-purple-100 rounded-full items-center justify-center">
                         <Text className="text-sm">{r.avatar}</Text>
                       </View>
                       <View>
-                        <Text className="text-sm text-gray-800 font-medium">
+                        <Text className="text-sm text-gray-800 font-medium" style={ta}>
                           {r.user}
                         </Text>
-                        <Text className="text-xs text-gray-500">
+                        <Text className="text-xs text-gray-500" style={ta}>
                           {relativeTime(r.createdAt)}
                         </Text>
                       </View>
                     </View>
-                    <View className="flex-row gap-0.5">
+                    <View style={rtlRowMerge(rtl, { gap: 2 })}>
                       {Array.from({ length: 5 }).map((_, i) => (
                         <Star
                           key={i}
@@ -438,16 +488,16 @@ export default function ProductDetailScreen() {
                       ))}
                     </View>
                   </View>
-                  <Text className="text-sm text-gray-700 mb-2">
+                  <Text className="text-sm text-gray-700 mb-2" style={ta}>
                     {r.comment}
                   </Text>
                   <Pressable
                     onPress={() => markHelpful(r.id)}
-                    className="flex-row items-center gap-1"
+                    style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}
                     hitSlop={6}
                   >
                     <ThumbsUp size={12} color={colors.gray[500]} />
-                    <Text className="text-xs text-gray-500">
+                    <Text className="text-xs text-gray-500" style={ta}>
                       Helpful ({r.helpful})
                     </Text>
                   </Pressable>

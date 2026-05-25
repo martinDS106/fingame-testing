@@ -8,13 +8,15 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useContentStore } from '@/stores';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 
 export default function QuizzesScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const quizzes = useContentStore((s) => s.quizzes);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('dashboard.dailyQuiz')}
         showBack
@@ -23,18 +25,21 @@ export default function QuizzesScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 10 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {!quizzes.length && (
           <Card className="border border-gray-200 bg-white" padded>
-            <View className="flex-row items-center gap-2 mb-1">
+            <View
+              className="mb-1"
+              style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+            >
               <HelpCircle size={18} color={colors.gray[600]} />
-              <Text className="text-gray-900 font-semibold">
+              <Text style={ta} className="text-gray-900 font-semibold">
                 {t('common.comingSoon')}
               </Text>
             </View>
-            <Text className="text-sm text-gray-700">
+            <Text style={ta} className="text-sm text-gray-700">
               No quizzes found yet. Try syncing content.
             </Text>
             <View className="mt-3">
@@ -56,25 +61,32 @@ export default function QuizzesScreen() {
             key={q.id}
             onPress={() => router.push(`/quiz/${q.id}` as never)}
           >
-            <Text className="text-gray-900 font-semibold mb-1" numberOfLines={1}>
+            <Text
+              style={ta}
+              className="text-gray-900 font-semibold mb-1"
+              numberOfLines={1}
+            >
               {q.title}
             </Text>
-            <Text className="text-sm text-gray-600 mb-2" numberOfLines={2}>
+            <Text style={ta} className="text-sm text-gray-600 mb-2" numberOfLines={2}>
               {q.description}
             </Text>
-            <View className="flex-row items-center justify-between">
-              <Text className="text-xs text-gray-500">
+            <View
+              style={rtlRowMerge(rtl, {
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              })}
+            >
+              <Text style={ta} className="text-xs text-gray-500">
                 {q.category} · {q.difficulty}
               </Text>
-              <Text className="text-xs text-gray-500">
+              <Text style={ta} className="text-xs text-gray-500">
                 reward: {q.coinReward}
               </Text>
             </View>
           </PressableCard>
         ))}
       </ScrollView>
-
     </View>
   );
 }
-

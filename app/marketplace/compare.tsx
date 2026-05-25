@@ -10,6 +10,14 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
+import {
+  rtlRootDirection,
+  rtlRow,
+  rtlRowMerge,
+  rtlTextStyle,
+  mergeScrollContentRtl,
+} from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useMarketplaceStore, useUserStore } from '@/stores';
 
 interface FeatureRow {
@@ -30,6 +38,8 @@ const FEATURES: FeatureRow[] = [
 ];
 
 export default function CompareScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const coins = useUserStore((s) => s.coins);
   const addCoins = useUserStore((s) => s.addCoins);
   const products = useMarketplaceStore((s) => s.products);
@@ -84,9 +94,11 @@ export default function CompareScreen() {
     }
   }
 
+  const horizontalChipRow = mergeScrollContentRtl(rtl, { gap: 12, ...rtlRow(rtl) });
+
   if (cards.length < 2) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader
           title="Compare Products"
           coins={coins}
@@ -95,10 +107,10 @@ export default function CompareScreen() {
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-5xl mb-4">🔀</Text>
-          <Text className="text-lg text-gray-800 font-semibold mb-2">
+          <Text className="text-lg text-gray-800 font-semibold mb-2" style={ta}>
             Select at least 2 cards
           </Text>
-          <Text className="text-sm text-gray-600 text-center mb-6">
+          <Text className="text-sm text-gray-600 text-center mb-6" style={ta}>
             Head back to the listing and tick 2 or more cards to start comparing
             side-by-side.
           </Text>
@@ -112,7 +124,7 @@ export default function CompareScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Compare Products"
         coins={coins}
@@ -122,11 +134,12 @@ export default function CompareScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card className="bg-yellow-50 border border-yellow-200">
-          <Text className="text-sm text-gray-700">
+          <Text className="text-sm text-gray-700" style={ta}>
             🎉 You earned{' '}
             <Text className="font-bold text-yellow-700">+10 coins</Text> for
             comparing products!
@@ -136,7 +149,8 @@ export default function CompareScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12 }}
+          style={rtlRootDirection(rtl)}
+          contentContainerStyle={horizontalChipRow}
         >
           {cards.map((card) => (
             <View
@@ -154,10 +168,13 @@ export default function CompareScreen() {
                 <Text
                   className="text-sm text-gray-800 font-semibold text-center"
                   numberOfLines={2}
+                  style={ta}
                 >
                   {card.name}
                 </Text>
-                <Text className="text-xs text-gray-500">{card.bank}</Text>
+                <Text className="text-xs text-gray-500" style={ta}>
+                  {card.bank}
+                </Text>
               </View>
             </View>
           ))}
@@ -165,16 +182,17 @@ export default function CompareScreen() {
 
         <View className="gap-2">
           {FEATURES.map((feature) => (
-            <View key={feature.key} className="flex-row gap-2">
+            <View key={feature.key} style={rtlRowMerge(rtl, { gap: 8 })}>
               <View style={{ width: 110 }} className="justify-center">
-                <Text className="text-sm text-gray-700 font-medium">
+                <Text className="text-sm text-gray-700 font-medium" style={ta}>
                   {feature.label}
                 </Text>
               </View>
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 12 }}
+                style={rtlRootDirection(rtl)}
+                contentContainerStyle={horizontalChipRow}
               >
                 {cards.map((card) => {
                   const value = getFeatureValue(card, feature.key);
@@ -191,7 +209,7 @@ export default function CompareScreen() {
                           <XCircle size={22} color={colors.gray[300]} />
                         )
                       ) : (
-                        <Text className="text-sm text-gray-800 font-semibold">
+                        <Text className="text-sm text-gray-800 font-semibold" style={ta}>
                           {feature.prefix ?? ''}
                           {typeof value === 'number'
                             ? formatNumber(value)
@@ -207,14 +225,17 @@ export default function CompareScreen() {
           ))}
         </View>
 
-        <View className="flex-row gap-2 mt-2">
+        <View style={rtlRowMerge(rtl, { gap: 8, marginTop: 8 })}>
           <View style={{ width: 110 }} className="justify-center">
-            <Text className="text-sm text-gray-700 font-medium">Best For</Text>
+            <Text className="text-sm text-gray-700 font-medium" style={ta}>
+              Best For
+            </Text>
           </View>
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12 }}
+            style={rtlRootDirection(rtl)}
+            contentContainerStyle={horizontalChipRow}
           >
             {cards.map((card) => (
               <View
@@ -222,7 +243,7 @@ export default function CompareScreen() {
                 style={{ width: 180 }}
                 className="bg-white rounded-lg p-3 border border-gray-100"
               >
-                <Text className="text-xs text-gray-700 text-center">
+                <Text className="text-xs text-gray-700 text-center" style={ta}>
                   {card.bestFor}
                 </Text>
               </View>
@@ -233,7 +254,13 @@ export default function CompareScreen() {
         <ScrollView
           horizontal
           showsHorizontalScrollIndicator={false}
-          contentContainerStyle={{ gap: 12, paddingLeft: 118 }}
+          style={rtlRootDirection(rtl)}
+          contentContainerStyle={mergeScrollContentRtl(rtl, {
+            gap: 12,
+            paddingLeft: rtl ? 0 : 118,
+            paddingRight: rtl ? 118 : 0,
+            ...rtlRow(rtl),
+          })}
         >
           {cards.map((card) => (
             <View key={card.id} style={{ width: 180 }}>
@@ -256,17 +283,17 @@ export default function CompareScreen() {
         </ScrollView>
 
         <Card className="bg-blue-50 border border-blue-200">
-          <Text className="text-gray-800 font-semibold mb-2">
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
             💡 Comparison Tips
           </Text>
           <View className="gap-1">
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Lower APR wins if you carry a balance
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Annual fee worth it? Check benefits vs. spend
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               • Match rewards to your spending habits
             </Text>
           </View>

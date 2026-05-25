@@ -1,4 +1,4 @@
-import { Alert, I18nManager, Pressable, ScrollView, Switch, Text, View } from 'react-native';
+import { Alert, Pressable, ScrollView, Switch, Text, View } from 'react-native';
 import { router } from 'expo-router';
 import {
   Award,
@@ -11,6 +11,7 @@ import {
 } from 'lucide-react-native';
 import type { ComponentType } from 'react';
 
+import { LocaleChevron } from '@/components/LocaleChevron';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/ui/Card';
@@ -18,7 +19,16 @@ import { colors } from '@/theme';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useT } from '@/hooks/useT';
-import { isRTL, LOCALES } from '@/lib/i18n';
+import { LOCALES } from '@/lib/i18n';
+import {
+  listRowLeadingStyle,
+  listRowStyle,
+  listRowTrailingStyle,
+  mergeScrollContentRtl,
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
 import {
   cancelDailyReminder,
   configureNotifications,
@@ -27,32 +37,48 @@ import {
 } from '@/lib/notifications';
 
 interface SettingItemProps {
+  rtl: boolean;
   Icon: ComponentType<{ size?: number; color?: string }>;
   label: string;
   value?: string;
   onPress?: () => void;
 }
 
-function SettingItem({ Icon, label, value, onPress }: SettingItemProps) {
+function SettingItem({ rtl, Icon, label, value, onPress }: SettingItemProps) {
+  const ta = rtlTextStyle(rtl);
   return (
     <Pressable
       onPress={onPress}
-      className="flex-row items-center justify-between p-3 rounded-lg active:bg-gray-100"
+      style={[listRowStyle(), { borderRadius: 8 }]}
+      className="active:bg-gray-100"
     >
-      <View className="flex-row items-center gap-3">
+      <View style={listRowLeadingStyle()}>
         <Icon size={20} color={colors.gray[600]} />
-        <Text className="text-gray-800 text-base">{label}</Text>
+        <Text
+          style={[ta, { flex: 1, fontSize: 16, color: colors.gray[800] }]}
+          numberOfLines={1}
+        >
+          {label}
+        </Text>
       </View>
-      <View className="flex-row items-center gap-2">
-        {value && <Text className="text-sm text-gray-500">{value}</Text>}
-        <Text className="text-gray-400 text-lg">{'›'}</Text>
+      <View style={listRowTrailingStyle()}>
+        {value ? (
+          <Text
+            style={[ta, { fontSize: 14, color: colors.gray[500], maxWidth: 120 }]}
+            numberOfLines={1}
+          >
+            {value}
+          </Text>
+        ) : null}
+        <LocaleChevron rtl={rtl} color={colors.gray[500]} />
       </View>
     </Pressable>
   );
 }
 
 export default function SettingsScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
   const currentLocale = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
@@ -70,46 +96,55 @@ export default function SettingsScreen() {
         onPress: () => {
           if (opt.code === locale) return;
           setLocale(opt.code);
-          const targetRTL = isRTL(opt.code);
-          if (I18nManager.isRTL !== targetRTL) {
-            Alert.alert(t('profile.languageChanged'), t('profile.restartNeeded'));
-          }
         },
       }))
     );
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('profile.settingsPrefs')} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View
+            className="mb-2"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+          >
             <SettingsIcon size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">
+            <Text style={ta} className="text-gray-900 font-semibold">
               {t('profile.settingsPrefs')}
             </Text>
           </View>
           <View className="gap-1">
             <SettingItem
+              rtl={rtl}
               Icon={Globe}
               label={t('profile.language')}
               value={currentLocale.nativeLabel}
               onPress={handleLanguagePick}
             />
-            <View className="flex-row items-center justify-between p-3 rounded-lg bg-white">
-              <View className="flex-row items-center gap-3">
+            <View
+              className="p-3 rounded-lg bg-white"
+              style={rtlRowMerge(rtl, {
+                alignItems: 'center',
+                justifyContent: 'space-between',
+              })}
+            >
+              <View
+                className="gap-3"
+                style={rtlRowMerge(rtl, { alignItems: 'center' })}
+              >
                 <Bell size={20} color={colors.gray[600]} />
                 <View>
-                  <Text className="text-gray-800 text-base">
+                  <Text style={ta} className="text-gray-800 text-base">
                     {t('profile.notifications')}
                   </Text>
-                  <Text className="text-xs text-gray-500">
+                  <Text style={ta} className="text-xs text-gray-500">
                     Daily reminder at 8:00 PM
                   </Text>
                 </View>
@@ -130,7 +165,6 @@ export default function SettingsScreen() {
                         return;
                       }
 
-                      // Replace existing reminder.
                       await cancelDailyReminder(dailyReminderId);
                       const id = await scheduleDailyReminder(20, 0);
                       setDailyReminderId(id);
@@ -154,21 +188,25 @@ export default function SettingsScreen() {
               />
             </View>
             <SettingItem
+              rtl={rtl}
               Icon={CreditCard}
               label={t('profile.paymentSettings')}
               onPress={() => router.push('/coming-soon?title=Payment settings' as never)}
             />
             <SettingItem
+              rtl={rtl}
               Icon={Award}
               label={t('profile.viewAllBadges')}
               onPress={() => router.push('/badges' as never)}
             />
             <SettingItem
+              rtl={rtl}
               Icon={Shield}
               label={t('profile.rewardRedemption')}
               onPress={() => router.push('/redemptions' as never)}
             />
             <SettingItem
+              rtl={rtl}
               Icon={Bookmark}
               label="Saved FinTok"
               onPress={() => router.push('/fintok-saved' as never)}
@@ -181,4 +219,3 @@ export default function SettingsScreen() {
     </View>
   );
 }
-

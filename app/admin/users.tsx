@@ -15,6 +15,8 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
 import { adminPullProfiles, adminUpdateProfile, type RemoteProfile } from '@/lib/syncServiceApi';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
@@ -24,6 +26,8 @@ function safeInt(v: string, fallback = 0): number {
 }
 
 export default function AdminUsersScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
 
   const [loading, setLoading] = useState(false);
@@ -126,12 +130,14 @@ export default function AdminUsersScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -146,7 +152,7 @@ export default function AdminUsersScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Users"
         showBack
@@ -155,13 +161,16 @@ export default function AdminUsersScreen() {
 
       <View className="px-4 pt-3 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by id or name…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
           <View className="mt-3">
             <Button variant="outline" fullWidth onPress={refresh} disabled={loading}>
@@ -173,42 +182,55 @@ export default function AdminUsersScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
         {!error &&
           visible.map((u) => (
             <PressableCard key={u.id} onPress={() => openEdit(u)}>
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-row items-center gap-3 flex-1">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
                   <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center">
                     <Text className="text-xl">{u.avatar ?? '👤'}</Text>
                   </View>
                   <View className="flex-1">
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
+                      <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                         {u.display_name}
                       </Text>
                       {u.is_admin && (
                         <View className="px-2 py-0.5 rounded bg-gray-900">
-                          <Text className="text-xs text-white font-semibold">ADMIN</Text>
+                          <Text className="text-xs text-white font-semibold" style={ta}>
+                            ADMIN
+                          </Text>
                         </View>
                       )}
                     </View>
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                    <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                       {u.id} · coins: {u.coins} · xp: {u.xp}
                     </Text>
                   </View>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   {u.is_admin && (
                     <Pressable
                       onPress={(e) => {
@@ -246,69 +268,89 @@ export default function AdminUsersScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">Edit user</Text>
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
+                Edit user
+              </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
                 <X size={20} color={colors.gray[600]} />
               </Pressable>
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">display name</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  display name
+                </Text>
                 <TextInput
                   value={draft.displayName}
                   onChangeText={(v) => setDraft((s) => ({ ...s, displayName: v }))}
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="w-24 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">avatar</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    avatar
+                  </Text>
                   <TextInput
                     value={draft.avatar}
                     onChangeText={(v) => setDraft((s) => ({ ...s, avatar: v }))}
                     className="px-3 py-2 rounded-lg border border-gray-200 text-center"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">level</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    level
+                  </Text>
                   <TextInput
                     value={draft.level}
                     onChangeText={(v) => setDraft((s) => ({ ...s, level: v }))}
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">coins</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    coins
+                  </Text>
                   <TextInput
                     value={draft.coins}
                     onChangeText={(v) => setDraft((s) => ({ ...s, coins: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">xp</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    xp
+                  </Text>
                   <TextInput
                     value={draft.xp}
                     onChangeText={(v) => setDraft((s) => ({ ...s, xp: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-2">admin</Text>
-                <View className="flex-row gap-2">
+                <Text className="text-xs text-gray-500 mb-2" style={ta}>
+                  admin
+                </Text>
+                <View style={rtlRowMerge(rtl, { gap: 8 })}>
                   <Button
                     size="sm"
                     variant={draft.isAdmin ? 'primary' : 'outline'}
@@ -326,7 +368,7 @@ export default function AdminUsersScreen() {
                 </View>
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

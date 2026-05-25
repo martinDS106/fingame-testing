@@ -1,10 +1,13 @@
-export function formatEGP(amount: number): string {
-  return `EGP ${amount.toLocaleString('en-US', {
+import type { Locale } from '@/lib/i18n';
+
+export function formatEGP(amount: number, locale: Locale = 'en'): string {
+  const num = amount.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US', {
     minimumFractionDigits: 0,
     maximumFractionDigits: 2,
-  })}`;
+  });
+  return locale === 'ar' ? `ج.م ${num}` : `EGP ${num}`;
 }
 
-export function formatNumber(n: number): string {
-  return n.toLocaleString('en-US');
+export function formatNumber(n: number, locale: Locale = 'en'): string {
+  return n.toLocaleString(locale === 'ar' ? 'ar-EG' : 'en-US');
 }

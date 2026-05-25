@@ -17,10 +17,14 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatEGP } from '@/lib/format';
 import {
-  BUSINESS_STEP_CONFIGS,
-  type BusinessStepOption,
-} from '@/lib/businessSteps';
+  getLocalizedBusinessStepConfig,
+  localizeStepDescription,
+  localizeStepTitle,
+} from '@/lib/businessLocale';
+import type { BusinessStepOption } from '@/lib/businessSteps';
 import { rewardFor } from '@/lib/rewards';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import {
   CORP_TAX_RATE,
   VAT_RATE,
@@ -30,6 +34,8 @@ import {
 } from '@/stores';
 
 export default function BusinessSimulationScreen() {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const currentStep = useBusinessStore((s) => s.currentStep);
   const steps = useBusinessStore((s) => s.steps);
   const cash = useBusinessStore((s) => s.cash);
@@ -51,7 +57,10 @@ export default function BusinessSimulationScreen() {
   const addCoins = useUserStore((s) => s.addCoins);
   const addXP = useUserStore((s) => s.addXP);
 
-  const currentConfig = BUSINESS_STEP_CONFIGS[currentStep];
+  const currentConfig = useMemo(
+    () => getLocalizedBusinessStepConfig(currentStep, locale),
+    [currentStep, locale]
+  );
   const currentStepInfo = steps.find((s) => s.id === currentStep);
   const allComplete = useMemo(
     () => steps.every((s) => s.completed),
@@ -62,15 +71,15 @@ export default function BusinessSimulationScreen() {
     if (!currentStepInfo || currentStepInfo.completed) return;
     Alert.alert(
       currentConfig.question,
-      `${option.label}\n\nCash impact: ${formatEGP(
+      `${option.label}\n\n${t('business.cashImpact')} ${formatEGP(
         option.impactOnCash
-      )}\nReputation: ${option.impactOnReputation >= 0 ? '+' : ''}${
+      )}\n${t('business.repImpact')} ${option.impactOnReputation >= 0 ? '+' : ''}${
         option.impactOnReputation
       }`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('action.cancel'), style: 'cancel' },
         {
-          text: 'Confirm',
+          text: t('action.confirm'),
           onPress: () => {
             void (async () => {
               makeDecision(
@@ -85,8 +94,8 @@ export default function BusinessSimulationScreen() {
               const okCoins = await addCoins(reward.coins, 'lesson_complete');
               if (!okCoins) {
                 Alert.alert(
-                  'Could not save reward',
-                  'Your choice was recorded locally, but coins did not sync.',
+                  t('sim.couldNotSaveReward'),
+                  t('sim.coinsNotSynced'),
                 );
                 return;
               }
@@ -95,10 +104,7 @@ export default function BusinessSimulationScreen() {
                 await useUserStore
                   .getState()
                   .spendCoins(reward.coins, 'lesson_complete');
-                Alert.alert(
-                  'Could not save XP',
-                  'Coins were saved, but XP did not sync.',
-                );
+                Alert.alert(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
               }
             })();
           },
@@ -108,13 +114,10 @@ export default function BusinessSimulationScreen() {
   };
 
   const handleReset = () => {
-    Alert.alert(
-      'Restart business?',
-      'This will clear your current progress and reset cash to EGP 25,000.',
-      [
-        { text: 'Cancel', style: 'cancel' },
+    Alert.alert(t('business.restartTitle'), t('business.restartBody'), [
+        { text: t('action.cancel'), style: 'cancel' },
         {
-          text: 'Restart',
+          text: t('business.restart'),
           style: 'destructive',
           onPress: () => resetBusiness(),
         },
@@ -141,57 +144,51 @@ export default function BusinessSimulationScreen() {
       const coinDelta = Math.round(reward.coins / 4);
       const ok = await addCoins(coinDelta, 'simulation_win');
       if (!ok) {
-        Alert.alert(
-          'Could not save coins',
-          'Month results were applied locally, but coins did not sync.',
-        );
+        Alert.alert(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
       }
     })();
 
     Alert.alert(
-      `Month ${report.month} Closed`,
-      `Revenue: ${formatEGP(report.revenue)}\n` +
-        `Expenses: ${formatEGP(report.expenses)}\n` +
-        `Gross Profit: ${formatEGP(report.grossProfit)}\n\n` +
-        `VAT (14%): ${formatEGP(report.vatCollected)}\n` +
-        `Corp Tax (22.5%): ${formatEGP(report.corporateTax)}\n\n` +
-        `Net Profit: ${formatEGP(report.netProfit)}`
+      t('business.monthClosed', { n: report.month }),
+      `${t('business.revenue')} ${formatEGP(report.revenue)}\n` +
+        `${t('business.expenses')} ${formatEGP(report.expenses)}\n` +
+        `${t('business.grossProfit')} ${formatEGP(report.grossProfit)}\n\n` +
+        `${t('business.vatLine')} ${formatEGP(report.vatCollected)}\n` +
+        `${t('business.corpLine')} ${formatEGP(report.corporateTax)}\n\n` +
+        `${t('business.netProfit')} ${formatEGP(report.netProfit)}`
     );
   };
 
   const handlePayTaxes = () => {
     const due = vatPayable + corpTaxPayable;
     if (due <= 0) {
-      Alert.alert('No taxes due', 'You are all caught up!');
+      Alert.alert(t('business.noTaxes'), t('business.caughtUp'));
       return;
     }
     Alert.alert(
-      'Pay taxes?',
-      `VAT owed: ${formatEGP(vatPayable)}\nCorp Tax owed: ${formatEGP(
+      t('business.payTaxesQ'),
+      `${t('business.vatOwedLine')} ${formatEGP(vatPayable)}\n${t('business.corpOwedLine')} ${formatEGP(
         corpTaxPayable
-      )}\n\nTotal: ${formatEGP(due)}`,
+      )}\n\n${t('business.total')} ${formatEGP(due)}`,
       [
-        { text: 'Cancel', style: 'cancel' },
+        { text: t('action.cancel'), style: 'cancel' },
         {
-          text: 'Pay Now',
+          text: t('business.payNow'),
           onPress: () => {
             const res = payTaxes();
             if (!res.ok) {
-              Alert.alert('Not enough cash', res.reason ?? '');
+              Alert.alert(t('business.notEnoughCash'), res.reason ?? '');
               return;
             }
             void (async () => {
               const ok = await addCoins(20, 'simulation_win');
               if (!ok) {
-                Alert.alert(
-                  'Could not save coins',
-                  'Taxes were paid locally, but the coin bonus did not sync.',
-                );
+                Alert.alert(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
                 return;
               }
               Alert.alert(
-                'Taxes paid ✅',
-                `Paid ${formatEGP(res.paid)}. +20 coins.`,
+                t('business.taxesPaid'),
+                t('business.taxesPaidBody', { amount: formatEGP(res.paid) }),
               );
             })();
           },
@@ -208,9 +205,9 @@ export default function BusinessSimulationScreen() {
         : '#dc2626';
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
-        title="Business Simulation"
+        title={t('business.screenTitle')}
         showBack
         showBell={false}
         gradient={['#9333ea', '#7e22ce']}
@@ -228,7 +225,8 @@ export default function BusinessSimulationScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 40, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -245,21 +243,27 @@ export default function BusinessSimulationScreen() {
             elevation: 6,
           }}
         >
-          <Text className="text-purple-100 text-sm mb-1">Company Cash</Text>
-          <Text className="text-4xl text-white font-bold mb-4">
+          <Text className="text-purple-100 text-sm mb-1" style={ta}>
+            {t('business.companyCash')}
+          </Text>
+          <Text className="text-4xl text-white font-bold mb-4" style={ta}>
             {cash >= 0 ? formatEGP(cash) : `- ${formatEGP(Math.abs(cash))}`}
           </Text>
-          <View className="flex-row gap-3">
+          <View style={rtlRowMerge(rtl, { gap: 12 })}>
             <View
               className="flex-1 rounded-lg p-3"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
             >
-              <Text className="text-xs text-purple-100">Reputation</Text>
-              <View className="flex-row items-center gap-1">
-                <Text className="text-lg text-white font-semibold">
+              <Text className="text-xs text-purple-100" style={ta}>
+                {t('business.reputation')}
+              </Text>
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}>
+                <Text className="text-lg text-white font-semibold" style={ta}>
                   {reputation}
                 </Text>
-                <Text className="text-xs text-purple-100">/100</Text>
+                <Text className="text-xs text-purple-100" style={ta}>
+                  {t('business.repOf')}
+                </Text>
                 {reputation >= 60 ? (
                   <TrendingUp size={14} color={colors.white} />
                 ) : (
@@ -271,8 +275,10 @@ export default function BusinessSimulationScreen() {
               className="flex-1 rounded-lg p-3"
               style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
             >
-              <Text className="text-xs text-purple-100">Progress</Text>
-              <Text className="text-lg text-white font-semibold">
+              <Text className="text-xs text-purple-100" style={ta}>
+                {t('business.progress')}
+              </Text>
+              <Text className="text-lg text-white font-semibold" style={ta}>
                 {progressPct.toFixed(0)}%
               </Text>
             </View>
@@ -280,10 +286,15 @@ export default function BusinessSimulationScreen() {
         </LinearGradient>
 
         <Card>
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-800 font-semibold">Journey</Text>
-            <Text className="text-xs text-gray-500">
-              {steps.filter((s) => s.completed).length} / {steps.length} steps
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
+              {t('business.journey')}
+            </Text>
+            <Text className="text-xs text-gray-500" style={ta}>
+              {t('business.stepsCount', {
+                done: steps.filter((s) => s.completed).length,
+                total: steps.length,
+              })}
             </Text>
           </View>
           <ProgressBar
@@ -291,45 +302,52 @@ export default function BusinessSimulationScreen() {
             height={8}
             gradient={['#a855f7', '#7e22ce']}
           />
-          <Text className="text-xs text-gray-500 mt-2">
-            Reputation:{' '}
+          <Text className="text-xs text-gray-500 mt-2" style={ta}>
+            {t('business.reputationLabel')}{' '}
             <Text style={{ color: reputationColor, fontWeight: '600' }}>
               {reputation >= 70
-                ? 'Strong'
+                ? t('business.repStrong')
                 : reputation >= 40
-                  ? 'Decent'
-                  : 'Struggling'}
+                  ? t('business.repDecent')
+                  : t('business.repStruggling')}
             </Text>
           </Text>
         </Card>
 
         <Card>
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-gray-800 font-semibold">
-              P&L · Month {monthsRunning}
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
+              {t('business.plMonth', { n: monthsRunning })}
             </Text>
-            <Text className="text-xs text-gray-500">
-              VAT {(VAT_RATE * 100).toFixed(0)}% · Corp {(CORP_TAX_RATE * 100).toFixed(1)}%
+            <Text className="text-xs text-gray-500" style={ta}>
+              {t('business.taxRates', {
+                vat: (VAT_RATE * 100).toFixed(0),
+                corp: (CORP_TAX_RATE * 100).toFixed(1),
+              })}
             </Text>
           </View>
 
           <View className="gap-1">
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Total Revenue</Text>
-              <Text className="text-sm text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                {t('business.totalRevenue')}
+              </Text>
+              <Text className="text-sm text-gray-900 font-semibold" style={ta}>
                 {formatEGP(revenue)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Total Expenses</Text>
-              <Text className="text-sm text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                {t('business.totalExpenses')}
+              </Text>
+              <Text className="text-sm text-gray-900 font-semibold" style={ta}>
                 - {formatEGP(expenses)}
               </Text>
             </View>
             <View className="h-px bg-gray-200 my-1" />
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-700 font-medium">
-                Gross Profit
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-700 font-medium" style={ta}>
+                {t('business.grossProfit')}
               </Text>
               <Text
                 className={
@@ -337,26 +355,31 @@ export default function BusinessSimulationScreen() {
                     ? 'text-sm text-green-700 font-semibold'
                     : 'text-sm text-red-700 font-semibold'
                 }
+                style={ta}
               >
                 {formatEGP(grossProfit)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">VAT Owed</Text>
-              <Text className="text-sm text-amber-700 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                {t('business.vatOwed')}
+              </Text>
+              <Text className="text-sm text-amber-700 font-semibold" style={ta}>
                 - {formatEGP(vatPayable)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-sm text-gray-600">Corporate Tax Owed</Text>
-              <Text className="text-sm text-amber-700 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-sm text-gray-600" style={ta}>
+                {t('business.corpTaxOwed')}
+              </Text>
+              <Text className="text-sm text-amber-700 font-semibold" style={ta}>
                 - {formatEGP(corpTaxPayable)}
               </Text>
             </View>
             <View className="h-px bg-gray-200 my-1" />
-            <View className="flex-row justify-between">
-              <Text className="text-base text-gray-900 font-bold">
-                Net Profit
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-base text-gray-900 font-bold" style={ta}>
+                {t('business.netProfit')}
               </Text>
               <Text
                 className={
@@ -364,16 +387,17 @@ export default function BusinessSimulationScreen() {
                     ? 'text-base text-green-700 font-bold'
                     : 'text-base text-red-700 font-bold'
                 }
+                style={ta}
               >
                 {formatEGP(netProfit)}
               </Text>
             </View>
           </View>
 
-          <View className="flex-row gap-2 mt-4">
+          <View style={rtlRowMerge(rtl, { gap: 8, marginTop: 16 })}>
             <View className="flex-1">
               <Button variant="outline" fullWidth onPress={handleRunMonth}>
-                Run Month
+                {t('business.runMonth')}
               </Button>
             </View>
             <View className="flex-1">
@@ -383,27 +407,36 @@ export default function BusinessSimulationScreen() {
                 onPress={handlePayTaxes}
                 disabled={vatPayable + corpTaxPayable <= 0}
               >
-                Pay Taxes
+                {t('business.payTaxes')}
               </Button>
             </View>
           </View>
 
           {reports.length > 0 && (
             <View className="mt-4">
-              <Text className="text-xs text-gray-500 mb-2">
-                Last {Math.min(3, reports.length)} months
+              <Text className="text-xs text-gray-500 mb-2" style={ta}>
+                {t('business.lastMonths', {
+                  n: Math.min(3, reports.length),
+                })}
               </Text>
               <View className="gap-2">
                 {reports.slice(0, 3).map((r) => (
                   <View
                     key={r.id}
-                    className="flex-row items-center justify-between bg-gray-50 rounded-lg px-3 py-2"
+                    style={rtlRowMerge(rtl, {
+                      alignItems: 'center',
+                      justifyContent: 'space-between',
+                      backgroundColor: '#f9fafb',
+                      borderRadius: 8,
+                      paddingHorizontal: 12,
+                      paddingVertical: 8,
+                    })}
                   >
-                    <Text className="text-xs text-gray-600">
-                      Month {r.month}
+                    <Text className="text-xs text-gray-600" style={ta}>
+                      {t('business.monthN', { n: r.month })}
                     </Text>
-                    <Text className="text-xs text-gray-500">
-                      Rev {formatEGP(r.revenue)}
+                    <Text className="text-xs text-gray-500" style={ta}>
+                      {t('business.rev', { amount: formatEGP(r.revenue) })}
                     </Text>
                     <Text
                       className={
@@ -411,6 +444,7 @@ export default function BusinessSimulationScreen() {
                           ? 'text-xs text-green-700 font-semibold'
                           : 'text-xs text-red-700 font-semibold'
                       }
+                      style={ta}
                     >
                       {r.netProfit >= 0 ? '+' : ''}
                       {formatEGP(r.netProfit)}
@@ -425,20 +459,22 @@ export default function BusinessSimulationScreen() {
         {allComplete ? (
           <Card className="items-center py-8">
             <Text className="text-6xl mb-3">🏆</Text>
-            <Text className="text-xl text-gray-900 font-bold mb-1">
-              You did it!
+            <Text className="text-xl text-gray-900 font-bold mb-1" style={ta}>
+              {t('business.allDone')}
             </Text>
-            <Text className="text-sm text-gray-500 text-center mb-4">
-              All 10 steps completed. Final cash: {formatEGP(cash)} · Reputation:{' '}
-              {reputation}
+            <Text className="text-sm text-gray-500 text-center mb-4" style={ta}>
+              {t('business.allDoneBody', {
+                cash: formatEGP(cash),
+                rep: String(reputation),
+              })}
             </Text>
             <Button variant="primary" onPress={handleReset}>
-              Start New Business
+              {t('business.startNew')}
             </Button>
           </Card>
         ) : (
           <Card>
-            <View className="flex-row items-center gap-3 mb-3">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, marginBottom: 12 })}>
               <View
                 className="w-12 h-12 rounded-xl items-center justify-center"
                 style={{ backgroundColor: '#f3e8ff' }}
@@ -446,16 +482,22 @@ export default function BusinessSimulationScreen() {
                 <Text className="text-2xl">{currentConfig.emoji}</Text>
               </View>
               <View className="flex-1">
-                <Text className="text-xs text-purple-600 font-semibold uppercase">
-                  Current Step
+                <Text className="text-xs text-purple-600 font-semibold uppercase" style={ta}>
+                  {t('business.currentStep')}
                 </Text>
-                <Text className="text-base text-gray-900 font-semibold">
-                  {currentStepInfo?.title}
+                <Text className="text-base text-gray-900 font-semibold" style={ta}>
+                  {currentStepInfo
+                    ? localizeStepTitle(
+                        currentStepInfo.id as BusinessStepId,
+                        currentStepInfo.title,
+                        locale
+                      )
+                    : ''}
                 </Text>
               </View>
             </View>
 
-            <Text className="text-sm text-gray-700 font-medium mb-3">
+            <Text className="text-sm text-gray-700 font-medium mb-3" style={ta}>
               {currentConfig.question}
             </Text>
 
@@ -466,13 +508,13 @@ export default function BusinessSimulationScreen() {
                   onPress={() => handlePick(opt)}
                   className="border border-gray-200 rounded-xl p-3 active:bg-gray-50"
                 >
-                  <Text className="text-sm text-gray-900 font-semibold mb-0.5">
+                  <Text className="text-sm text-gray-900 font-semibold mb-0.5" style={ta}>
                     {opt.label}
                   </Text>
-                  <Text className="text-xs text-gray-500 mb-2">
+                  <Text className="text-xs text-gray-500 mb-2" style={ta}>
                     {opt.description}
                   </Text>
-                  <View className="flex-row gap-2">
+                  <View style={rtlRowMerge(rtl, { gap: 8 })}>
                     <View
                       className="px-2 py-0.5 rounded-md"
                       style={{
@@ -486,17 +528,20 @@ export default function BusinessSimulationScreen() {
                             ? 'text-[11px] font-semibold text-green-700'
                             : 'text-[11px] font-semibold text-red-700'
                         }
+                        style={ta}
                       >
                         {opt.impactOnCash >= 0 ? '+' : ''}
                         {formatEGP(opt.impactOnCash)}
                       </Text>
                     </View>
                     <View
-                      className="px-2 py-0.5 rounded-md flex-row items-center gap-1"
-                      style={{
+                      className="px-2 py-0.5 rounded-md"
+                      style={rtlRowMerge(rtl, {
+                        alignItems: 'center',
+                        gap: 4,
                         backgroundColor:
                           opt.impactOnReputation >= 0 ? '#dbeafe' : '#fef3c7',
-                      }}
+                      })}
                     >
                       <Star
                         size={10}
@@ -510,9 +555,12 @@ export default function BusinessSimulationScreen() {
                             ? 'text-[11px] font-semibold text-blue-700'
                             : 'text-[11px] font-semibold text-yellow-700'
                         }
+                        style={ta}
                       >
                         {opt.impactOnReputation >= 0 ? '+' : ''}
-                        {opt.impactOnReputation} rep
+                        {t('business.repBadge', {
+                          n: `${opt.impactOnReputation >= 0 ? '+' : ''}${opt.impactOnReputation}`,
+                        })}
                       </Text>
                     </View>
                   </View>
@@ -523,12 +571,15 @@ export default function BusinessSimulationScreen() {
         )}
 
         <View>
-          <Text className="text-lg text-gray-800 font-semibold mb-3">
-            All Steps
+          <Text className="text-lg text-gray-800 font-semibold mb-3" style={ta}>
+            {t('business.allSteps')}
           </Text>
           <View className="gap-2">
             {steps.map((step, idx) => {
-              const cfg = BUSINESS_STEP_CONFIGS[step.id as BusinessStepId];
+              const cfg = getLocalizedBusinessStepConfig(
+                step.id as BusinessStepId,
+                locale
+              );
               const isCurrent = step.id === currentStep && !step.completed;
               return (
                 <Card
@@ -541,7 +592,7 @@ export default function BusinessSimulationScreen() {
                         : ''
                   }
                 >
-                  <View className="flex-row items-center gap-3">
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}>
                     <View
                       className="w-10 h-10 rounded-xl items-center justify-center"
                       style={{
@@ -567,8 +618,16 @@ export default function BusinessSimulationScreen() {
                             ? 'text-sm text-gray-900 font-semibold'
                             : 'text-sm text-gray-400 font-medium'
                         }
+                        style={ta}
                       >
-                        {idx + 1}. {step.title}
+                        {t('business.stepNumber', {
+                          title: localizeStepTitle(
+                            step.id as BusinessStepId,
+                            step.title,
+                            locale
+                          ),
+                          n: idx + 1,
+                        })}
                       </Text>
                       <Text
                         className={
@@ -576,14 +635,19 @@ export default function BusinessSimulationScreen() {
                             ? 'text-xs text-gray-500'
                             : 'text-xs text-gray-400'
                         }
+                        style={ta}
                       >
-                        {step.description}
+                        {localizeStepDescription(
+                          step.id as BusinessStepId,
+                          step.description,
+                          locale
+                        )}
                       </Text>
                     </View>
                     {isCurrent && (
                       <View className="bg-purple-100 px-2 py-1 rounded-full">
-                        <Text className="text-[10px] text-purple-700 font-bold">
-                          NOW
+                        <Text className="text-[10px] text-purple-700 font-bold" style={ta}>
+                          {t('business.now')}
                         </Text>
                       </View>
                     )}

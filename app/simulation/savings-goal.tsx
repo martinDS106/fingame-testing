@@ -19,11 +19,24 @@ import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatEGP } from '@/lib/format';
+import { localizeSavingsGoalTitle } from '@/lib/savingsGoalsLocale';
+import {
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  mergeScrollContentRtl,
+  rtlRootDirection,
+  rtlRow,
+  rtlRowMerge,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useBankingStore, type SavingsGoal } from '@/stores';
 
 const EMOJIS = ['🚗', '🏖️', '🏠', '📱', '💍', '🎓', '💼', '✈️'];
 
 export default function SavingsGoalScreen() {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const goals = useBankingStore((s) => s.goals);
   const accounts = useBankingStore((s) => s.accounts);
   const addGoal = useBankingStore((s) => s.addGoal);
@@ -36,9 +49,9 @@ export default function SavingsGoalScreen() {
   const checking = accounts.find((a) => a.type === 'checking');
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
-        title="Savings Goals"
+        title={t('savings.screenTitle')}
         showBack
         showBell={false}
         rightSlot={
@@ -55,24 +68,25 @@ export default function SavingsGoalScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 32, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         {goals.length === 0 && (
           <Card className="items-center py-8">
             <Text className="text-5xl mb-3">🎯</Text>
-            <Text className="text-lg text-gray-800 font-semibold mb-1">
-              No goals yet
+            <Text className="text-lg text-gray-800 font-semibold mb-1" style={ta}>
+              {t('savings.noGoals')}
             </Text>
-            <Text className="text-sm text-gray-500 text-center mb-4">
-              Create your first savings goal and watch it grow.
+            <Text className="text-sm text-gray-500 text-center mb-4" style={ta}>
+              {t('savings.noGoalsBody')}
             </Text>
             <Button
               variant="primary"
               leftIcon={<Plus size={16} color={colors.white} />}
               onPress={() => setAddOpen(true)}
             >
-              Add Goal
+              {t('savings.addGoal')}
             </Button>
           </Card>
         )}
@@ -94,26 +108,75 @@ export default function SavingsGoalScreen() {
                 end={{ x: 1, y: 0 }}
                 style={{ padding: 16 }}
               >
-                <View className="flex-row items-center gap-3">
-                  <Text className="text-4xl">{goal.emoji}</Text>
-                  <View className="flex-1">
-                    <Text className="text-white font-semibold text-lg">
-                      {goal.title}
-                    </Text>
-                    <Text className="text-white/80 text-sm">
-                      Target: {formatEGP(goal.targetAmount)}
-                    </Text>
-                  </View>
-                  <Pressable
-                    hitSlop={8}
-                    onPress={() =>
-                      Alert.alert(
-                        'Delete goal?',
-                        `Remove "${goal.title}"?`,
+                <View style={localeIconRowStyle(rtl)}>
+                  {rtl ? (
+                    <>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() =>
+                          Alert.alert(
+                            t('savings.deleteTitle'),
+                            t('savings.deleteBody', {
+                              title: localizeSavingsGoalTitle(
+                                goal.id,
+                                goal.title,
+                                locale
+                              ),
+                            }),
+                            [
+                              { text: t('action.cancel'), style: 'cancel' },
+                              {
+                                text: t('savings.delete'),
+                                style: 'destructive',
+                                onPress: () => removeGoal(goal.id),
+                              },
+                            ]
+                          )
+                        }
+                        className="p-1.5 rounded-full"
+                        style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
+                      >
+                        <Trash2 size={16} color={colors.white} />
+                      </Pressable>
+                      <View style={localeTextBesideIconStyle(rtl)}>
+                        <Text className="text-white font-semibold text-lg" style={ta}>
+                          {localizeSavingsGoalTitle(goal.id, goal.title, locale)}
+                        </Text>
+                        <Text className="text-white/80 text-sm" style={ta}>
+                          {t('savings.target')}{' '}
+                          {formatEGP(goal.targetAmount, locale)}
+                        </Text>
+                      </View>
+                      <Text className="text-4xl">{goal.emoji}</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text className="text-4xl">{goal.emoji}</Text>
+                      <View className="flex-1">
+                        <Text className="text-white font-semibold text-lg" style={ta}>
+                          {localizeSavingsGoalTitle(goal.id, goal.title, locale)}
+                        </Text>
+                        <Text className="text-white/80 text-sm" style={ta}>
+                          {t('savings.target')}{' '}
+                          {formatEGP(goal.targetAmount, locale)}
+                        </Text>
+                      </View>
+                      <Pressable
+                        hitSlop={8}
+                        onPress={() =>
+                          Alert.alert(
+                            t('savings.deleteTitle'),
+                            t('savings.deleteBody', {
+                              title: localizeSavingsGoalTitle(
+                                goal.id,
+                                goal.title,
+                                locale
+                              ),
+                            }),
                         [
-                          { text: 'Cancel', style: 'cancel' },
+                          { text: t('action.cancel'), style: 'cancel' },
                           {
-                            text: 'Delete',
+                            text: t('savings.delete'),
                             style: 'destructive',
                             onPress: () => removeGoal(goal.id),
                           },
@@ -125,27 +188,51 @@ export default function SavingsGoalScreen() {
                   >
                     <Trash2 size={16} color={colors.white} />
                   </Pressable>
+                    </>
+                  )}
                 </View>
               </LinearGradient>
 
               <View className="p-4">
-                <View className="flex-row justify-between mb-2">
-                  <Text className="text-sm text-gray-600">
-                    {formatEGP(goal.currentAmount)} saved
-                  </Text>
-                  <Text className="text-sm text-gray-600 font-medium">
-                    {pct.toFixed(0)}%
-                  </Text>
+                <View style={localeIconRowStyle(rtl)}>
+                  {rtl ? (
+                    <>
+                      <Text className="text-sm text-gray-600 font-medium" style={ta}>
+                        {pct.toFixed(0)}%
+                      </Text>
+                      <View style={{ flex: 1, alignItems: 'flex-end' }}>
+                        <Text className="text-sm text-gray-600" style={ta}>
+                          {t('savings.saved', {
+                            amount: formatEGP(goal.currentAmount, locale),
+                          })}
+                        </Text>
+                      </View>
+                    </>
+                  ) : (
+                    <>
+                      <Text className="text-sm text-gray-600" style={ta}>
+                        {t('savings.saved', {
+                          amount: formatEGP(goal.currentAmount, locale),
+                        })}
+                      </Text>
+                      <Text className="text-sm text-gray-600 font-medium" style={ta}>
+                        {pct.toFixed(0)}%
+                      </Text>
+                    </>
+                  )}
                 </View>
                 <ProgressBar
                   value={pct}
                   height={8}
                   gradient={[colors.primary[500], '#9333ea']}
                 />
-                <Text className="text-xs text-gray-500 mt-2">
+                <Text
+                  className="text-xs text-gray-500 mt-2"
+                  style={[ta, rtl ? { alignSelf: 'flex-end' } : undefined]}
+                >
                   {remaining > 0
-                    ? `${formatEGP(remaining)} to go`
-                    : 'Goal reached! 🎉'}
+                    ? t('savings.toGo', { amount: formatEGP(remaining, locale) })
+                    : t('savings.goalReached')}
                 </Text>
 
                 <View className="mt-4">
@@ -155,7 +242,9 @@ export default function SavingsGoalScreen() {
                     onPress={() => setContribFor(goal)}
                     disabled={remaining === 0}
                   >
-                    {remaining === 0 ? 'Completed' : 'Add Contribution'}
+                    {remaining === 0
+                      ? t('savings.completed')
+                      : t('savings.addContribution')}
                   </Button>
                 </View>
               </View>
@@ -181,7 +270,7 @@ export default function SavingsGoalScreen() {
           if (!contribFor || !checking) return;
           const ok = contributeToGoal(contribFor.id, checking.id, amount);
           if (!ok) {
-            Alert.alert('Oops', 'Not enough balance in checking.');
+            Alert.alert(t('sim.oops'), t('savings.notEnoughChecking'));
             return;
           }
           setContribFor(null);
@@ -202,6 +291,8 @@ interface AddGoalModalProps {
 }
 
 function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [title, setTitle] = useState('');
   const [target, setTarget] = useState('');
   const [emoji, setEmoji] = useState('🎯');
@@ -242,9 +333,9 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View className="bg-white rounded-t-3xl p-5 pb-8">
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-xl text-gray-900 font-bold">
-                  New Savings Goal
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 })}>
+                <Text className="text-xl text-gray-900 font-bold" style={ta}>
+                  {t('savings.newGoal')}
                 </Text>
                 <Pressable
                   onPress={() => {
@@ -258,19 +349,20 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
                 </Pressable>
               </View>
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
-                Goal name
+              <Text className="text-sm text-gray-700 mb-2 font-medium" style={ta}>
+                {t('savings.goalName')}
               </Text>
               <TextInput
                 value={title}
                 onChangeText={setTitle}
-                placeholder="e.g. Vacation"
+                placeholder={t('savings.goalPlaceholder')}
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-base text-gray-900 mb-4"
+                style={ta}
               />
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
-                Target amount (EGP)
+              <Text className="text-sm text-gray-700 mb-2 font-medium" style={ta}>
+                {t('savings.targetAmount')}
               </Text>
               <TextInput
                 value={target}
@@ -279,12 +371,13 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
                 placeholder="0"
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-2xl text-gray-900 mb-4"
+                style={ta}
               />
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
-                Icon
+              <Text className="text-sm text-gray-700 mb-2 font-medium" style={ta}>
+                {t('savings.icon')}
               </Text>
-              <View className="flex-row flex-wrap -m-1 mb-4">
+              <View className="-m-1 mb-4" style={rtlRowMerge(rtl, { flexWrap: 'wrap' })}>
                 {EMOJIS.map((e) => {
                   const active = e === emoji;
                   return (
@@ -304,7 +397,7 @@ function AddGoalModal({ visible, onClose, onAdd }: AddGoalModalProps) {
               </View>
 
               <Button variant="primary" fullWidth onPress={handleAdd}>
-                Create Goal
+                {t('savings.createGoal')}
               </Button>
             </View>
           </KeyboardAvoidingView>
@@ -327,6 +420,8 @@ function ContributeModal({
   onClose,
   onContribute,
 }: ContributeModalProps) {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [amount, setAmount] = useState('');
 
   const handleClose = () => {
@@ -358,15 +453,15 @@ function ContributeModal({
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View className="bg-white rounded-t-3xl p-5 pb-8">
-              <View className="flex-row items-center justify-between mb-4">
-                <View className="flex-row items-center gap-2">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 })}>
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Text className="text-2xl">{goal?.emoji}</Text>
                   <View>
-                    <Text className="text-lg text-gray-900 font-bold">
-                      Contribute
+                    <Text className="text-lg text-gray-900 font-bold" style={ta}>
+                      {t('savings.contribute')}
                     </Text>
-                    <Text className="text-xs text-gray-500">
-                      to {goal?.title}
+                    <Text className="text-xs text-gray-500" style={ta}>
+                      {t('savings.contributeTo', { title: goal?.title ?? '' })}
                     </Text>
                   </View>
                 </View>
@@ -380,16 +475,16 @@ function ContributeModal({
               </View>
 
               <View className="bg-primary-50 rounded-xl p-3 mb-4">
-                <Text className="text-xs text-gray-600">
-                  Checking Balance
+                <Text className="text-xs text-gray-600" style={ta}>
+                  {t('banking.checkingBalance')}
                 </Text>
-                <Text className="text-lg text-primary-700 font-semibold">
-                  {formatEGP(checkingBalance)}
+                <Text className="text-lg text-primary-700 font-semibold" style={ta}>
+                  {formatEGP(checkingBalance, locale)}
                 </Text>
               </View>
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
-                Amount (EGP)
+              <Text className="text-sm text-gray-700 mb-2 font-medium" style={ta}>
+                {t('banking.amountEGP')}
               </Text>
               <TextInput
                 value={amount}
@@ -398,12 +493,17 @@ function ContributeModal({
                 placeholder="0"
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-2xl text-gray-900 mb-3"
+                style={ta}
               />
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
+                style={rtlRootDirection(rtl)}
+                contentContainerStyle={mergeScrollContentRtl(rtl, {
+                  gap: 8,
+                  ...rtlRow(rtl),
+                })}
               >
                 {[100, 500, 1000, 2500].map((p) => (
                   <Pressable
@@ -411,8 +511,8 @@ function ContributeModal({
                     onPress={() => setAmount(String(p))}
                     className="px-4 py-2 rounded-full bg-gray-100"
                   >
-                    <Text className="text-gray-800 font-medium">
-                      {formatEGP(p)}
+                    <Text className="text-gray-800 font-medium" style={ta}>
+                      {formatEGP(p, locale)}
                     </Text>
                   </Pressable>
                 ))}
@@ -425,7 +525,7 @@ function ContributeModal({
                   onPress={handleConfirm}
                   leftIcon={<Target size={16} color={colors.white} />}
                 >
-                  Contribute
+                  {t('savings.contribute')}
                 </Button>
               </View>
             </View>

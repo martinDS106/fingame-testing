@@ -22,6 +22,13 @@ import {
 } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 import { useT } from '@/hooks/useT';
+import {
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+  mergeScrollContentRtl,
+  rtlRow,
+} from '@/lib/rtlStyle';
 
 type Mode = 'buy' | 'sell';
 
@@ -31,7 +38,8 @@ interface GoldTradeModalProps {
 }
 
 export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [mode, setMode] = useState<Mode>('buy');
   const [grams, setGrams] = useState('');
   const [error, setError] = useState<string | null>(null);
@@ -142,9 +150,15 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
           <KeyboardAvoidingView
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
-            <View className="bg-white rounded-t-3xl p-5 pb-8">
-              <View className="flex-row items-center justify-between mb-4">
-                <Text className="text-xl text-gray-900 font-bold">
+            <View className="bg-white rounded-t-3xl p-5 pb-8" style={rtlRootDirection(rtl)}>
+              <View
+                className="mb-4"
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                })}
+              >
+                <Text style={ta} className="text-xl text-gray-900 font-bold">
                   {metal?.label}
                 </Text>
                 <Pressable
@@ -156,24 +170,29 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
                 </Pressable>
               </View>
 
-              <View className="bg-gray-50 rounded-xl p-3 mb-4 flex-row justify-between">
+              <View
+                className="bg-gray-50 rounded-xl p-3 mb-4"
+                style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}
+              >
                 <View>
-                  <Text className="text-xs text-gray-600">
+                  <Text style={ta} className="text-xs text-gray-600">
                     {t('gold.pricePerGram')}
                   </Text>
-                  <Text className="text-lg text-gray-900 font-semibold">
+                  <Text style={ta} className="text-lg text-gray-900 font-semibold">
                     {formatEGP(metal?.pricePerGram ?? 0)}
                   </Text>
                 </View>
                 <View className="items-end">
-                  <Text className="text-xs text-gray-600">{t('trade.cash')}</Text>
-                  <Text className="text-lg text-primary-700 font-semibold">
+                  <Text style={ta} className="text-xs text-gray-600">
+                    {t('trade.cash')}
+                  </Text>
+                  <Text style={ta} className="text-lg text-primary-700 font-semibold">
                     {formatEGP(cash)}
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row gap-2 mb-4">
+              <View className="mb-4" style={rtlRowMerge(rtl, { gap: 8 })}>
                 {(['buy', 'sell'] as Mode[]).map((m) => {
                   const active = mode === m;
                   const isBuy = m === 'buy';
@@ -190,6 +209,7 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
                       }`}
                     >
                       <Text
+                        style={ta}
                         className={
                           active
                             ? 'text-white font-semibold'
@@ -205,8 +225,10 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
 
               {holding && (
                 <View className="bg-accent-50 rounded-lg p-3 mb-3">
-                  <Text className="text-xs text-gray-600">{t('trade.youOwn')}</Text>
-                  <Text className="text-sm text-accent-800 font-semibold">
+                  <Text style={ta} className="text-xs text-gray-600">
+                    {t('trade.youOwn')}
+                  </Text>
+                  <Text style={ta} className="text-sm text-accent-800 font-semibold">
                     {t('gold.holdingAtAvg', {
                       grams: holding.grams,
                       avgPrice: formatEGP(holding.avgCost),
@@ -215,7 +237,7 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
                 </View>
               )}
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
+              <Text style={ta} className="text-sm text-gray-700 mb-2 font-medium">
                 {t('gold.amountGrams')}
               </Text>
               <TextInput
@@ -225,12 +247,20 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
                 placeholder="0"
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-2xl text-gray-900 mb-3"
+                style={{
+                  textAlign: rtl ? 'right' : 'left',
+                  writingDirection: rtl ? 'rtl' : 'ltr',
+                }}
               />
 
               <ScrollView
                 horizontal
                 showsHorizontalScrollIndicator={false}
-                contentContainerStyle={{ gap: 8 }}
+                style={rtlRootDirection(rtl)}
+                contentContainerStyle={mergeScrollContentRtl(rtl, {
+                  gap: 8,
+                  ...rtlRow(rtl),
+                })}
               >
                 {[0.5, 1, 5, 10, 25].map((p) => (
                   <Pressable
@@ -238,23 +268,30 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
                     onPress={() => setGrams(String(p))}
                     className="px-4 py-2 rounded-full bg-gray-100"
                   >
-                    <Text className="text-gray-800 font-medium">{p}g</Text>
+                    <Text style={ta} className="text-gray-800 font-medium">
+                      {p}g
+                    </Text>
                   </Pressable>
                 ))}
               </ScrollView>
 
-              <View className="bg-gray-50 rounded-lg p-3 mt-4 flex-row justify-between">
-                <Text className="text-sm text-gray-600">
+              <View
+                className="bg-gray-50 rounded-lg p-3 mt-4"
+                style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}
+              >
+                <Text style={ta} className="text-sm text-gray-600">
                   {mode === 'buy' ? t('trade.totalCost') : t('trade.proceeds')}
                 </Text>
-                <Text className="text-base text-gray-900 font-semibold">
+                <Text style={ta} className="text-base text-gray-900 font-semibold">
                   {formatEGP(totalCost)}
                 </Text>
               </View>
 
               {error && (
                 <View className="mt-3 bg-red-50 border border-red-200 rounded-lg p-3">
-                  <Text className="text-sm text-red-700">{error}</Text>
+                  <Text style={ta} className="text-sm text-red-700">
+                    {error}
+                  </Text>
                 </View>
               )}
 

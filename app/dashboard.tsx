@@ -22,6 +22,16 @@ import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
+import {
+  rtlRootDirection,
+  rtlTextStyle,
+  rtlRow,
+  mergeScrollContentRtl,
+  localeBannerAlignStyle,
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  localeTrailingGroupRowStyle,
+} from '@/lib/rtlStyle';
 import { useContentStore, useUserStore } from '@/stores';
 
 const leaderboard = [
@@ -47,11 +57,24 @@ export default function DashboardScreen() {
   const streak = useUserStore((s) => s.streak);
   const profile = useUserStore((s) => s.profile);
   const contentCourses = useContentStore((s) => s.courses);
-  const { t } = useT();
+  const lessonsFor = useContentStore((s) => s.lessonsFor);
+  const completedLessons = useContentStore((s) => s.completedLessons);
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const featuredCourses = useMemo(() => {
     return [...contentCourses].sort((a, b) => a.sortOrder - b.sortOrder).slice(0, 3);
   }, [contentCourses]);
+
+  const courseProgressPct = useCallback(
+    (courseId: string): number => {
+      const lessons = lessonsFor(courseId);
+      if (!lessons.length) return 0;
+      const done = lessons.filter((l) => completedLessons.includes(l.id)).length;
+      return Math.round((done / lessons.length) * 100);
+    },
+    [completedLessons, lessonsFor]
+  );
 
   const [rewardMsg, setRewardMsg] = useState<string | null>(null);
   const handleReward = useCallback(
@@ -67,7 +90,7 @@ export default function DashboardScreen() {
   useDailyCheckIn(handleReward);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('dashboard.hi', { name: profile.name.split(' ')[0] })}
         showMenu
@@ -78,7 +101,7 @@ export default function DashboardScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <FadeInView direction="down" duration={450}>
@@ -96,12 +119,14 @@ export default function DashboardScreen() {
               elevation: 4,
             }}
           >
-            <Text className="text-2xl text-primary-900 font-bold mb-1">
-              {t('dashboard.welcomeBack')}
-            </Text>
-            <Text className="text-primary-800">
-              {t('dashboard.readyToLearn')}
-            </Text>
+            <View style={localeBannerAlignStyle(rtl)}>
+              <Text style={ta} className="text-2xl text-primary-900 font-bold mb-1">
+                {t('dashboard.welcomeBack')}
+              </Text>
+              <Text style={ta} className="text-primary-800">
+                {t('dashboard.readyToLearn')}
+              </Text>
+            </View>
           </LinearGradient>
         </FadeInView>
 
@@ -127,20 +152,26 @@ export default function DashboardScreen() {
               elevation: 4,
             }}
           >
-            <View className="flex-row items-center justify-between mb-4">
-              <View className="flex-1 pr-3">
-                <Text className="text-lg text-white font-semibold mb-1">
-                  {t('dashboard.financialMarketplace')}
-                </Text>
-                <Text className="text-sm text-white/80">
-                  {t('dashboard.marketplaceSubtitle')}
-                </Text>
-              </View>
+            <View className="mb-4" style={localeTrailingGroupRowStyle(rtl)}>
               <View
                 className="w-12 h-12 rounded-full items-center justify-center"
                 style={{ backgroundColor: 'rgba(255,255,255,0.2)' }}
               >
                 <DollarSign size={24} color={colors.white} />
+              </View>
+              <View style={localeTextBesideIconStyle(rtl)}>
+                <Text
+                  style={[ta, { alignSelf: 'stretch' }]}
+                  className="text-lg text-white font-semibold mb-1"
+                >
+                  {t('dashboard.financialMarketplace')}
+                </Text>
+                <Text
+                  style={[ta, { alignSelf: 'stretch' }]}
+                  className="text-sm text-white/80"
+                >
+                  {t('dashboard.marketplaceSubtitle')}
+                </Text>
               </View>
             </View>
             <Button
@@ -148,7 +179,7 @@ export default function DashboardScreen() {
               fullWidth
               onPress={() => router.push('/marketplace-home' as never)}
             >
-              <Text className="text-purple-600 font-semibold">
+              <Text style={ta} className="text-purple-600 font-semibold">
                 {t('dashboard.exploreProducts')}
               </Text>
             </Button>
@@ -156,15 +187,21 @@ export default function DashboardScreen() {
         </Pressable>
 
         <View>
-          <View className="flex-row items-center justify-between mb-3">
-            <Text className="text-xl text-gray-800 font-semibold">
+          <View
+            className="mb-3"
+            style={[
+              { alignItems: 'center', justifyContent: 'space-between' },
+              rtlRow(rtl),
+            ]}
+          >
+            <Text style={ta} className="text-xl text-gray-800 font-semibold">
               {t('dashboard.featuredCourses')}
             </Text>
             <Pressable
               onPress={() => router.push('/courses' as never)}
               className="active:opacity-60"
             >
-              <Text className="text-primary-600 font-medium">
+              <Text style={ta} className="text-primary-600 font-medium">
                 {t('action.seeAll')}
               </Text>
             </Pressable>
@@ -173,60 +210,142 @@ export default function DashboardScreen() {
           <ScrollView
             horizontal
             showsHorizontalScrollIndicator={false}
-            contentContainerStyle={{ gap: 12, paddingRight: 8 }}
+            style={rtlRootDirection(rtl)}
+            contentContainerStyle={mergeScrollContentRtl(rtl, {
+              gap: 12,
+              paddingHorizontal: 8,
+              ...rtlRow(rtl),
+            })}
           >
             {(featuredCourses.length ? featuredCourses : contentCourses.slice(0, 3)).map(
               (course) => {
+              const percent = courseProgressPct(course.id);
               return (
                 <PressableCard
                   key={course.id}
                   onPress={() => router.push(`/courses/${course.id}` as never)}
                   className="w-64 border-2 border-transparent"
                 >
-                  <View
-                    className="w-12 h-12 rounded-xl items-center justify-center mb-3"
-                    style={{ backgroundColor: course.color }}
-                  >
-                    <Text className="text-2xl">{course.icon}</Text>
-                  </View>
-                  <Text
-                    className="text-base text-gray-900 font-semibold mb-1"
-                    numberOfLines={1}
-                  >
-                    {course.title}
-                  </Text>
-                  <Text
-                    className="text-sm text-gray-600 mb-3"
-                    numberOfLines={2}
-                  >
-                    {course.description}
-                  </Text>
-                  <View className="mb-3">
-                    <View className="flex-row items-center justify-between mb-1">
-                      <Text className="text-xs text-gray-600">
-                        {t('dashboard.progress')}
+                  <View style={[localeIconRowStyle(rtl), { gap: 12, alignItems: 'flex-start' }]}>
+                    {rtl ? (
+                      <>
+                        <View style={localeTextBesideIconStyle(rtl)}>
+                          <Text
+                            style={[ta, { alignSelf: 'stretch' }]}
+                            className="text-base text-gray-900 font-semibold mb-1"
+                            numberOfLines={1}
+                          >
+                            {course.title}
+                          </Text>
+                          <Text
+                            style={[ta, { alignSelf: 'stretch' }]}
+                            className="text-sm text-gray-600 mb-3"
+                            numberOfLines={2}
+                          >
+                            {course.description}
+                          </Text>
+                          <View className="mb-3">
+                            <View
+                              className="mb-1"
+                              style={[
+                                {
+                                  alignItems: 'center',
+                                  justifyContent: 'space-between',
+                                },
+                                rtlRow(rtl),
+                              ]}
+                            >
+                              <Text style={ta} className="text-xs text-gray-600">
+                                {t('dashboard.progress')}
+                              </Text>
+                              <Text style={ta} className="text-xs text-gray-600 font-medium">
+                                {percent}%
+                              </Text>
+                            </View>
+                            <ProgressBar value={percent} height={6} />
+                          </View>
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            fullWidth
+                            onPress={() => router.push(`/courses/${course.id}` as never)}
+                          >
+                            {t('dashboard.continue')}
+                          </Button>
+                        </View>
+                        <View
+                          className="w-12 h-12 rounded-xl items-center justify-center shrink-0"
+                          style={{ backgroundColor: course.color }}
+                        >
+                          <Text style={ta} className="text-2xl">
+                            {course.icon}
+                          </Text>
+                        </View>
+                      </>
+                    ) : (
+                      <>
+                        <View
+                          className="w-12 h-12 rounded-xl items-center justify-center shrink-0"
+                          style={{ backgroundColor: course.color }}
+                        >
+                          <Text style={ta} className="text-2xl">
+                            {course.icon}
+                          </Text>
+                        </View>
+                        <View style={localeTextBesideIconStyle(rtl)}>
+                      <Text
+                        style={[ta, { alignSelf: 'stretch' }]}
+                        className="text-base text-gray-900 font-semibold mb-1"
+                        numberOfLines={1}
+                      >
+                        {course.title}
                       </Text>
-                      <Text className="text-xs text-gray-600 font-medium">
-                        0%
+                      <Text
+                        style={[ta, { alignSelf: 'stretch' }]}
+                        className="text-sm text-gray-600 mb-3"
+                        numberOfLines={2}
+                      >
+                        {course.description}
                       </Text>
-                    </View>
-                    <ProgressBar value={0} height={6} />
+                      <View className="mb-3">
+                        <View
+                          className="mb-1"
+                          style={[
+                            {
+                              alignItems: 'center',
+                              justifyContent: 'space-between',
+                            },
+                            rtlRow(rtl),
+                          ]}
+                        >
+                          <Text style={ta} className="text-xs text-gray-600">
+                            {t('dashboard.progress')}
+                          </Text>
+                          <Text style={ta} className="text-xs text-gray-600 font-medium">
+                            {percent}%
+                          </Text>
+                        </View>
+                        <ProgressBar value={percent} height={6} />
+                      </View>
+                      <Button
+                        variant="primary"
+                        size="sm"
+                        fullWidth
+                        onPress={() => router.push(`/courses/${course.id}` as never)}
+                      >
+                        {t('dashboard.continue')}
+                      </Button>
+                        </View>
+                      </>
+                    )}
                   </View>
-                  <Button
-                    variant="primary"
-                    size="sm"
-                    fullWidth
-                    onPress={() => router.push(`/courses/${course.id}` as never)}
-                  >
-                    {t('dashboard.continue')}
-                  </Button>
                 </PressableCard>
               );
             })}
           </ScrollView>
         </View>
 
-        <View className="flex-row gap-3">
+        <View className="gap-3" style={[{ alignItems: 'stretch' }, rtlRow(rtl)]}>
           <PressableCard
             onPress={() => router.push('/quizzes' as never)}
             className="flex-1 border-0 p-0 overflow-hidden"
@@ -244,14 +363,14 @@ export default function DashboardScreen() {
               >
                 <Award size={24} color={colors.white} />
               </View>
-              <Text className="text-white font-semibold mb-1">
+              <Text style={ta} className="text-white font-semibold mb-1">
                 {t('dashboard.dailyQuiz')}
               </Text>
-              <Text className="text-sm text-purple-100 mb-3">
+              <Text style={ta} className="text-sm text-purple-100 mb-3">
                 {t('dashboard.testKnowledge')}
               </Text>
               <View className="bg-white rounded-lg py-2 items-center">
-                <Text className="text-purple-600 font-semibold text-sm">
+                <Text style={ta} className="text-purple-600 font-semibold text-sm">
                   {t('dashboard.takeQuiz')}
                 </Text>
               </View>
@@ -275,14 +394,14 @@ export default function DashboardScreen() {
               >
                 <Play size={24} color={colors.white} />
               </View>
-              <Text className="text-white font-semibold mb-1">
+              <Text style={ta} className="text-white font-semibold mb-1">
                 {t('dashboard.simulation')}
               </Text>
-              <Text className="text-sm text-green-100 mb-3">
+              <Text style={ta} className="text-sm text-green-100 mb-3">
                 {t('dashboard.practiceTrading')}
               </Text>
               <View className="bg-white rounded-lg py-2 items-center">
-                <Text className="text-green-600 font-semibold text-sm">
+                <Text style={ta} className="text-green-600 font-semibold text-sm">
                   {t('dashboard.startNow')}
                 </Text>
               </View>
@@ -291,10 +410,19 @@ export default function DashboardScreen() {
         </View>
 
         <View>
-          <View className="flex-row items-center justify-between mb-3">
-            <View className="flex-row items-center gap-2">
+          <View
+            className="mb-3"
+            style={[
+              { alignItems: 'center', justifyContent: 'space-between' },
+              rtlRow(rtl),
+            ]}
+          >
+            <View
+              className="gap-2"
+              style={[{ alignItems: 'center' }, rtlRow(rtl)]}
+            >
               <Trophy size={20} color={colors.accent[500]} />
-              <Text className="text-xl text-gray-800 font-semibold">
+              <Text style={ta} className="text-xl text-gray-800 font-semibold">
                 {t('dashboard.leaderboard')}
               </Text>
             </View>
@@ -302,7 +430,7 @@ export default function DashboardScreen() {
               className="active:opacity-60"
               onPress={() => router.push('/leaderboard' as never)}
             >
-              <Text className="text-primary-600 font-medium">
+              <Text style={ta} className="text-primary-600 font-medium">
                 {t('action.viewAll')}
               </Text>
             </Pressable>
@@ -313,14 +441,21 @@ export default function DashboardScreen() {
               {leaderboard.map((user) => (
                 <View
                   key={user.rank}
-                  className="flex-row items-center gap-3 py-2"
+                  className="gap-3 py-2"
+                  style={[localeIconRowStyle(rtl), { alignItems: 'center' }]}
                 >
-                  <Text className="text-2xl">{user.avatar}</Text>
-                  <View className="flex-1">
-                    <Text className="text-sm text-gray-900 font-medium">
+                  <Text style={ta} className="text-2xl">{user.avatar}</Text>
+                  <View style={localeTextBesideIconStyle(rtl)}>
+                    <Text
+                      style={[ta, { alignSelf: 'stretch' }]}
+                      className="text-sm text-gray-900 font-medium"
+                    >
                       {user.name}
                     </Text>
-                    <Text className="text-xs text-gray-500">
+                    <Text
+                      style={[ta, { alignSelf: 'stretch' }]}
+                      className="text-xs text-gray-500"
+                    >
                       {t('dashboard.points', {
                         points: user.points.toLocaleString(),
                       })}
@@ -330,6 +465,7 @@ export default function DashboardScreen() {
                     className={`px-3 py-1 rounded-full ${rankBadgeClass(user.rank)}`}
                   >
                     <Text
+                      style={ta}
                       className={`text-sm font-semibold ${rankTextClass(user.rank)}`}
                     >
                       #{user.rank}
@@ -371,7 +507,7 @@ export default function DashboardScreen() {
           marginBottom: 80,
         }}
       >
-        <Text className="text-primary-900 font-semibold">
+        <Text style={ta} className="text-primary-900 font-semibold">
           {rewardMsg ?? ''}
         </Text>
       </Snackbar>

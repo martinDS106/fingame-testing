@@ -10,11 +10,15 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useContentStore } from '@/stores';
 
 export default function LessonPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const allLessons = useContentStore((s) => s.lessons);
   const allVideos = useContentStore((s) => s.videos);
@@ -98,10 +102,12 @@ export default function LessonPlayerScreen() {
 
   if (!lesson) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Lesson" showBack showBell={false} />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-600">Lesson not found</Text>
+          <Text className="text-gray-600" style={ta}>
+            Lesson not found
+          </Text>
           <Button
             variant="outline"
             className="mt-3"
@@ -124,12 +130,15 @@ export default function LessonPlayerScreen() {
   };
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={lesson.title} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
+        contentContainerStyle={[
+          { padding: 16, paddingBottom: 40, gap: 16 },
+          rtlRootDirection(rtl),
+        ]}
         showsVerticalScrollIndicator={false}
       >
         {video ? (
@@ -143,15 +152,15 @@ export default function LessonPlayerScreen() {
               nativeControls
             />
             <View className="p-4">
-              <View className="flex-row items-center gap-2 mb-2">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                 <Film size={16} color={colors.primary[600]} />
-                <Text className="text-sm text-primary-700 font-semibold flex-1">
+                <Text className="text-sm text-primary-700 font-semibold flex-1" style={ta}>
                   {video.title}
                 </Text>
                 {alreadyWatched && (
-                  <View className="flex-row items-center gap-1">
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}>
                     <CheckCircle size={14} color="#16a34a" />
-                    <Text className="text-xs text-green-700 font-semibold">
+                    <Text className="text-xs text-green-700 font-semibold" style={ta}>
                       Watched
                     </Text>
                   </View>
@@ -162,16 +171,16 @@ export default function LessonPlayerScreen() {
                 height={6}
                 gradient={[colors.primary[500], colors.primary[700]]}
               />
-              <View className="flex-row justify-between mt-2">
-                <Text className="text-xs text-gray-500">
+              <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginTop: 8 })}>
+                <Text className="text-xs text-gray-500" style={ta}>
                   {formatTime(watchedSec)} /{' '}
                   {formatTime(duration || video.durationSeconds)}
                 </Text>
-                <Text className="text-xs text-gray-500">
+                <Text className="text-xs text-gray-500" style={ta}>
                   {progressPct.toFixed(0)}% watched · {status}
                 </Text>
               </View>
-              <Text className="text-xs text-gray-500 mt-3 text-center">
+              <Text className="text-xs text-gray-500 mt-3 text-center" style={ta}>
                 Use the player controls. Watch 90%+ to auto-complete.
               </Text>
             </View>
@@ -179,7 +188,7 @@ export default function LessonPlayerScreen() {
         ) : (
           <Card className="items-center py-8">
             <Film size={36} color={colors.gray[400]} />
-            <Text className="text-sm text-gray-600 mt-3 text-center">
+            <Text className="text-sm text-gray-600 mt-3 text-center" style={ta}>
               No video attached to this lesson yet. You can still mark it as
               complete.
             </Text>
@@ -192,20 +201,27 @@ export default function LessonPlayerScreen() {
           end={{ x: 1, y: 0 }}
           style={{ borderRadius: 16, padding: 16 }}
         >
-          <Text className="text-white font-semibold mb-1">{lesson.title}</Text>
-          <Text className="text-primary-100 text-sm">{lesson.summary}</Text>
-          <View className="flex-row items-center gap-1 mt-2">
+          <Text className="text-white font-semibold mb-1" style={ta}>
+            {lesson.title}
+          </Text>
+          <Text className="text-primary-100 text-sm" style={ta}>
+            {lesson.summary}
+          </Text>
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4, marginTop: 8 })}>
             <Clock size={14} color={colors.white} />
-            <Text className="text-white text-xs">
+            <Text className="text-white text-xs" style={ta}>
               {lesson.durationMinutes} min
             </Text>
           </View>
         </LinearGradient>
 
         {alreadyCompleted ? (
-          <View className="bg-green-50 border border-green-200 rounded-xl p-4 flex-row items-center gap-2">
+          <View
+            className="bg-green-50 border border-green-200 rounded-xl p-4"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+          >
             <CheckCircle size={20} color="#16a34a" />
-            <Text className="text-green-800 font-medium flex-1">
+            <Text className="text-green-800 font-medium flex-1" style={ta}>
               You have already completed this lesson.
             </Text>
           </View>

@@ -1,6 +1,8 @@
 import { View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 
+import { useRTL } from '@/hooks/useRTL';
+import { rtlRow } from '@/lib/rtlStyle';
 import { colors } from '@/theme';
 
 interface ProgressBarProps {
@@ -22,18 +24,19 @@ export function ProgressBar({
   gradient,
   color = colors.primary[600],
 }: ProgressBarProps) {
+  const rtl = useRTL();
   const pct = Math.max(0, Math.min(100, (value / max) * 100));
 
   return (
     <View
       className={`rounded-full overflow-hidden ${trackClassName} ${className}`}
-      style={{ height }}
+      style={[{ height }, rtlRow(rtl)]}
     >
       {gradient ? (
         <LinearGradient
           colors={gradient as [string, string, ...string[]]}
-          start={{ x: 0, y: 0 }}
-          end={{ x: 1, y: 0 }}
+          start={{ x: rtl ? 1 : 0, y: 0 }}
+          end={{ x: rtl ? 0 : 1, y: 0 }}
           style={{ width: `${pct}%`, height: '100%' }}
         />
       ) : (

@@ -27,7 +27,22 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatEGP } from '@/lib/format';
+import {
+  creditActionDescription,
+  creditActionLabel,
+  creditActionLabelForAction,
+  scoreCategoryLabel,
+} from '@/lib/creditLocale';
 import { rewardFor } from '@/lib/rewards';
+import {
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  mergeScrollContentRtl,
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import {
   CREDIT_ACTION_DEFINITIONS,
   useCreditStore,
@@ -36,14 +51,14 @@ import {
   type CreditCard as CreditCardType,
 } from '@/stores';
 
-function scoreCategory(score: number) {
-  if (score >= 800)
-    return { label: 'Excellent', color: '#16a34a', bg: '#dcfce7' };
-  if (score >= 740)
-    return { label: 'Very Good', color: '#2563eb', bg: '#dbeafe' };
-  if (score >= 670) return { label: 'Good', color: '#ca8a04', bg: '#fef3c7' };
-  if (score >= 580) return { label: 'Fair', color: '#ea580c', bg: '#ffedd5' };
-  return { label: 'Poor', color: '#dc2626', bg: '#fee2e2' };
+function cardDisplayName(
+  cardId: string,
+  t: (key: string) => string,
+  fallback: string
+): string {
+  if (cardId === 'card-visa') return t('credit.card.visa');
+  if (cardId === 'card-mc') return t('credit.card.mastercard');
+  return fallback;
 }
 
 const SCORE_MIN = 300;
@@ -65,6 +80,8 @@ const QUICK_SCENARIOS: {
 ];
 
 export default function CreditSimulationScreen() {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const score = useCreditStore((s) => s.score);
   const cards = useCreditStore((s) => s.cards);
   const actions = useCreditStore((s) => s.actions);
@@ -79,87 +96,94 @@ export default function CreditSimulationScreen() {
 
   const [activeCard, setActiveCard] = useState<CreditCardType | null>(null);
 
-  const category = useMemo(() => scoreCategory(score), [score]);
+  const category = useMemo(
+    () => scoreCategoryLabel(score, locale),
+    [score, locale]
+  );
   const pct = ((score - SCORE_MIN) / (SCORE_MAX - SCORE_MIN)) * 100;
   const radius = 80;
   const stroke = 12;
   const circumference = 2 * Math.PI * radius;
 
   const handleScenario = (type: CreditActionType) => {
-    const def = CREDIT_ACTION_DEFINITIONS[type];
     const result = applyAction(type);
+    const label = creditActionLabel(type, locale);
+    const desc = creditActionDescription(type, locale);
 
     void (async () => {
       if (result.delta > 0) {
         const reward = rewardFor('quiz_correct');
         const okCoins = await addCoins(reward.coins, 'quiz_correct');
         if (!okCoins) {
-          Alert.alert(
-            'Could not save reward',
-            'Your score changed locally, but coins did not sync.',
-          );
+          Alert.alert(t('sim.couldNotSaveReward'), t('sim.scoreNotSynced'));
           return;
         }
         const okXp = await addXP(reward.xp);
         if (!okXp) {
           await useUserStore.getState().spendCoins(reward.coins, 'quiz_correct');
-          Alert.alert(
-            'Could not save XP',
-            'Coins were saved, but XP did not sync.',
-          );
+          Alert.alert(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
           return;
         }
       }
 
       Alert.alert(
-        def.label,
-        `Score ${result.delta >= 0 ? '+' : ''}${result.delta} points\n\n${def.description}`
+        label,
+        `${t('credit.scoreDelta', {
+          delta: `${result.delta >= 0 ? '+' : ''}${result.delta}`,
+        })}\n\n${desc}`
       );
     })();
   };
 
   const handleReset = () => {
-    Alert.alert(
-      'Reset score?',
-      'This will reset score to 720 and clear history.',
-      [
-        { text: 'Cancel', style: 'cancel' },
-        {
-          text: 'Reset',
-          style: 'destructive',
-          onPress: () => resetScore(),
-        },
-      ]
-    );
+    Alert.alert(t('credit.resetTitle'), t('credit.resetBody'), [
+      { text: t('action.cancel'), style: 'cancel' },
+      {
+        text: t('credit.reset'),
+        style: 'destructive',
+        onPress: () => resetScore(),
+      },
+    ]);
   };
 
-  const factors = [
-    {
-      name: 'Payment History',
-      score: Math.min(100, Math.max(40, 95 - actions.filter((a) => a.scoreImpact < 0).length * 5)),
-      weight: '35%',
-    },
-    {
-      name: 'Credit Utilization',
-      score: Math.max(0, 100 - utilization),
-      weight: '30%',
-    },
-    { name: 'Credit Mix', score: cards.length >= 2 ? 75 : 50, weight: '15%' },
-    { name: 'Account Age', score: 72, weight: '15%' },
-    {
-      name: 'New Credit',
-      score: Math.max(
-        30,
-        100 - actions.filter((a) => a.label.includes('new card')).length * 15
-      ),
-      weight: '10%',
-    },
-  ];
+  const factors = useMemo(
+    () => [
+      {
+        name: t('credit.factor.paymentHistory'),
+        score: Math.min(
+          100,
+          Math.max(40, 95 - actions.filter((a) => a.scoreImpact < 0).length * 5)
+        ),
+        weight: '35%',
+      },
+      {
+        name: t('credit.factor.utilization'),
+        score: Math.max(0, 100 - utilization),
+        weight: '30%',
+      },
+      {
+        name: t('credit.factor.mix'),
+        score: cards.length >= 2 ? 75 : 50,
+        weight: '15%',
+      },
+      { name: t('credit.factor.age'), score: 72, weight: '15%' },
+      {
+        name: t('credit.factor.newCredit'),
+        score: Math.max(
+          30,
+          100 -
+            actions.filter((a) => a.type === 'open_new_card').length * 15
+        ),
+        weight: '10%',
+      },
+    ],
+    [t, actions, utilization, cards.length]
+  );
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
-        title="Credit Score Builder"
+        title={t('credit.screenTitle')}
         showBack
         showBell={false}
         gradient={['#ea580c', '#c2410c']}
@@ -177,7 +201,8 @@ export default function CreditSimulationScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 40, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -195,8 +220,8 @@ export default function CreditSimulationScreen() {
             elevation: 6,
           }}
         >
-          <Text className="text-orange-100 text-sm mb-4">
-            Your Credit Score
+          <Text className="text-orange-100 text-sm mb-4" style={ta}>
+            {t('credit.yourScore')}
           </Text>
 
           <View
@@ -241,9 +266,11 @@ export default function CreditSimulationScreen() {
             <View
               style={{ position: 'absolute', alignItems: 'center' }}
             >
-              <Text className="text-6xl text-white font-bold">{score}</Text>
-              <Text className="text-xs text-orange-100">
-                out of {SCORE_MAX}
+              <Text className="text-6xl text-white font-bold" style={ta}>
+                {score}
+              </Text>
+              <Text className="text-xs text-orange-100" style={ta}>
+                {t('credit.outOf', { max: SCORE_MAX })}
               </Text>
             </View>
           </View>
@@ -254,7 +281,7 @@ export default function CreditSimulationScreen() {
           >
             <Text
               className="text-base font-semibold"
-              style={{ color: category.color }}
+              style={[ta, { color: category.color }]}
             >
               {category.label}
             </Text>
@@ -262,9 +289,9 @@ export default function CreditSimulationScreen() {
         </LinearGradient>
 
         <Card>
-          <View className="flex-row items-center justify-between mb-2">
-            <Text className="text-gray-800 font-semibold">
-              Credit Utilization
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
+              {t('credit.utilization')}
             </Text>
             <Text
               className={
@@ -274,6 +301,7 @@ export default function CreditSimulationScreen() {
                     ? 'text-sm font-semibold text-yellow-700'
                     : 'text-sm font-semibold text-red-700'
               }
+              style={ta}
             >
               {utilization.toFixed(1)}%
             </Text>
@@ -283,26 +311,26 @@ export default function CreditSimulationScreen() {
             height={8}
             gradient={['#4ade80', '#dc2626']}
           />
-          <View className="flex-row justify-between mt-2">
-            <Text className="text-xs text-gray-500">
-              Used: {formatEGP(totalDebt)}
+          <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginTop: 8 })}>
+            <Text className="text-xs text-gray-500" style={ta}>
+              {t('credit.used')} {formatEGP(totalDebt, locale)}
             </Text>
-            <Text className="text-xs text-gray-500">
-              Limit: {formatEGP(totalLimit)}
+            <Text className="text-xs text-gray-500" style={ta}>
+              {t('credit.limit')} {formatEGP(totalLimit, locale)}
             </Text>
           </View>
-          <Text className="text-xs text-gray-500 mt-1">
+          <Text className="text-xs text-gray-500 mt-1" style={ta}>
             {utilization < 30
-              ? '✅ Great — keep below 30%'
+              ? `✅ ${t('credit.utilGreat')}`
               : utilization < 60
-                ? '⚠️ Watch out — try paying some down'
-                : '🚨 High utilization damages your score'}
+                ? `⚠️ ${t('credit.utilWatch')}`
+                : `🚨 ${t('credit.utilHigh')}`}
           </Text>
         </Card>
 
         <View>
-          <Text className="text-lg text-gray-800 font-semibold mb-3">
-            Your Cards
+          <Text className="text-lg text-gray-800 font-semibold mb-3" style={ta}>
+            {t('credit.yourCards')}
           </Text>
           <View className="gap-3">
             {cards.map((card) => {
@@ -320,30 +348,30 @@ export default function CreditSimulationScreen() {
                     end={{ x: 1, y: 1 }}
                     style={{ padding: 16 }}
                   >
-                    <View className="flex-row items-center justify-between mb-8">
-                      <Text className="text-white/80 text-sm">
-                        {card.name}
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 32 })}>
+                      <Text className="text-white/80 text-sm" style={ta}>
+                        {cardDisplayName(card.id, t, card.name)}
                       </Text>
                       <CreditIcon size={24} color={colors.white} />
                     </View>
-                    <Text className="text-white text-lg tracking-widest mb-2">
+                    <Text className="text-white text-lg tracking-widest mb-2" style={ta}>
                       •••• •••• •••• {card.last4}
                     </Text>
-                    <View className="flex-row justify-between">
+                    <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
                       <View>
-                        <Text className="text-white/70 text-[10px] uppercase">
-                          Balance
+                        <Text className="text-white/70 text-[10px] uppercase" style={ta}>
+                          {t('credit.balance')}
                         </Text>
-                        <Text className="text-white font-semibold">
-                          {formatEGP(card.balance)}
+                        <Text className="text-white font-semibold" style={ta}>
+                          {formatEGP(card.balance, locale)}
                         </Text>
                       </View>
                       <View className="items-end">
-                        <Text className="text-white/70 text-[10px] uppercase">
-                          Limit
+                        <Text className="text-white/70 text-[10px] uppercase" style={ta}>
+                          {t('credit.limitLabel')}
                         </Text>
-                        <Text className="text-white font-semibold">
-                          {formatEGP(card.limit)}
+                        <Text className="text-white font-semibold" style={ta}>
+                          {formatEGP(card.limit, locale)}
                         </Text>
                       </View>
                     </View>
@@ -360,8 +388,11 @@ export default function CreditSimulationScreen() {
                             : '#dc2626'
                       }
                     />
-                    <Text className="text-xs text-gray-500 mt-1">
-                      {cardUtil.toFixed(0)}% used · {card.apr}% APR
+                    <Text className="text-xs text-gray-500 mt-1" style={ta}>
+                      {t('credit.cardUsedApr', {
+                        pct: cardUtil.toFixed(0),
+                        apr: card.apr,
+                      })}
                     </Text>
                   </View>
                 </PressableCard>
@@ -371,27 +402,31 @@ export default function CreditSimulationScreen() {
         </View>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">
-            Score Factors
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+            {t('credit.scoreFactors')}
           </Text>
           <View className="gap-3">
             {factors.map((f) => {
               const isGood = f.score >= 70;
               return (
                 <View key={f.name}>
-                  <View className="flex-row items-center justify-between mb-1.5">
-                    <View className="flex-row items-center gap-2">
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 6 })}>
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                       {isGood ? (
                         <CheckCircle2 size={14} color="#16a34a" />
                       ) : (
                         <AlertCircle size={14} color="#ea580c" />
                       )}
-                      <Text className="text-sm text-gray-700">{f.name}</Text>
+                      <Text className="text-sm text-gray-700" style={ta}>
+                        {f.name}
+                      </Text>
                     </View>
-                    <View className="flex-row items-center gap-2">
-                      <Text className="text-xs text-gray-500">{f.score.toFixed(0)}%</Text>
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
+                      <Text className="text-xs text-gray-500" style={ta}>
+                        {f.score.toFixed(0)}%
+                      </Text>
                       <View className="bg-gray-100 px-2 py-0.5 rounded">
-                        <Text className="text-[10px] text-gray-700 font-semibold">
+                        <Text className="text-[10px] text-gray-700 font-semibold" style={ta}>
                           {f.weight}
                         </Text>
                       </View>
@@ -409,22 +444,23 @@ export default function CreditSimulationScreen() {
         </Card>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-1">
-            Try a Scenario
+          <Text className="text-gray-800 font-semibold mb-1" style={ta}>
+            {t('credit.tryScenario')}
           </Text>
-          <Text className="text-xs text-gray-500 mb-3">
-            Tap an action to see its impact on your score.
+          <Text className="text-xs text-gray-500 mb-3" style={ta}>
+            {t('credit.tryScenarioHint')}
           </Text>
-          <View className="flex-row flex-wrap -m-1">
+          <View style={rtlRowMerge(rtl, { flexWrap: 'wrap' })} className="-m-1">
             {QUICK_SCENARIOS.map((s) => {
               const def = CREDIT_ACTION_DEFINITIONS[s.key];
+              const label = creditActionLabel(s.key, locale);
               return (
                 <View key={s.key} style={{ width: '50%' }} className="p-1">
                   <Pressable
                     onPress={() => handleScenario(s.key)}
                     className="border border-gray-200 rounded-xl p-3 active:bg-gray-50"
                   >
-                    <View className="flex-row items-center gap-2 mb-1">
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 4 })}>
                       <Text className="text-lg">{s.emoji}</Text>
                       <Text
                         className={
@@ -432,6 +468,7 @@ export default function CreditSimulationScreen() {
                             ? 'text-[11px] font-bold text-green-700'
                             : 'text-[11px] font-bold text-red-700'
                         }
+                        style={ta}
                       >
                         {def.delta >= 0 ? '+' : ''}
                         {def.delta}
@@ -440,8 +477,9 @@ export default function CreditSimulationScreen() {
                     <Text
                       className="text-sm text-gray-800 font-medium"
                       numberOfLines={2}
+                      style={ta}
                     >
-                      {def.label}
+                      {label}
                     </Text>
                   </Pressable>
                 </View>
@@ -452,23 +490,12 @@ export default function CreditSimulationScreen() {
 
         {actions.length > 0 && (
           <Card>
-            <Text className="text-gray-800 font-semibold mb-3">
-              Recent Activity
+            <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+              {t('credit.recentActivity')}
             </Text>
             <View className="gap-2">
-              {actions.slice(0, 5).map((a) => (
-                <View
-                  key={a.id}
-                  className="flex-row items-center justify-between py-2 border-b border-gray-100 last:border-b-0"
-                >
-                  <View className="flex-1 pr-2">
-                    <Text className="text-sm text-gray-800 font-medium">
-                      {a.label}
-                    </Text>
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
-                      {new Date(a.at).toLocaleString('en-GB')}
-                    </Text>
-                  </View>
+              {actions.slice(0, 5).map((a) => {
+                const badge = (
                   <View
                     className="px-2 py-0.5 rounded-md"
                     style={{
@@ -482,37 +509,78 @@ export default function CreditSimulationScreen() {
                           ? 'text-xs font-bold text-green-700'
                           : 'text-xs font-bold text-red-700'
                       }
+                      style={ta}
                     >
                       {a.scoreImpact >= 0 ? '+' : ''}
                       {a.scoreImpact}
                     </Text>
                   </View>
-                </View>
-              ))}
+                );
+                const textBlock = (
+                  <View style={localeTextBesideIconStyle(rtl)}>
+                    <Text className="text-sm text-gray-800 font-medium" style={ta}>
+                      {creditActionLabelForAction(a, locale)}
+                    </Text>
+                    <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
+                      {new Date(a.at).toLocaleString(
+                        locale === 'ar' ? 'ar-EG' : 'en-GB'
+                      )}
+                    </Text>
+                  </View>
+                );
+                return (
+                  <View
+                    key={a.id}
+                    className="py-2 border-b border-gray-100 last:border-b-0"
+                    style={localeIconRowStyle(rtl)}
+                  >
+                    {rtl ? (
+                      <>
+                        {badge}
+                        {textBlock}
+                      </>
+                    ) : (
+                      <>
+                        {textBlock}
+                        {badge}
+                      </>
+                    )}
+                  </View>
+                );
+              })}
             </View>
           </Card>
         )}
 
         <Card className="bg-blue-50 border-blue-100">
-          <View className="flex-row items-center gap-2 mb-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
             <TrendingUp size={18} color="#2563eb" />
-            <Text className="text-gray-800 font-semibold">
-              Credit Health Tips
+            <Text className="text-gray-800 font-semibold" style={ta}>
+              {t('credit.healthTips')}
             </Text>
           </View>
-          <View className="gap-1">
-            <Text className="text-sm text-gray-600">
-              ✓ Pay all bills on time — biggest factor
-            </Text>
-            <Text className="text-sm text-gray-600">
-              ✓ Keep credit utilization below 30%
-            </Text>
-            <Text className="text-sm text-gray-600">
-              ✓ Don&apos;t close old credit accounts
-            </Text>
-            <Text className="text-sm text-gray-600">
-              ✓ Limit new credit applications
-            </Text>
+          <View className="gap-2">
+            {[t('credit.tip1'), t('credit.tip2'), t('credit.tip3'), t('credit.tip4')].map(
+              (tip) => (
+                <View key={tip} style={localeIconRowStyle(rtl)}>
+                  {rtl ? (
+                    <>
+                      <Text className="text-sm text-gray-600" style={ta}>
+                        {tip}
+                      </Text>
+                      <Text className="text-sm text-green-700">✓</Text>
+                    </>
+                  ) : (
+                    <>
+                      <Text className="text-sm text-green-700">✓</Text>
+                      <Text className="text-sm text-gray-600 flex-1" style={ta}>
+                        {tip}
+                      </Text>
+                    </>
+                  )}
+                </View>
+              )
+            )}
           </View>
         </Card>
       </ScrollView>
@@ -524,19 +592,18 @@ export default function CreditSimulationScreen() {
           if (!activeCard) return;
           const ok = makePayment(activeCard.id, amount);
           if (!ok.ok) {
-            Alert.alert('Oops', ok.reason ?? 'Payment failed');
+            Alert.alert(t('sim.oops'), ok.reason ?? t('credit.paymentFailed'));
             return;
           }
           const fullBalance = activeCard.balance <= amount;
-          const result = applyAction(
-            fullBalance ? 'pay_full_balance' : 'pay_on_time'
-          );
-          const def = CREDIT_ACTION_DEFINITIONS[
-            fullBalance ? 'pay_full_balance' : 'pay_on_time'
-          ];
+          const actionType = fullBalance ? 'pay_full_balance' : 'pay_on_time';
+          const result = applyAction(actionType);
           Alert.alert(
-            'Payment made',
-            `Paid ${formatEGP(amount)}\n\n${def.label}: +${result.delta} score`
+            t('credit.paymentMade'),
+            `${t('credit.paidAmount', { amount: formatEGP(amount, locale) })}\n\n${t('credit.actionDelta', {
+              label: creditActionLabel(actionType, locale),
+              delta: `+${result.delta}`,
+            })}`
           );
           setActiveCard(null);
         }}
@@ -552,6 +619,8 @@ interface PaymentModalProps {
 }
 
 function PaymentModal({ card, onClose, onPay }: PaymentModalProps) {
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [amount, setAmount] = useState('');
 
   const handleClose = () => {
@@ -579,12 +648,16 @@ function PaymentModal({ card, onClose, onPay }: PaymentModalProps) {
             behavior={Platform.OS === 'ios' ? 'padding' : undefined}
           >
             <View className="bg-white rounded-t-3xl p-5 pb-8">
-              <View className="flex-row items-center justify-between mb-4">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 })}>
                 <View>
-                  <Text className="text-xl text-gray-900 font-bold">
-                    Pay {card?.name}
+                  <Text className="text-xl text-gray-900 font-bold" style={ta}>
+                    {t('credit.payCard', {
+                      name: card
+                        ? cardDisplayName(card.id, t, card.name)
+                        : '',
+                    })}
                   </Text>
-                  <Text className="text-xs text-gray-500">
+                  <Text className="text-xs text-gray-500" style={ta}>
                     •••• {card?.last4}
                   </Text>
                 </View>
@@ -598,14 +671,16 @@ function PaymentModal({ card, onClose, onPay }: PaymentModalProps) {
               </View>
 
               <View className="bg-orange-50 rounded-xl p-3 mb-4">
-                <Text className="text-xs text-gray-600">Current Balance</Text>
-                <Text className="text-lg text-orange-700 font-semibold">
-                  {formatEGP(card?.balance ?? 0)}
+                <Text className="text-xs text-gray-600" style={ta}>
+                  {t('credit.currentBalance')}
+                </Text>
+                <Text className="text-lg text-orange-700 font-semibold" style={ta}>
+                  {formatEGP(card?.balance ?? 0, locale)}
                 </Text>
               </View>
 
-              <Text className="text-sm text-gray-700 mb-2 font-medium">
-                Payment amount (EGP)
+              <Text className="text-sm text-gray-700 mb-2 font-medium" style={ta}>
+                {t('credit.paymentAmount')}
               </Text>
               <TextInput
                 value={amount}
@@ -614,39 +689,40 @@ function PaymentModal({ card, onClose, onPay }: PaymentModalProps) {
                 placeholder="0"
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-2xl text-gray-900 mb-3"
+                style={ta}
               />
 
-              <View className="flex-row gap-2 mb-4">
+              <View style={rtlRowMerge(rtl, { gap: 8, marginBottom: 16 })}>
                 <Pressable
                   onPress={() => setAmount(String(Math.round((card?.balance ?? 0) * 0.1)))}
                   className="flex-1 items-center py-2 rounded-full bg-gray-100"
                 >
-                  <Text className="text-gray-800 font-medium text-sm">
-                    10%
+                  <Text className="text-gray-800 font-medium text-sm" style={ta}>
+                    {t('credit.pct10')}
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setAmount(String(Math.round((card?.balance ?? 0) * 0.25)))}
                   className="flex-1 items-center py-2 rounded-full bg-gray-100"
                 >
-                  <Text className="text-gray-800 font-medium text-sm">
-                    25%
+                  <Text className="text-gray-800 font-medium text-sm" style={ta}>
+                    {t('credit.pct25')}
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setAmount(String(Math.round((card?.balance ?? 0) * 0.5)))}
                   className="flex-1 items-center py-2 rounded-full bg-gray-100"
                 >
-                  <Text className="text-gray-800 font-medium text-sm">
-                    50%
+                  <Text className="text-gray-800 font-medium text-sm" style={ta}>
+                    {t('credit.pct50')}
                   </Text>
                 </Pressable>
                 <Pressable
                   onPress={() => setAmount(String(card?.balance ?? 0))}
                   className="flex-1 items-center py-2 rounded-full bg-primary-100"
                 >
-                  <Text className="text-primary-800 font-semibold text-sm">
-                    Full
+                  <Text className="text-primary-800 font-semibold text-sm" style={ta}>
+                    {t('credit.full')}
                   </Text>
                 </Pressable>
               </View>
@@ -661,7 +737,9 @@ function PaymentModal({ card, onClose, onPay }: PaymentModalProps) {
                   setAmount('');
                 }}
               >
-                Pay {valid ? formatEGP(n) : ''}
+                {valid
+                  ? t('credit.payAmount', { amount: formatEGP(n, locale) })
+                  : t('credit.payAmount', { amount: '' })}
               </Button>
             </View>
           </KeyboardAvoidingView>

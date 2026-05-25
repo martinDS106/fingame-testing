@@ -6,9 +6,13 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useAuthStore, useUserStore } from '@/stores';
 
 export default function AdminDashboardScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const syncStatus = useUserStore((s) => s.syncStatus);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
@@ -18,37 +22,41 @@ export default function AdminDashboardScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <View className="flex-row items-center gap-3 mb-2">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, marginBottom: 8 })}>
               <Shield size={18} color="#ef4444" />
-              <Text className="text-gray-900 font-semibold">Access denied</Text>
+              <Text className="text-gray-900 font-semibold" style={ta}>
+                Access denied
+              </Text>
             </View>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
 
           <Card className="mt-3">
-            <Text className="text-sm text-gray-900 font-semibold mb-2">
+            <Text className="text-sm text-gray-900 font-semibold mb-2" style={ta}>
               Debug info
             </Text>
             <View className="gap-1">
-              <Text className="text-xs text-gray-700">
+              <Text className="text-xs text-gray-700" style={ta}>
                 Auth email: {sessionUser?.email ?? '—'}
               </Text>
-              <Text className="text-xs text-gray-700">
+              <Text className="text-xs text-gray-700" style={ta}>
                 Store email: {emailInUserStore || '—'}
               </Text>
-              <Text className="text-xs text-gray-700">
+              <Text className="text-xs text-gray-700" style={ta}>
                 remoteUserId: {remoteUserId ?? '—'}
               </Text>
-              <Text className="text-xs text-gray-700">
+              <Text className="text-xs text-gray-700" style={ta}>
                 syncStatus: {syncStatus}
               </Text>
-              <Text className="text-xs text-gray-700">isAdmin: false</Text>
+              <Text className="text-xs text-gray-700" style={ta}>
+                isAdmin: false
+              </Text>
             </View>
           </Card>
 
@@ -74,7 +82,7 @@ export default function AdminDashboardScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Admin Dashboard"
         showBack
@@ -83,14 +91,14 @@ export default function AdminDashboardScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <Text className="text-lg text-gray-900 font-semibold mb-1">
+          <Text className="text-lg text-gray-900 font-semibold mb-1" style={ta}>
             Admin dashboard
           </Text>
-          <Text className="text-sm text-gray-700">
+          <Text className="text-sm text-gray-700" style={ta}>
             Content tools live under Quick actions. English is enough for the app
             to work; Arabic fields are optional. When locale is Arabic, empty
             Arabic falls back to English. If you add Arabic quiz options, use the
@@ -99,8 +107,10 @@ export default function AdminDashboardScreen() {
         </Card>
 
         <Card className="bg-gray-900 border border-gray-800">
-          <Text className="text-white font-semibold mb-2">Quick actions</Text>
-          <Text className="text-white/80 text-sm mb-3">
+          <Text className="text-white font-semibold mb-2" style={ta}>
+            Quick actions
+          </Text>
+          <Text className="text-white/80 text-sm mb-3" style={ta}>
             Supabase RLS + `profiles.is_admin`; syncs refresh the in-app content
             store after saves.
           </Text>
@@ -120,12 +130,12 @@ export default function AdminDashboardScreen() {
             >
               Manage courses
             </Button>
-          <Button
-            variant="secondary"
-            onPress={() => router.push('/admin/marketplace-products')}
-          >
-            Manage marketplace products
-          </Button>
+            <Button
+              variant="secondary"
+              onPress={() => router.push('/admin/marketplace-products')}
+            >
+              Manage marketplace products
+            </Button>
             <Button variant="secondary" onPress={() => router.push('/admin/quizzes')}>
               Quiz editor
             </Button>
@@ -156,4 +166,3 @@ export default function AdminDashboardScreen() {
     </View>
   );
 }
-

@@ -18,6 +18,15 @@ import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
 import {
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+  mergeScrollContentRtl,
+} from '@/lib/rtlStyle';
+import { translateMarketplaceFeature } from '@/lib/marketplaceI18n';
+import {
   useMarketplaceStore,
   useUserStore,
   type CardTier,
@@ -54,7 +63,8 @@ export default function CreditCardsScreen() {
   const syncFromCloud = useMarketplaceStore((s) => s.syncFromCloud);
   const selected = useMarketplaceStore((s) => s.selectedForCompare);
   const toggleCompare = useMarketplaceStore((s) => s.toggleCompareSelection);
-  const { t } = useT();
+  const { t, rtl, locale } = useT();
+  const ta = rtlTextStyle(rtl);
 
   useEffect(() => {
     void syncFromCloud();
@@ -71,7 +81,7 @@ export default function CreditCardsScreen() {
   const canCompare = selected.length >= 2;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('creditCards.title')}
         coins={coins}
@@ -82,9 +92,18 @@ export default function CreditCardsScreen() {
       <View className="px-4 py-3 bg-white border-b border-gray-100">
         <Pressable
           onPress={() => setFiltersOpen(true)}
-          className="flex-row items-center justify-between px-3 py-2.5 bg-purple-50 rounded-lg border border-purple-100 active:opacity-70"
+          style={rtlRowMerge(rtl, {
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            paddingHorizontal: 12,
+            paddingVertical: 10,
+            backgroundColor: '#faf5ff',
+            borderRadius: 8,
+            borderWidth: 1,
+            borderColor: '#f3e8ff',
+          })}
         >
-          <Text className="text-sm text-gray-700 font-medium">
+          <Text className="text-sm text-gray-700 font-medium" style={ta}>
             {t('creditCards.smartFilters')}
             {incomeFilter !== 'all'
               ? ` · ${t('creditCards.income', { v: incomeFilter })}`
@@ -96,7 +115,8 @@ export default function CreditCardsScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 120, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 120, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         {selected.length > 0 && (
@@ -106,12 +126,12 @@ export default function CreditCardsScreen() {
             end={{ x: 1, y: 0 }}
             style={{ borderRadius: 12, padding: 16 }}
           >
-            <View className="flex-row items-center justify-between">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
               <View>
-                <Text className="text-white/80 text-xs">
+                <Text className="text-white/80 text-xs" style={ta}>
                   {t('creditCards.selectedForComparison')}
                 </Text>
-                <Text className="text-white text-lg font-semibold">
+                <Text className="text-white text-lg font-semibold" style={ta}>
                   {t('creditCards.selectedCount', { n: selected.length })}
                 </Text>
               </View>
@@ -137,83 +157,129 @@ export default function CreditCardsScreen() {
                 isSelected ? 'border-2 border-purple-500' : undefined
               }
             >
-              <View className="flex-row items-start justify-between mb-3">
-                <View className="flex-row items-center gap-3 flex-1">
-                  <View className="w-12 h-12 bg-purple-50 rounded-lg items-center justify-center">
-                    <Text className="text-2xl">{card.logo}</Text>
-                  </View>
-                  <View className="flex-1">
-                    <Text
-                      className="text-sm text-gray-800 font-semibold"
-                      numberOfLines={1}
+              <View
+                style={[
+                  localeIconRowStyle(rtl),
+                  { alignItems: 'center', marginBottom: 12, gap: 12 },
+                ]}
+              >
+                {rtl ? (
+                  <>
+                    <Pressable
+                      onPress={() => toggleCompare(card.id)}
+                      hitSlop={8}
+                      className={`w-6 h-6 rounded items-center justify-center border-2 shrink-0 ${
+                        isSelected
+                          ? 'bg-purple-600 border-purple-600'
+                          : 'border-gray-300 bg-white'
+                      }`}
                     >
-                      {card.name}
-                    </Text>
-                    <Text className="text-xs text-gray-600">{card.bank}</Text>
-                  </View>
-                </View>
-                <Pressable
-                  onPress={() => toggleCompare(card.id)}
-                  hitSlop={8}
-                  className={`w-6 h-6 rounded items-center justify-center border-2 ${
-                    isSelected
-                      ? 'bg-purple-600 border-purple-600'
-                      : 'border-gray-300 bg-white'
-                  }`}
-                >
-                  {isSelected && <Check size={14} color={colors.white} />}
-                </Pressable>
+                      {isSelected && <Check size={14} color={colors.white} />}
+                    </Pressable>
+                    <View style={localeTextBesideIconStyle(rtl)}>
+                      <Text
+                        className="text-sm text-gray-800 font-semibold"
+                        numberOfLines={1}
+                        style={[ta, { alignSelf: 'stretch' }]}
+                      >
+                        {card.name}
+                      </Text>
+                      <Text
+                        className="text-xs text-gray-600"
+                        style={[ta, { alignSelf: 'stretch' }]}
+                      >
+                        {card.bank}
+                      </Text>
+                    </View>
+                    <View className="w-12 h-12 bg-purple-50 rounded-lg items-center justify-center shrink-0">
+                      <Text className="text-2xl">{card.logo}</Text>
+                    </View>
+                  </>
+                ) : (
+                  <>
+                    <View className="w-12 h-12 bg-purple-50 rounded-lg items-center justify-center shrink-0">
+                      <Text className="text-2xl">{card.logo}</Text>
+                    </View>
+                    <View style={localeTextBesideIconStyle(rtl)}>
+                      <Text
+                        className="text-sm text-gray-800 font-semibold"
+                        numberOfLines={1}
+                        style={ta}
+                      >
+                        {card.name}
+                      </Text>
+                      <Text className="text-xs text-gray-600" style={ta}>
+                        {card.bank}
+                      </Text>
+                    </View>
+                    <Pressable
+                      onPress={() => toggleCompare(card.id)}
+                      hitSlop={8}
+                      className={`w-6 h-6 rounded items-center justify-center border-2 shrink-0 ${
+                        isSelected
+                          ? 'bg-purple-600 border-purple-600'
+                          : 'border-gray-300 bg-white'
+                      }`}
+                    >
+                      {isSelected && <Check size={14} color={colors.white} />}
+                    </Pressable>
+                  </>
+                )}
               </View>
 
-              <View className="flex-row items-center gap-1 mb-3">
+              <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4, marginBottom: 12 })}>
                 <Star size={14} color="#eab308" fill="#eab308" />
-                <Text className="text-sm text-gray-700 font-medium">
+                <Text className="text-sm text-gray-700 font-medium" style={ta}>
                   {card.rating}
                 </Text>
-                <Text className="text-xs text-gray-500 ml-1">
+                <Text className="text-xs text-gray-500 ml-1" style={ta}>
                   {t('creditCards.reviews', { n: card.reviewsCount })}
                 </Text>
               </View>
 
-              <View className="flex-row gap-2 mb-3">
+              <View style={rtlRowMerge(rtl, { gap: 8, marginBottom: 12 })}>
                 <View className="flex-1 p-2 bg-blue-50 rounded-lg">
-                  <Text className="text-xs text-gray-600">
+                  <Text className="text-xs text-gray-600" style={ta}>
                     {t('creditCards.apr')}
                   </Text>
-                  <Text className="text-base text-blue-600 font-bold">
+                  <Text className="text-base text-blue-600 font-bold" style={ta}>
                     {card.apr}%
                   </Text>
                 </View>
                 <View className="flex-1 p-2 bg-purple-50 rounded-lg">
-                  <Text className="text-xs text-gray-600">
+                  <Text className="text-xs text-gray-600" style={ta}>
                     {t('creditCards.annualFee')}
                   </Text>
-                  <Text className="text-base text-purple-600 font-bold">
+                  <Text className="text-base text-purple-600 font-bold" style={ta}>
                     {card.annualFee === 0
                       ? t('creditCards.free')
                       : `EGP ${formatNumber(card.annualFee)}`}
                   </Text>
                 </View>
                 <View className="flex-1 p-2 bg-green-50 rounded-lg">
-                  <Text className="text-xs text-gray-600">
+                  <Text className="text-xs text-gray-600" style={ta}>
                     {t('creditCards.cashback')}
                   </Text>
-                  <Text className="text-base text-green-600 font-bold">
+                  <Text className="text-base text-green-600 font-bold" style={ta}>
                     {card.cashback}%
                   </Text>
                 </View>
               </View>
 
-              <View className="flex-row flex-wrap gap-1 mb-3">
+              <View style={rtlRowMerge(rtl, { flexWrap: 'wrap', gap: 4, marginBottom: 12 })}>
                 {card.benefits.slice(0, 3).map((b) => (
                   <Badge key={b} variant="neutral">
-                    {b}
+                    {translateMarketplaceFeature(locale, b)}
                   </Badge>
                 ))}
               </View>
 
-              <View className="flex-row items-center justify-between">
-                <Badge variant={tier.variant}>{t(tier.label)}</Badge>
+              <View
+                style={[
+                  localeIconRowStyle(rtl),
+                  { alignItems: 'center', justifyContent: 'space-between' },
+                ]}
+              >
                 <Button
                   size="sm"
                   onPress={() =>
@@ -222,12 +288,16 @@ export default function CreditCardsScreen() {
                 >
                   {t('creditCards.viewDetails')}
                 </Button>
+                <Badge variant={tier.variant}>{t(tier.label)}</Badge>
               </View>
 
               {card.minIncome > 0 && (
-                <View className="mt-3 pt-3 border-t border-gray-100 flex-row items-center gap-2">
+                <View
+                  className="mt-3 pt-3 border-t border-gray-100"
+                  style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+                >
                   <AlertCircle size={12} color={colors.gray[500]} />
-                  <Text className="text-xs text-gray-600">
+                  <Text className="text-xs text-gray-600" style={ta}>
                     {t('creditCards.minIncome', {
                       n: formatNumber(card.minIncome),
                     })}
@@ -239,17 +309,17 @@ export default function CreditCardsScreen() {
         })}
 
         <Card className="bg-blue-50 border border-blue-200">
-          <Text className="text-gray-800 font-semibold mb-2">
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
             {t('creditCards.tipsTitle')}
           </Text>
           <View className="gap-1">
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               {t('creditCards.tip1')}
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               {t('creditCards.tip2')}
             </Text>
-            <Text className="text-xs text-gray-700">
+            <Text className="text-xs text-gray-700" style={ta}>
               {t('creditCards.tip3')}
             </Text>
           </View>
@@ -271,9 +341,10 @@ export default function CreditCardsScreen() {
           <Pressable
             onPress={(e) => e.stopPropagation()}
             className="bg-white rounded-t-3xl p-6"
+            style={rtlRootDirection(rtl)}
           >
-            <View className="flex-row items-center justify-between mb-4">
-              <Text className="text-xl text-gray-800 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 })}>
+              <Text className="text-xl text-gray-800 font-semibold" style={ta}>
                 {t('creditCards.filterProducts')}
               </Text>
               <Pressable onPress={() => setFiltersOpen(false)} hitSlop={8}>
@@ -281,10 +352,13 @@ export default function CreditCardsScreen() {
               </Pressable>
             </View>
 
-            <Text className="text-sm text-gray-700 font-medium mb-2">
+            <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
               {t('creditCards.monthlyIncome')}
             </Text>
-            <View className="flex-row gap-2 flex-wrap mb-6">
+            <View
+              className="mb-6"
+              style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}
+            >
               {(
                 [
                   { id: 'all', label: t('rewards.all') },
@@ -308,6 +382,7 @@ export default function CreditCardsScreen() {
                       className={`text-sm font-medium ${
                         active ? 'text-white' : 'text-gray-700'
                       }`}
+                      style={ta}
                     >
                       {opt.label}
                     </Text>
@@ -316,7 +391,7 @@ export default function CreditCardsScreen() {
               })}
             </View>
 
-            <View className="flex-row gap-2">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
               <View className="flex-1">
                 <Button
                   variant="outline"

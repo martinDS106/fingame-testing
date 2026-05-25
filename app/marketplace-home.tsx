@@ -26,6 +26,18 @@ import {
   useUserStore,
   type ProductCategory,
 } from '@/stores';
+import {
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  rtlRootDirection,
+  rtlRowMerge,
+  rtlTextStyle,
+  mergeScrollContentRtl,
+} from '@/lib/rtlStyle';
+import {
+  marketplaceCategoryDesc,
+  marketplaceCategoryTitle,
+} from '@/lib/marketplaceI18n';
 import { useT } from '@/hooks/useT';
 
 const CATEGORY_ICONS: Record<
@@ -60,7 +72,8 @@ export default function MarketplaceHomeScreen() {
   const comparisons = useMarketplaceStore((s) => s.comparisonsMade);
   const applications = useMarketplaceStore((s) => s.applications);
   const [query, setQuery] = useState('');
-  const { t, locale } = useT();
+  const { t, locale, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const level = useMemo(() => {
     if (comparisons >= 10) return { labelKey: 'marketplace.levelAnalyst', n: 5 };
@@ -75,7 +88,7 @@ export default function MarketplaceHomeScreen() {
     locale === 'ar' ? (remaining === 1 ? '' : 'ات') : remaining === 1 ? '' : 's';
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('marketplace.title')}
         coins={coins}
@@ -84,7 +97,10 @@ export default function MarketplaceHomeScreen() {
       />
 
       <View className="px-4 pt-3 pb-2 bg-white border-b border-gray-100">
-        <View className="flex-row items-center gap-2 bg-gray-100 rounded-xl px-3 py-2">
+        <View
+          className="bg-gray-100 rounded-xl px-3 py-2 items-center"
+          style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+        >
           <Search size={16} color={colors.gray[400]} />
           <TextInput
             placeholder={t('marketplace.searchPlaceholder')}
@@ -92,6 +108,7 @@ export default function MarketplaceHomeScreen() {
             value={query}
             onChangeText={setQuery}
             className="flex-1 text-sm text-gray-800"
+            style={ta}
           />
           <Pressable hitSlop={8}>
             <Filter size={16} color={colors.gray[500]} />
@@ -101,7 +118,7 @@ export default function MarketplaceHomeScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -110,12 +127,12 @@ export default function MarketplaceHomeScreen() {
           end={{ x: 1, y: 1 }}
           style={{ borderRadius: 12, padding: 16 }}
         >
-          <View className="flex-row items-center justify-between mb-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
             <View>
-              <Text className="text-white/80 text-sm">
+              <Text className="text-white/80 text-sm" style={ta}>
                 {t('marketplace.levelTitle')}
               </Text>
-              <Text className="text-white text-2xl font-bold">
+              <Text className="text-white text-2xl font-bold" style={ta}>
                 {t(level.labelKey)}
               </Text>
             </View>
@@ -132,7 +149,7 @@ export default function MarketplaceHomeScreen() {
               }}
             />
           </View>
-          <Text className="text-white/80 text-xs mt-2">
+          <Text className="text-white/80 text-xs mt-2" style={ta}>
             {remaining > 0
               ? t('marketplace.compareMore', {
                   n: remaining,
@@ -144,11 +161,11 @@ export default function MarketplaceHomeScreen() {
 
         {applications.length > 0 && (
           <Card>
-            <View className="flex-row items-center justify-between mb-3">
-              <Text className="text-gray-800 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 12 })}>
+              <Text className="text-gray-800 font-semibold" style={ta}>
                 {t('marketplace.myApplications')}
               </Text>
-              <Text className="text-xs text-gray-500">
+              <Text className="text-xs text-gray-500" style={ta}>
                 {t('marketplace.activeCount', { n: applications.length })}
               </Text>
             </View>
@@ -158,14 +175,15 @@ export default function MarketplaceHomeScreen() {
                 onPress={() =>
                   router.push(`/marketplace/application-tracking?id=${app.id}`)
                 }
-                className="flex-row items-center gap-3 p-2 rounded-lg active:bg-gray-50"
+                className="p-2 rounded-lg active:bg-gray-50"
+                style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
               >
                 <Text className="text-2xl">{app.bankLogo}</Text>
                 <View className="flex-1">
-                  <Text className="text-sm text-gray-800" numberOfLines={1}>
+                  <Text className="text-sm text-gray-800" numberOfLines={1} style={ta}>
                     {app.productName}
                   </Text>
-                  <Text className="text-xs text-gray-500 capitalize">
+                  <Text className="text-xs text-gray-500 capitalize" style={ta}>
                     {app.status.replace('_', ' ')}
                   </Text>
                 </View>
@@ -182,22 +200,22 @@ export default function MarketplaceHomeScreen() {
         )}
 
         <View>
-          <Text className="text-gray-800 font-semibold mb-3">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
             {t('marketplace.recommended')}
           </Text>
           <Pressable
             onPress={() => router.push('/marketplace/product/cib-smart')}
           >
             <Card className="bg-green-50 border border-green-200">
-              <View className="flex-row items-start gap-3">
+              <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12 })}>
                 <View className="w-12 h-12 bg-white rounded-lg items-center justify-center">
                   <CreditCard size={24} color={colors.primary[600]} />
                 </View>
                 <View className="flex-1">
-                  <Text className="text-sm text-gray-800 font-semibold mb-1">
-                    CIB Smart Credit Card
+                  <Text className="text-sm text-gray-800 font-semibold mb-1" style={ta}>
+                    {t('marketplace.recommendedCard')}
                   </Text>
-                  <Text className="text-xs text-gray-600 mb-2">
+                  <Text className="text-xs text-gray-600 mb-2" style={ta}>
                     {t('marketplace.recoSubtitle')}
                   </Text>
                   <Button
@@ -215,7 +233,7 @@ export default function MarketplaceHomeScreen() {
         </View>
 
         <View>
-          <Text className="text-gray-800 font-semibold mb-3">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
             {t('marketplace.browseCategories')}
           </Text>
           <View className="gap-3">
@@ -228,34 +246,66 @@ export default function MarketplaceHomeScreen() {
                   className="active:opacity-80"
                 >
                   <Card>
-                    <View className="flex-row items-center gap-4">
-                      <LinearGradient
-                        colors={cat.color}
-                        start={{ x: 0, y: 0 }}
-                        end={{ x: 1, y: 1 }}
-                        style={{
-                          width: 56,
-                          height: 56,
-                          borderRadius: 12,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Icon size={28} color={colors.white} />
-                      </LinearGradient>
-
-                      <View className="flex-1">
-                        <Text className="text-gray-800 font-semibold mb-1">
-                          {cat.title}
-                        </Text>
-                        <Text className="text-sm text-gray-600">
-                          {cat.description}
-                        </Text>
-                      </View>
-
-                      <View className="items-end gap-2">
-                        <Badge variant="neutral">{`${cat.count}`}</Badge>
-                      </View>
+                    <View style={[localeIconRowStyle(rtl), { alignItems: 'center', gap: 16 }]}>
+                      {rtl ? (
+                        <>
+                          <Badge variant="neutral">{`${cat.count}`}</Badge>
+                          <View style={localeTextBesideIconStyle(rtl)}>
+                            <Text
+                              style={[ta, { alignSelf: 'stretch' }]}
+                              className="text-gray-800 font-semibold mb-1"
+                            >
+                              {marketplaceCategoryTitle(locale, cat.id)}
+                            </Text>
+                            <Text
+                              style={[ta, { alignSelf: 'stretch' }]}
+                              className="text-sm text-gray-600"
+                            >
+                              {marketplaceCategoryDesc(locale, cat.id)}
+                            </Text>
+                          </View>
+                          <LinearGradient
+                            colors={cat.color}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 12,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Icon size={28} color={colors.white} />
+                          </LinearGradient>
+                        </>
+                      ) : (
+                        <>
+                          <LinearGradient
+                            colors={cat.color}
+                            start={{ x: 0, y: 0 }}
+                            end={{ x: 1, y: 1 }}
+                            style={{
+                              width: 56,
+                              height: 56,
+                              borderRadius: 12,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Icon size={28} color={colors.white} />
+                          </LinearGradient>
+                          <View style={localeTextBesideIconStyle(rtl)}>
+                            <Text className="text-gray-800 font-semibold mb-1" style={ta}>
+                              {marketplaceCategoryTitle(locale, cat.id)}
+                            </Text>
+                            <Text className="text-sm text-gray-600" style={ta}>
+                              {marketplaceCategoryDesc(locale, cat.id)}
+                            </Text>
+                          </View>
+                          <Badge variant="neutral">{`${cat.count}`}</Badge>
+                        </>
+                      )}
                     </View>
                   </Card>
                 </Pressable>
@@ -265,7 +315,7 @@ export default function MarketplaceHomeScreen() {
         </View>
 
         <Card className="bg-yellow-50 border border-yellow-200">
-          <Text className="text-gray-800 font-semibold mb-3">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
             {t('marketplace.earnCoinsTitle')}
           </Text>
           <View className="gap-2">
@@ -275,9 +325,11 @@ export default function MarketplaceHomeScreen() {
               { label: t('marketplace.earnReview'), amt: 25 },
               { label: t('marketplace.earnReferral'), amt: 150 },
             ].map((item) => (
-              <View key={item.label} className="flex-row justify-between">
-                <Text className="text-sm text-gray-700">• {item.label}</Text>
-                <Text className="text-sm text-yellow-700 font-semibold">
+              <View key={item.label} style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+                <Text className="text-sm text-gray-700" style={ta}>
+                  • {item.label}
+                </Text>
+                <Text className="text-sm text-yellow-700 font-semibold" style={ta}>
                   {t('marketplace.earnCoinsSuffix', { n: item.amt })}
                 </Text>
               </View>

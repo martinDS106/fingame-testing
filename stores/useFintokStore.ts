@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 
 import { isApiConfigured } from '@/lib/api';
+import { FINTOK_DEMO_VIDEOS } from '@/lib/fintokDemo';
 import {
   addFinTokComment,
   pullFinTokComments,
@@ -52,25 +53,23 @@ export const useFintokStore = create<FinTokState>((set, get) => ({
   refresh: async (userId) => {
     set({ loading: true });
     try {
-      if (isApiConfigured) {
-        set({
-          videos: [],
-          likedIds: [],
-          savedIds: [],
-          lastError:
-            'FinTok is not available in MySQL API mode yet.',
-        });
-        return;
+      let videos: FinTokVideo[] = [];
+
+      if (!isApiConfigured) {
+        const raw = (await pullFinTokVideos()) as RemoteFinTokVideo[];
+        videos = raw
+          .filter((v) => v.is_published !== false)
+          .sort((a, b) => (a.sort_order ?? 0) - (b.sort_order ?? 0))
+          .map((v) => ({ ...v, resolved_url: resolvePublicUrl(v) }));
       }
 
-      const raw = (await pullFinTokVideos(200)) as RemoteFinTokVideo[];
-      const videos: FinTokVideo[] = raw
-        .filter((v) => v.is_published)
-        .map((v) => ({ ...v, resolved_url: resolvePublicUrl(v) }));
+      if (!videos.length) {
+        videos = FINTOK_DEMO_VIDEOS as FinTokVideo[];
+      }
 
       set({ videos, lastError: null });
 
-      if (userId) {
+      if (userId && !isApiConfigured) {
         const [likes, saves] = await Promise.all([
           pullFinTokLikeIds(userId),
           pullFinTokSaveIds(userId),
@@ -79,6 +78,14 @@ export const useFintokStore = create<FinTokState>((set, get) => ({
       } else {
         set({ likedIds: [], savedIds: [] });
       }
+    } catch (err) {
+      set({
+        videos: FINTOK_DEMO_VIDEOS as FinTokVideo[],
+        lastError: null,
+        likedIds: [],
+        savedIds: [],
+      });
+      console.warn('[fintok] refresh failed, using demo feed', err);
     } finally {
       set({ loading: false });
     }

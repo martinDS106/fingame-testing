@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState } from 'react';
+import { useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react-native';
@@ -7,11 +7,15 @@ import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useContentStore } from '@/stores';
 
 export default function QuizPlayScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const quizId = (params.id ?? '').toString();
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const quiz = useContentStore((s) => s.quizFor(quizId));
   const allQuestions = useContentStore((s) => s.questions);
@@ -31,6 +35,8 @@ export default function QuizPlayScreen() {
   const [idx, setIdx] = useState(0);
   const [answers, setAnswers] = useState<Record<string, number>>({});
   const [autoSyncAttempted, setAutoSyncAttempted] = useState(false);
+  const [submitting, setSubmitting] = useState(false);
+  const submittedRef = useRef(false);
 
   const current = questions[idx];
   const answeredCount = useMemo(() => Object.keys(answers).length, [answers]);
@@ -55,14 +61,14 @@ export default function QuizPlayScreen() {
   // avoid crashing and show a friendly message instead.
   if (questions.length > 0 && !current) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title={quiz?.title ?? 'Quiz'} showBack showBell={false} />
         <View className="flex-1 items-center justify-center px-8">
           <HelpCircle size={42} color={colors.gray[500]} />
-          <Text className="text-gray-900 font-semibold mt-3">
+          <Text className="text-gray-900 font-semibold mt-3" style={ta}>
             Quiz state changed
           </Text>
-          <Text className="text-gray-700 text-sm text-center mt-2">
+          <Text className="text-gray-700 text-sm text-center mt-2" style={ta}>
             Please reopen the quiz.
           </Text>
           <View className="mt-4 w-full">
@@ -77,11 +83,13 @@ export default function QuizPlayScreen() {
 
   if (!quizId || !quiz) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Quiz" showBack showBell={false} />
         <View className="flex-1 items-center justify-center px-8">
           <HelpCircle size={42} color={colors.gray[500]} />
-          <Text className="text-gray-900 font-semibold mt-3">Quiz not found</Text>
+          <Text className="text-gray-900 font-semibold mt-3" style={ta}>
+            Quiz not found
+          </Text>
           <View className="mt-4 w-full">
             <Button fullWidth variant="outline" onPress={() => router.back()}>
               Go back
@@ -94,14 +102,14 @@ export default function QuizPlayScreen() {
 
   if (!questions.length) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title={quiz.title} showBack showBell={false} />
         <View className="flex-1 items-center justify-center px-8">
           <HelpCircle size={42} color={colors.gray[500]} />
-          <Text className="text-gray-900 font-semibold mt-3">
+          <Text className="text-gray-900 font-semibold mt-3" style={ta}>
             {syncStatus === 'syncing' ? 'Syncing questions…' : 'No questions yet'}
           </Text>
-          <Text className="text-gray-700 text-sm text-center mt-2">
+          <Text className="text-gray-700 text-sm text-center mt-2" style={ta}>
             This quiz doesn’t have questions loaded yet. Please retry sync.
           </Text>
           <View className="mt-4 w-full">
@@ -120,40 +128,49 @@ export default function QuizPlayScreen() {
   }
 
   async function finish() {
+    if (submittedRef.current || submitting) return;
+    submittedRef.current = true;
+    setSubmitting(true);
+
     const total = questions.length;
-    const res = await submitAttempt(quizId, score, total);
-    if (!res.ok) {
+    try {
+      const res = await submitAttempt(quizId, score, total);
+      if (!res.ok) {
+        submittedRef.current = false;
+        Alert.alert(
+          'Could not save result',
+          res.error || 'Please sign in again.',
+          [{ text: 'OK' }],
+          { cancelable: true },
+        );
+        return;
+      }
+
       Alert.alert(
-        'Could not save result',
-        res.error || 'Please sign in again.',
-        [{ text: 'OK' }],
+        'Quiz complete',
+        `Score: ${score}/${total}\n+${res.coinsEarned} coins`,
+        [{ text: 'OK', onPress: () => router.back() }],
         { cancelable: true },
       );
-      return;
+    } finally {
+      setSubmitting(false);
     }
-
-    Alert.alert(
-      'Quiz complete',
-      `Score: ${score}/${total}\n+${res.coinsEarned} coins`,
-      [{ text: 'OK', onPress: () => router.back() }],
-      { cancelable: true },
-    );
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={quiz.title} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card className="border border-gray-200 bg-white" padded>
-          <Text className="text-xs text-gray-500 mb-1">
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
             Question {idx + 1} / {questions.length} · Answered {answeredCount}
           </Text>
-          <Text className="text-gray-900 font-semibold text-base">
+          <Text className="text-gray-900 font-semibold text-base" style={ta}>
             {current.question}
           </Text>
         </Card>
@@ -171,11 +188,18 @@ export default function QuizPlayScreen() {
                     : 'bg-white border-gray-200'
                 }`}
               >
-                <View className="flex-row items-center justify-between gap-3">
+                <View
+                  style={rtlRowMerge(rtl, {
+                    alignItems: 'center',
+                    justifyContent: 'space-between',
+                    gap: 12,
+                  })}
+                >
                   <Text
                     className={`flex-1 text-sm ${
                       selected ? 'text-primary-800 font-semibold' : 'text-gray-800'
                     }`}
+                    style={ta}
                   >
                     {opt}
                   </Text>
@@ -186,12 +210,12 @@ export default function QuizPlayScreen() {
           })}
         </View>
 
-        <View className="flex-row gap-2">
+        <View style={rtlRowMerge(rtl, { gap: 8 })}>
           <View className="flex-1">
             <Button
               variant="outline"
               fullWidth
-              disabled={idx === 0}
+              disabled={idx === 0 || submitting}
               onPress={() => setIdx((v) => Math.max(0, v - 1))}
             >
               Previous
@@ -201,7 +225,7 @@ export default function QuizPlayScreen() {
             {idx < questions.length - 1 ? (
               <Button
                 fullWidth
-                disabled={answers[current.id] === undefined}
+                disabled={answers[current.id] === undefined || submitting}
                 onPress={() => setIdx((v) => Math.min(questions.length - 1, v + 1))}
               >
                 Next
@@ -209,21 +233,23 @@ export default function QuizPlayScreen() {
             ) : (
               <Button
                 fullWidth
-                disabled={answers[current.id] === undefined}
-                onPress={finish}
+                disabled={answers[current.id] === undefined || submitting}
+                onPress={() => void finish()}
               >
-                Submit
+                {submitting ? 'Submitting…' : 'Submit'}
               </Button>
             )}
           </View>
         </View>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <View className="flex-row items-center gap-2 mb-1">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 4 })}>
             <XCircle size={18} color={colors.gray[600]} />
-            <Text className="text-gray-900 font-semibold">Note</Text>
+            <Text className="text-gray-900 font-semibold" style={ta}>
+              Note
+            </Text>
           </View>
-          <Text className="text-sm text-gray-700">
+          <Text className="text-sm text-gray-700" style={ta}>
             This is a minimal quiz runner for QA. We can enhance it with review mode,
             explanations, and better UX.
           </Text>
@@ -233,4 +259,3 @@ export default function QuizPlayScreen() {
     </View>
   );
 }
-

@@ -4,6 +4,11 @@ import { createJSONStorage, persist } from 'zustand/middleware';
 import { asyncStorage } from './storage';
 import { isApiConfigured } from '@/lib/api';
 import {
+  daysBetweenDates,
+  localDateStamp,
+  normalizeDateStamp,
+} from '@/lib/dateStamp';
+import {
   logCoinChange,
   pullProfile,
   pushProfile,
@@ -84,15 +89,6 @@ const XP_PER_LEVEL = 500;
 
 function computeLevel(xp: number): number {
   return Math.max(1, Math.floor(xp / XP_PER_LEVEL) + 1);
-}
-
-function todayStamp(d: Date = new Date()): string {
-  return d.toISOString().slice(0, 10);
-}
-
-function daysBetween(a: string, b: string): number {
-  const ms = new Date(b).getTime() - new Date(a).getTime();
-  return Math.round(ms / (1000 * 60 * 60 * 24));
 }
 
 const defaultProfile: UserProfile = {
@@ -222,9 +218,9 @@ export const useUserStore = create<UserState>()(
       },
 
       checkInDaily: async () => {
-        const today = todayStamp();
+        const today = localDateStamp();
         const state = get();
-        const last = state.lastActiveDate;
+        const last = normalizeDateStamp(state.lastActiveDate);
 
         if (last === today) {
           return { newStreak: state.streak, streakChanged: false };
@@ -232,7 +228,7 @@ export const useUserStore = create<UserState>()(
 
         let newStreak = 1;
         if (last) {
-          const diff = daysBetween(last, today);
+          const diff = daysBetweenDates(last, today);
           if (diff === 1) newStreak = state.streak + 1;
           else if (diff === 0) newStreak = state.streak;
           else newStreak = 1;

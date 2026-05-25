@@ -22,8 +22,11 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
+import { useLearningProgress } from '@/hooks/useLearningProgress';
+import type { SimulationModuleId } from '@/lib/learningProgress';
 import { useUserStore, xpProgressToNextLevel } from '@/stores';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 
 type Difficulty = 'Beginner' | 'Intermediate' | 'Advanced';
 
@@ -36,8 +39,6 @@ interface Simulation {
   difficultyKey: string;
   gradient: [string, string];
   unlocked: boolean;
-  progress: number;
-  points: number;
   path: string;
 }
 
@@ -51,8 +52,6 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.beginner',
     gradient: [colors.primary[500], colors.primary[600]],
     unlocked: true,
-    progress: 75,
-    points: 450,
     path: '/simulation/banking',
   },
   {
@@ -64,8 +63,6 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.intermediate',
     gradient: ['#22c55e', '#16a34a'],
     unlocked: true,
-    progress: 40,
-    points: 280,
     path: '/simulation/investment',
   },
   {
@@ -77,8 +74,6 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.intermediate',
     gradient: [colors.accent[400], colors.accent[600]],
     unlocked: true,
-    progress: 30,
-    points: 180,
     path: '/simulation/gold',
   },
   {
@@ -90,8 +85,6 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.advanced',
     gradient: ['#a855f7', '#9333ea'],
     unlocked: true,
-    progress: 15,
-    points: 320,
     path: '/simulation/business',
   },
   {
@@ -103,8 +96,6 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.intermediate',
     gradient: ['#0ea5e9', '#2563eb'],
     unlocked: true,
-    progress: 0,
-    points: 120,
     path: '/challenges',
   },
   {
@@ -116,9 +107,7 @@ const simulations: Simulation[] = [
     difficultyKey: 'difficulty.beginner',
     gradient: ['#6366f1', '#4f46e5'],
     unlocked: true,
-    progress: 60,
-    points: 220,
-    path: '/simulation/banking',
+    path: '/simulation/savings-goal',
   },
   {
     id: 'credit',
@@ -128,9 +117,7 @@ const simulations: Simulation[] = [
     difficulty: 'Advanced',
     difficultyKey: 'difficulty.advanced',
     gradient: ['#f97316', '#dc2626'],
-    unlocked: false,
-    progress: 0,
-    points: 0,
+    unlocked: true,
     path: '/simulation/credit',
   },
 ];
@@ -147,22 +134,27 @@ export default function SimulationHubScreen() {
   const userLevel = useUserStore((s) => s.level);
   const xpInfo = xpProgressToNextLevel(xp);
   const xpProgress = xpInfo.pct;
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
+  const { simulationByModule } = useLearningProgress();
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('simHub.title')}
         showBack
         showBell={false}
         rightSlot={
-          <View className="flex-row items-center gap-1.5 bg-accent-400 px-3 py-1 rounded-full">
+          <View
+            className="items-center gap-1.5 bg-accent-400 px-3 py-1 rounded-full"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 6 })}
+          >
             <Star
               size={14}
               color={colors.primary[900]}
               fill={colors.primary[900]}
             />
-            <Text className="text-primary-900 text-sm font-semibold">
+            <Text className="text-primary-900 text-sm font-semibold" style={ta}>
               {t('rewards.pts', { points: formatNumber(coins) })}
             </Text>
           </View>
@@ -179,14 +171,14 @@ export default function SimulationHubScreen() {
           className="rounded-xl p-3"
           style={{ backgroundColor: 'rgba(255,255,255,0.1)' }}
         >
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center gap-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
               <Trophy size={18} color={colors.accent[300]} />
-              <Text className="text-white text-sm font-medium">
+              <Text className="text-white text-sm font-medium" style={ta}>
                 {t('simHub.level', { n: userLevel })}
               </Text>
             </View>
-            <Text className="text-white/80 text-sm">
+            <Text className="text-white/80 text-sm" style={ta}>
               {t('simHub.xpProgress', {
                 current: formatNumber(xpInfo.current),
                 target: formatNumber(xpInfo.target),
@@ -204,14 +196,14 @@ export default function SimulationHubScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 32, gap: 16 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 32, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <Card className="bg-primary-50 border-primary-100">
-          <Text className="text-gray-800 font-semibold mb-2">
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
             {t('simHub.chooseTitle')}
           </Text>
-          <Text className="text-sm text-gray-600">
+          <Text className="text-sm text-gray-600" style={ta}>
             {t('simHub.chooseBody')}
           </Text>
         </Card>
@@ -219,6 +211,9 @@ export default function SimulationHubScreen() {
         <View className="gap-3">
           {simulations.map((sim) => {
             const { Icon } = sim;
+            const live = simulationByModule[sim.id as SimulationModuleId];
+            const progress = live?.progress ?? 0;
+            const points = live?.points ?? 0;
             return (
               <PressableCard
                 key={sim.id}
@@ -228,7 +223,7 @@ export default function SimulationHubScreen() {
                 }
                 className={sim.unlocked ? '' : 'opacity-60'}
               >
-                <View className="flex-row gap-4">
+                <View style={rtlRowMerge(rtl, { gap: 16 })}>
                   <LinearGradient
                     colors={sim.gradient}
                     start={{ x: 0, y: 0 }}
@@ -249,10 +244,18 @@ export default function SimulationHubScreen() {
                   </LinearGradient>
 
                   <View className="flex-1">
-                    <View className="flex-row items-start justify-between mb-1 gap-2">
+                    <View
+                      style={rtlRowMerge(rtl, {
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        marginBottom: 4,
+                        gap: 8,
+                      })}
+                    >
                       <Text
                         className="text-gray-800 font-semibold flex-1"
                         numberOfLines={1}
+                        style={ta}
                       >
                         {t(sim.titleKey)}
                       </Text>
@@ -264,46 +267,53 @@ export default function SimulationHubScreen() {
                     <Text
                       className="text-sm text-gray-600 mb-2"
                       numberOfLines={2}
+                      style={ta}
                     >
                       {t(sim.descriptionKey)}
                     </Text>
 
                     {sim.unlocked ? (
                       <>
-                        <View className="flex-row justify-between mb-1">
-                          <Text className="text-xs text-gray-600">
+                        <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginBottom: 4 })}>
+                          <Text className="text-xs text-gray-600" style={ta}>
                             {t('simHub.progress')}
                           </Text>
-                          <Text className="text-xs text-gray-600 font-medium">
-                            {sim.progress}%
+                          <Text className="text-xs text-gray-600 font-medium" style={ta}>
+                            {progress}%
                           </Text>
                         </View>
                         <ProgressBar
-                          value={sim.progress}
+                          value={progress}
                           height={6}
                           gradient={sim.gradient}
                           className="mb-2"
                         />
-                        <View className="flex-row items-center justify-between">
-                          <View className="flex-row items-center gap-1">
+                        <View
+                          style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}
+                        >
+                          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}>
                             <Star
                               size={14}
                               color={colors.accent[500]}
                               fill={colors.accent[500]}
                             />
-                            <Text className="text-sm text-gray-600">
-                              {t('simHub.pointsEarned', { n: sim.points })}
+                            <Text className="text-sm text-gray-600" style={ta}>
+                              {t('simHub.pointsEarned', { n: points })}
                             </Text>
                           </View>
-                          <Button variant="primary" size="sm">
+                          <Button
+                            variant="primary"
+                            size="sm"
+                            onPress={() => router.push(sim.path as never)}
+                          >
                             {t('simHub.continue')}
                           </Button>
                         </View>
                       </>
                     ) : (
-                      <View className="flex-row items-center gap-2">
+                      <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                         <Lock size={14} color={colors.gray[500]} />
-                        <Text className="text-sm text-gray-500">
+                        <Text className="text-sm text-gray-500" style={ta}>
                           {t('simHub.unlockHint', {
                             name: t('simHub.sim.finance.title'),
                           })}
@@ -323,13 +333,13 @@ export default function SimulationHubScreen() {
           end={{ x: 1, y: 0 }}
           style={{ borderRadius: 16, padding: 16 }}
         >
-          <View className="flex-row items-center gap-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}>
             <Trophy size={48} color={colors.white} />
             <View className="flex-1">
-              <Text className="text-white font-semibold mb-1">
+              <Text className="text-white font-semibold mb-1" style={ta}>
                 {t('simHub.masterAllTitle')}
               </Text>
-              <Text className="text-sm text-white/80">
+              <Text className="text-sm text-white/80" style={ta}>
                 {t('simHub.masterAllBody')}
               </Text>
             </View>

@@ -10,6 +10,7 @@ import { colors } from '@/theme';
 import { pullRedemptions, type RemoteRedemption } from '@/lib/syncServiceApi';
 import { useUserStore } from '@/stores';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 
 function formatDate(iso: string): string {
   try {
@@ -20,7 +21,8 @@ function formatDate(iso: string): string {
 }
 
 export default function RedemptionsScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<RemoteRedemption[]>([]);
@@ -46,18 +48,20 @@ export default function RedemptionsScreen() {
   }, [remoteUserId]);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('profile.rewardRedemption')} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         {!remoteUserId && (
           <Card className="border border-yellow-200 bg-yellow-50" padded>
-            <Text className="text-gray-900 font-semibold mb-1">Sign in required</Text>
-            <Text className="text-sm text-gray-700">
+            <Text style={ta} className="text-gray-900 font-semibold mb-1">
+              Sign in required
+            </Text>
+            <Text style={ta} className="text-sm text-gray-700">
               Redemption history is stored in the cloud. Please sign in first.
             </Text>
           </Card>
@@ -65,13 +69,16 @@ export default function RedemptionsScreen() {
 
         {remoteUserId && (
           <Card>
-            <View className="flex-row items-center gap-2 mb-2">
+            <View
+              className="mb-2"
+              style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+            >
               <Gift size={18} color={colors.primary[700]} />
-              <Text className="text-gray-900 font-semibold">
+              <Text style={ta} className="text-gray-900 font-semibold">
                 {t('profile.rewardRedemption')}
               </Text>
             </View>
-            <Text className="text-sm text-gray-700">
+            <Text style={ta} className="text-sm text-gray-700">
               Your redeemed rewards and their status.
             </Text>
             <View className="mt-3">
@@ -80,15 +87,19 @@ export default function RedemptionsScreen() {
               </Button>
             </View>
             {error && (
-              <Text className="text-sm text-red-600 mt-2">{error}</Text>
+              <Text style={ta} className="text-sm text-red-600 mt-2">
+                {error}
+              </Text>
             )}
           </Card>
         )}
 
         {remoteUserId && rows.length === 0 && (
           <Card className="border border-gray-200 bg-white" padded>
-            <Text className="text-gray-900 font-semibold mb-1">No redemptions yet</Text>
-            <Text className="text-sm text-gray-700">
+            <Text style={ta} className="text-gray-900 font-semibold mb-1">
+              No redemptions yet
+            </Text>
+            <Text style={ta} className="text-sm text-gray-700">
               Redeem a reward from the Rewards tab to see it here.
             </Text>
           </Card>
@@ -96,10 +107,14 @@ export default function RedemptionsScreen() {
 
         {rows.map((r) => (
           <Card key={r.id} className="border border-gray-200 bg-white" padded>
-            <Text className="text-gray-900 font-semibold mb-1" numberOfLines={1}>
+            <Text
+              style={ta}
+              className="text-gray-900 font-semibold mb-1"
+              numberOfLines={1}
+            >
               {r.reward_title}
             </Text>
-            <Text className="text-xs text-gray-500">
+            <Text style={ta} className="text-xs text-gray-500">
               cost: {r.cost} · status: {r.status} · {formatDate(r.created_at)}
             </Text>
           </Card>
@@ -110,4 +125,3 @@ export default function RedemptionsScreen() {
     </View>
   );
 }
-

@@ -27,6 +27,8 @@ import { formatEGP } from '@/lib/format';
 import { useMarketEngine } from '@/hooks/useMarketEngine';
 import { useInvestmentStore, useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 
 type Mode = 'market' | 'limit' | 'stop_loss';
 type Side = 'buy' | 'sell';
@@ -34,6 +36,8 @@ type Side = 'buy' | 'sell';
 export default function StockDetailScreen() {
   const { symbol } = useLocalSearchParams<{ symbol: string }>();
   const router = useRouter();
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   useMarketEngine(4000);
 
   const stocks = useInvestmentStore((s) => s.stocks);
@@ -72,10 +76,12 @@ export default function StockDetailScreen() {
 
   if (!stock) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Stock" showBack showBell={false} />
         <View className="flex-1 items-center justify-center">
-          <Text className="text-gray-600">Stock not found</Text>
+          <Text className="text-gray-600" style={ta}>
+            Stock not found
+          </Text>
           <Button
             variant="outline"
             className="mt-3"
@@ -146,7 +152,7 @@ export default function StockDetailScreen() {
   const chartWidth = Math.min(Dimensions.get('window').width - 32, 360);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={`${stock.symbol} · ${stock.name}`}
         showBack
@@ -156,7 +162,7 @@ export default function StockDetailScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -165,34 +171,36 @@ export default function StockDetailScreen() {
           end={{ x: 1, y: 1 }}
           style={{ borderRadius: 16, padding: 20 }}
         >
-          <Text className="text-white/80 text-xs">Current Price</Text>
-          <Text className="text-4xl text-white font-bold">
+          <Text className="text-white/80 text-xs" style={ta}>
+            Current Price
+          </Text>
+          <Text className="text-4xl text-white font-bold" style={ta}>
             {formatEGP(stock.price)}
           </Text>
-          <View className="flex-row items-center gap-1 mt-1">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4, marginTop: 4 })}>
             {isUp ? (
               <TrendingUp size={16} color={colors.white} />
             ) : (
               <TrendingDown size={16} color={colors.white} />
             )}
-            <Text className="text-white text-sm font-semibold">
+            <Text className="text-white text-sm font-semibold" style={ta}>
               {isUp ? '+' : ''}
               {stock.change.toFixed(2)} ({stock.changePct.toFixed(2)}%)
             </Text>
           </View>
-          <Text className="text-white/70 text-xs mt-2">
+          <Text className="text-white/70 text-xs mt-2" style={ta}>
             Sector: {stock.sector}
           </Text>
         </LinearGradient>
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-2">
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
             Price History
           </Text>
           <View className="items-center">
             <PriceChart prices={history} width={chartWidth} height={180} />
           </View>
-          <Text className="text-xs text-gray-500 text-center mt-1">
+          <Text className="text-xs text-gray-500 text-center mt-1" style={ta}>
             {history.length > 1
               ? `${history.length} ticks shown · auto-refresh every 4s`
               : 'Collecting data... first tick incoming'}
@@ -201,35 +209,44 @@ export default function StockDetailScreen() {
 
         {holding && (
           <Card>
-            <Text className="text-gray-800 font-semibold mb-2">
+            <Text className="text-gray-800 font-semibold mb-2" style={ta}>
               Your Position
             </Text>
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-gray-600 text-sm">Shares</Text>
-              <Text className="text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginBottom: 4 })}>
+              <Text className="text-gray-600 text-sm" style={ta}>
+                Shares
+              </Text>
+              <Text className="text-gray-900 font-semibold" style={ta}>
                 {holding.shares}
               </Text>
             </View>
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-gray-600 text-sm">Avg Cost</Text>
-              <Text className="text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginBottom: 4 })}>
+              <Text className="text-gray-600 text-sm" style={ta}>
+                Avg Cost
+              </Text>
+              <Text className="text-gray-900 font-semibold" style={ta}>
                 {formatEGP(holding.avgCost)}
               </Text>
             </View>
-            <View className="flex-row justify-between mb-1">
-              <Text className="text-gray-600 text-sm">Market Value</Text>
-              <Text className="text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginBottom: 4 })}>
+              <Text className="text-gray-600 text-sm" style={ta}>
+                Market Value
+              </Text>
+              <Text className="text-gray-900 font-semibold" style={ta}>
                 {formatEGP(stock.price * holding.shares)}
               </Text>
             </View>
-            <View className="flex-row justify-between">
-              <Text className="text-gray-600 text-sm">Unrealized P&L</Text>
+            <View style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}>
+              <Text className="text-gray-600 text-sm" style={ta}>
+                Unrealized P&L
+              </Text>
               <Text
                 className={
                   stock.price >= holding.avgCost
                     ? 'text-green-700 font-semibold'
                     : 'text-red-700 font-semibold'
                 }
+                style={ta}
               >
                 {formatEGP((stock.price - holding.avgCost) * holding.shares)}
               </Text>
@@ -238,16 +255,21 @@ export default function StockDetailScreen() {
         )}
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">Place Order</Text>
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+            Place Order
+          </Text>
 
-          <View className="flex-row gap-2 mb-3">
+          <View style={rtlRowMerge(rtl, { gap: 8, marginBottom: 12 })}>
             <Pressable
               onPress={() => setSide('buy')}
               className={`flex-1 items-center py-2.5 rounded-xl border ${
                 side === 'buy' ? 'bg-green-600 border-green-600' : 'bg-white border-gray-200'
               }`}
             >
-              <Text className={side === 'buy' ? 'text-white font-semibold' : 'text-gray-700 font-semibold'}>
+              <Text
+                className={side === 'buy' ? 'text-white font-semibold' : 'text-gray-700 font-semibold'}
+                style={ta}
+              >
                 Buy
               </Text>
             </Pressable>
@@ -257,13 +279,16 @@ export default function StockDetailScreen() {
                 side === 'sell' ? 'bg-red-600 border-red-600' : 'bg-white border-gray-200'
               }`}
             >
-              <Text className={side === 'sell' ? 'text-white font-semibold' : 'text-gray-700 font-semibold'}>
+              <Text
+                className={side === 'sell' ? 'text-white font-semibold' : 'text-gray-700 font-semibold'}
+                style={ta}
+              >
                 Sell
               </Text>
             </Pressable>
           </View>
 
-          <View className="flex-row bg-gray-100 rounded-xl p-1 mb-3">
+          <View className="bg-gray-100 rounded-xl p-1 mb-3" style={rtlRowMerge(rtl)}>
             {(['market', 'limit', 'stop_loss'] as Mode[]).map((m) => (
               <Pressable
                 key={m}
@@ -278,6 +303,7 @@ export default function StockDetailScreen() {
                       ? 'text-gray-900 font-semibold text-xs'
                       : 'text-gray-600 font-medium text-xs'
                   }
+                  style={ta}
                 >
                   {m === 'market' ? 'Market' : m === 'limit' ? 'Limit' : 'Stop-Loss'}
                 </Text>
@@ -285,7 +311,7 @@ export default function StockDetailScreen() {
             ))}
           </View>
 
-          <Text className="text-xs text-gray-500 mb-3">
+          <Text className="text-xs text-gray-500 mb-3" style={ta}>
             {mode === 'market' &&
               'Executes immediately at the current price.'}
             {mode === 'limit' &&
@@ -296,7 +322,7 @@ export default function StockDetailScreen() {
               'Auto-sells if price drops to your stop trigger (protects against losses).'}
           </Text>
 
-          <Text className="text-sm text-gray-700 mb-1 font-medium">
+          <Text className="text-sm text-gray-700 mb-1 font-medium" style={ta}>
             Number of shares
           </Text>
           <TextInput
@@ -306,11 +332,12 @@ export default function StockDetailScreen() {
             placeholder="0"
             placeholderTextColor={colors.gray[400]}
             className="border border-gray-200 rounded-xl px-4 py-3 text-xl text-gray-900 mb-3"
+            style={ta}
           />
 
           {mode !== 'market' && (
             <>
-              <Text className="text-sm text-gray-700 mb-1 font-medium">
+              <Text className="text-sm text-gray-700 mb-1 font-medium" style={ta}>
                 Trigger price (EGP)
               </Text>
               <TextInput
@@ -320,28 +347,36 @@ export default function StockDetailScreen() {
                 placeholder={stock.price.toFixed(2)}
                 placeholderTextColor={colors.gray[400]}
                 className="border border-gray-200 rounded-xl px-4 py-3 text-xl text-gray-900 mb-3"
+                style={ta}
               />
             </>
           )}
 
-          <View className="bg-gray-50 rounded-lg p-3 flex-row justify-between mb-3">
-            <Text className="text-sm text-gray-600">
+          <View
+            className="bg-gray-50 rounded-lg p-3 mb-3"
+            style={rtlRowMerge(rtl, { justifyContent: 'space-between' })}
+          >
+            <Text className="text-sm text-gray-600" style={ta}>
               {mode === 'market' ? 'Estimated' : 'At trigger'}
             </Text>
-            <Text className="text-base text-gray-900 font-semibold">
+            <Text className="text-base text-gray-900 font-semibold" style={ta}>
               {formatEGP(estCost)}
             </Text>
           </View>
-          <View className="flex-row justify-between mb-3">
-            <Text className="text-xs text-gray-500">Cash available</Text>
-            <Text className="text-xs text-gray-700 font-medium">
+          <View style={rtlRowMerge(rtl, { justifyContent: 'space-between', marginBottom: 12 })}>
+            <Text className="text-xs text-gray-500" style={ta}>
+              Cash available
+            </Text>
+            <Text className="text-xs text-gray-700 font-medium" style={ta}>
               {formatEGP(cash)}
             </Text>
           </View>
 
           {error && (
             <View className="mb-3 bg-red-50 border border-red-200 rounded-lg p-3">
-              <Text className="text-sm text-red-700">{error}</Text>
+              <Text className="text-sm text-red-700" style={ta}>
+                {error}
+              </Text>
             </View>
           )}
 
@@ -363,32 +398,33 @@ export default function StockDetailScreen() {
 
         {openOrders.length > 0 && (
           <Card>
-            <Text className="text-gray-800 font-semibold mb-3">
+            <Text className="text-gray-800 font-semibold mb-3" style={ta}>
               Open Orders ({openOrders.length})
             </Text>
             <View className="gap-2">
               {openOrders.map((o) => (
                 <View
                   key={o.id}
-                  className="flex-row items-center justify-between bg-gray-50 rounded-lg p-3"
+                  className="bg-gray-50 rounded-lg p-3"
+                  style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}
                 >
                   <View className="flex-1">
-                    <View className="flex-row items-center gap-2 mb-1">
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 4 })}>
                       <Badge
                         variant={o.side === 'buy' ? 'success' : 'warning'}
                       >
                         {o.side.toUpperCase()}
                       </Badge>
-                      <Text className="text-xs text-gray-500">
+                      <Text className="text-xs text-gray-500" style={ta}>
                         {o.type === 'limit' ? 'Limit' : 'Stop-Loss'}
                       </Text>
                     </View>
-                    <Text className="text-sm text-gray-900 font-medium">
+                    <Text className="text-sm text-gray-900 font-medium" style={ta}>
                       {o.shares} shares @ {formatEGP(o.triggerPrice)}
                     </Text>
-                    <View className="flex-row items-center gap-1 mt-0.5">
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4, marginTop: 2 })}>
                       <Clock size={11} color={colors.gray[500]} />
-                      <Text className="text-[11px] text-gray-500">
+                      <Text className="text-[11px] text-gray-500" style={ta}>
                         {new Date(o.createdAt).toLocaleTimeString()}
                       </Text>
                     </View>

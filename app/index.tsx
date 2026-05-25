@@ -9,6 +9,7 @@ import { FadeInView } from '@/components/animated';
 import { colors } from '@/theme';
 import { useAuthStore } from '@/stores';
 import { isApiConfigured } from '@/lib/api';
+import { rtlRootDirection, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 
 /** Email/password auth: Nest API and/or Supabase (UI shows signup/login if either is available). */
@@ -16,7 +17,8 @@ const canUseAccountAuth = isApiConfigured;
 
 export default function WelcomeScreen() {
   const status = useAuthStore((s) => s.status);
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   useEffect(() => {
     if (status === 'authenticated') {
@@ -29,7 +31,10 @@ export default function WelcomeScreen() {
       colors={[colors.primary[500], colors.primary[600]]}
       style={{ flex: 1 }}
     >
-      <SafeAreaView className="flex-1 items-center justify-center p-6">
+      <SafeAreaView
+        className="flex-1 items-center justify-center p-6"
+        style={rtlRootDirection(rtl)}
+      >
         <FadeInView direction="down" duration={600}>
           <View className="items-center mb-10">
             <View className="relative mb-4">
@@ -38,7 +43,10 @@ export default function WelcomeScreen() {
                 color={colors.accent[400]}
                 strokeWidth={2}
               />
-              <View className="absolute -top-2 -right-2">
+              <View
+                className="absolute -top-2"
+                style={rtl ? { left: -8 } : { right: -8 }}
+              >
                 <GraduationCap
                   size={40}
                   color={colors.accent[300]}
@@ -47,10 +55,13 @@ export default function WelcomeScreen() {
               </View>
             </View>
 
-            <Text className="text-5xl text-white mb-3 font-bold">
+            <Text className="text-5xl text-white mb-3 font-bold" style={ta}>
               Fin-Game
             </Text>
-            <Text className="text-2xl text-accent-300 tracking-wide">
+            <Text
+              className={`text-2xl text-accent-300 ${rtl ? '' : 'tracking-wide'}`}
+              style={[ta, { letterSpacing: rtl ? 0 : undefined }]}
+            >
               {t('welcome.tagline')}
             </Text>
           </View>
@@ -81,7 +92,7 @@ export default function WelcomeScreen() {
                 },
               ]}
             >
-              <Text className="text-lg text-primary-900 font-semibold">
+              <Text className="text-lg text-primary-900 font-semibold" style={ta}>
                 {canUseAccountAuth
                   ? t('welcome.getStarted')
                   : t('welcome.startLearning')}
@@ -91,9 +102,20 @@ export default function WelcomeScreen() {
             {canUseAccountAuth && (
               <Pressable
                 onPress={() => router.push('/(auth)/login')}
-                className="bg-white/10 border border-white/30 py-4 rounded-full items-center active:bg-white/20"
+                className="bg-white/10 border border-white/30 py-4 px-6 rounded-full active:bg-white/20"
+                style={{
+                  alignSelf: 'stretch',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                }}
               >
-                <Text className="text-lg text-white font-semibold">
+                <Text
+                  className="text-lg text-white font-semibold text-center"
+                  style={{
+                    textAlign: 'center',
+                    writingDirection: rtl ? 'rtl' : 'ltr',
+                  }}
+                >
                   {t('welcome.haveAccount')}
                 </Text>
               </Pressable>
@@ -104,7 +126,7 @@ export default function WelcomeScreen() {
               className="py-2 items-center"
               hitSlop={8}
             >
-              <Text className="text-white/80 text-sm">
+              <Text className="text-white/80 text-sm" style={ta}>
                 {t('welcome.guestArrow')}
               </Text>
             </Pressable>
@@ -113,7 +135,10 @@ export default function WelcomeScreen() {
         )}
 
         <FadeInView direction="up" duration={500} delay={500}>
-          <Text className="text-white/80 mt-10 text-center max-w-md text-base px-4">
+          <Text
+            className="text-white/80 mt-10 text-center max-w-md text-base px-4"
+            style={ta}
+          >
             {t('welcome.description')}
           </Text>
         </FadeInView>

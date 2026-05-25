@@ -8,6 +8,7 @@ import {
   isApiConfigured,
   loadApiTokens,
 } from '@/lib/api';
+import { normalizeDateStamp } from '@/lib/dateStamp';
 import type { CoinsReason, UserLevel, UserProfile } from '@/stores/useUserStore';
 
 // ---------------------------------------------------------------------------
@@ -610,17 +611,30 @@ export async function upsertInvestmentHolding(
 export interface RemoteFinTokVideo {
   id: string;
   title: string;
+  title_ar?: string | null;
+  creator_name?: string;
+  creator_name_ar?: string | null;
+  creator_avatar?: string;
+  caption?: string | null;
+  caption_ar?: string | null;
+  tags?: string[] | unknown;
+  simulation_route?: string | null;
   storage_path: string;
-  caption: string | null;
+  video_url?: string | null;
+  thumbnail_url?: string | null;
+  duration_seconds?: number;
+  sort_order?: number;
+  is_published?: boolean;
+  published_at?: string | null;
   created_at: string;
-  updated_at: string;
+  updated_at?: string;
 }
 
 export interface RemoteFinTokComment {
   id: string;
   video_id: string;
   user_id: string;
-  text: string;
+  body: string;
   created_at: string;
 }
 
@@ -1472,7 +1486,7 @@ export function remoteProfileToLocal(remote: RemoteProfile): {
     xp: remote.xp ?? 0,
     streak: remote.streak ?? 0,
     longestStreak: remote.longest_streak ?? 0,
-    lastActiveDate: remote.last_active_date,
+    lastActiveDate: normalizeDateStamp(remote.last_active_date),
     isAdmin: !!remote.is_admin,
   };
 }

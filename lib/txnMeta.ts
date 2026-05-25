@@ -1,3 +1,5 @@
+import type { Locale } from '@/lib/i18n';
+import { translate } from '@/lib/i18n';
 import type { TxnCategory } from '@/stores';
 
 export interface TxnMeta {
@@ -18,6 +20,11 @@ export const txnMeta: Record<TxnCategory, TxnMeta> = {
   other: { label: 'Other', emoji: '📌', color: '#6b7280' },
 };
 
-export function metaFor(cat: TxnCategory): TxnMeta {
-  return txnMeta[cat] ?? txnMeta.other;
+export function metaFor(cat: TxnCategory, locale: Locale = 'en'): TxnMeta {
+  const base = txnMeta[cat] ?? txnMeta.other;
+  const label = translate(locale, `txn.${cat}`);
+  return {
+    ...base,
+    label: label === `txn.${cat}` ? base.label : label,
+  };
 }

@@ -4,6 +4,12 @@ import { Flame, Zap } from 'lucide-react-native';
 import { router } from 'expo-router';
 
 import { Card } from '@/components/ui/Card';
+import { useRTL } from '@/hooks/useRTL';
+import {
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
 
@@ -45,6 +51,41 @@ function getFlameStyle(days: number) {
 export function StreakWidget({ days }: StreakWidgetProps) {
   const flame = getFlameStyle(days);
   const { t } = useT();
+  const rtl = useRTL();
+  const ta = rtlTextStyle(rtl);
+
+  const flameCircle = (
+    <LinearGradient
+      colors={flame.gradient}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={{
+        width: 56,
+        height: 56,
+        borderRadius: 28,
+        alignItems: 'center',
+        justifyContent: 'center',
+        shadowColor: '#000',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.2,
+        shadowRadius: 6,
+        elevation: 4,
+      }}
+    >
+      {flame.icon}
+    </LinearGradient>
+  );
+
+  const textBlock = (
+    <View style={localeTextBesideIconStyle(rtl)}>
+      <Text style={[ta, { alignSelf: 'stretch' }]} className="text-2xl text-gray-800 font-bold">
+        {t('streak.days', { n: days })}
+      </Text>
+      <Text style={[ta, { alignSelf: 'stretch' }]} className="text-sm text-gray-600">
+        {t('streak.learningStreak')}
+      </Text>
+    </View>
+  );
 
   return (
     <Pressable
@@ -52,35 +93,27 @@ export function StreakWidget({ days }: StreakWidgetProps) {
       className="active:opacity-80"
     >
       <Card>
-        <View className="flex-row items-center gap-3">
-          <LinearGradient
-            colors={flame.gradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 1 }}
-            style={{
-              width: 56,
-              height: 56,
-              borderRadius: 28,
+        <View
+          style={[
+            localeIconRowStyle(rtl),
+            {
               alignItems: 'center',
-              justifyContent: 'center',
-              shadowColor: '#000',
-              shadowOffset: { width: 0, height: 4 },
-              shadowOpacity: 0.2,
-              shadowRadius: 6,
-              elevation: 4,
-            }}
-          >
-            {flame.icon}
-          </LinearGradient>
-
-          <View>
-            <Text className="text-2xl text-gray-800 font-bold">
-              {t('streak.days', { n: days })}
-            </Text>
-            <Text className="text-sm text-gray-600">
-              {t('streak.learningStreak')}
-            </Text>
-          </View>
+              gap: 12,
+              justifyContent: rtl ? 'flex-end' : 'flex-start',
+            },
+          ]}
+        >
+          {rtl ? (
+            <>
+              {textBlock}
+              {flameCircle}
+            </>
+          ) : (
+            <>
+              {flameCircle}
+              {textBlock}
+            </>
+          )}
         </View>
       </Card>
     </Pressable>

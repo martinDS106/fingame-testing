@@ -8,10 +8,14 @@ import { BottomNav } from '@/components/BottomNav';
 import { Card } from '@/components/ui/Card';
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useFintokStore, useUserStore } from '@/stores';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
 export default function FinTokSavedScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
   const refresh = useFintokStore((s) => s.refresh);
   const videos = useFintokStore((s) => s.videos);
@@ -28,26 +32,30 @@ export default function FinTokSavedScreen() {
   }, [videos, savedIds]);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title="Saved FinTok" showBack />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
             <Bookmark size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">Saved</Text>
+            <Text className="text-gray-900 font-semibold" style={ta}>
+              Saved
+            </Text>
           </View>
           {!remoteUserId && (
-            <Text className="text-sm text-gray-700">
+            <Text className="text-sm text-gray-700" style={ta}>
               Sign in to use Saved videos.
             </Text>
           )}
           {remoteUserId && savedVideos.length === 0 && (
-            <Text className="text-sm text-gray-700">No saved videos yet.</Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              No saved videos yet.
+            </Text>
           )}
         </Card>
 
@@ -56,11 +64,11 @@ export default function FinTokSavedScreen() {
           const caption = locale === 'ar' ? v.caption_ar || v.caption : v.caption;
           return (
             <Card key={v.id}>
-              <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+              <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                 {title}
               </Text>
               {!!caption && (
-                <Text className="text-sm text-gray-700 mt-1" numberOfLines={2}>
+                <Text className="text-sm text-gray-700 mt-1" numberOfLines={2} style={ta}>
                   {caption}
                 </Text>
               )}
@@ -84,4 +92,3 @@ export default function FinTokSavedScreen() {
     </View>
   );
 }
-

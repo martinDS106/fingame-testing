@@ -15,6 +15,7 @@ export interface CreditCard {
 
 export interface CreditAction {
   id: string;
+  type?: CreditActionType;
   label: string;
   scoreImpact: number;
   description: string;
@@ -109,12 +110,12 @@ const ACTION_DEFINITIONS: Record<
     description: 'Shortens credit history.',
   },
   bnpl_responsible: {
-    label: 'BNPL paid on schedule',
+    label: 'Pay-later plan paid on schedule',
     delta: 3,
     description: 'Small boost when used responsibly.',
   },
   bnpl_missed: {
-    label: 'Missed BNPL installment',
+    label: 'Missed pay-later installment',
     delta: -15,
     description: 'BNPL defaults now report to bureaus.',
   },
@@ -148,14 +149,73 @@ export const useCreditStore = create<CreditState>()(
 
       applyAction: (type) => {
         const def = ACTION_DEFINITIONS[type];
-        const newScore = Math.max(300, Math.min(850, get().score + def.delta));
+        const state = get();
+        let cards = state.cards.map((c) => ({ ...c }));
 
-        set((state) => ({
+        switch (type) {
+          case 'pay_full_balance':
+            cards = cards.map((c) => ({ ...c, balance: 0 }));
+            break;
+          case 'max_out_card': {
+            const target = cards[0];
+            if (target) {
+              cards[0] = {
+                ...target,
+                balance: Math.floor(target.limit * 0.95),
+              };
+            }
+            break;
+          }
+          case 'open_new_card':
+            if (cards.length < 4) {
+              cards.push({
+                id: makeId('card'),
+                name: 'Starter Card',
+                last4: String(1000 + Math.floor(Math.random() * 9000)),
+                limit: 15000,
+                balance: 0,
+                apr: 30,
+                color: '#059669',
+              });
+            }
+            break;
+          case 'close_old_card':
+            if (cards.length > 1) cards = cards.slice(1);
+            break;
+          case 'pay_on_time': {
+            const target = cards.find((c) => c.balance > 0) ?? cards[0];
+            if (target) {
+              const pay = Math.min(target.balance, Math.max(500, target.balance * 0.25));
+              cards = cards.map((c) =>
+                c.id === target.id ? { ...c, balance: c.balance - pay } : c
+              );
+            }
+            break;
+          }
+          case 'pay_late': {
+            const target = cards[0];
+            if (target) {
+              cards[0] = {
+                ...target,
+                balance: Math.min(target.limit, target.balance + 300),
+              };
+            }
+            break;
+          }
+          default:
+            break;
+        }
+
+        const newScore = Math.max(300, Math.min(850, state.score + def.delta));
+
+        set({
           score: newScore,
+          cards,
           lastUpdated: Date.now(),
           actions: [
             {
               id: makeId('act'),
+              type,
               label: def.label,
               scoreImpact: def.delta,
               description: def.description,
@@ -163,7 +223,7 @@ export const useCreditStore = create<CreditState>()(
             },
             ...state.actions,
           ].slice(0, 50),
-        }));
+        });
 
         return { delta: def.delta, message: def.description };
       },

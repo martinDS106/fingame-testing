@@ -10,6 +10,9 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useLocalizedChallenges } from '@/hooks/useLocalizedChallenges';
+import { useT } from '@/hooks/useT';
 import { useChallengesStore, useUserStore } from '@/stores';
 
 function difficultyColor(d: 'easy' | 'medium' | 'hard'): string {
@@ -20,27 +23,32 @@ function difficultyColor(d: 'easy' | 'medium' | 'hard'): string {
 
 export default function ChallengesListScreen() {
   const coins = useUserStore((s) => s.coins);
-  const challenges = useChallengesStore((s) => s.challenges);
+  const challenges = useLocalizedChallenges();
   const completed = useChallengesStore((s) => s.completed);
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
 
   const done = completed.length;
   const pct = challenges.length ? (done / challenges.length) * 100 : 0;
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
-        title="Challenges"
+        title={t('challenges.title')}
         showBack
         showBell={false}
         gradient={[colors.primary[600], colors.primary[700]]}
         rightSlot={
-          <View className="flex-row items-center gap-1.5 bg-accent-400 px-3 py-1 rounded-full">
+          <View
+            className="items-center gap-1.5 bg-accent-400 px-3 py-1 rounded-full"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 6 })}
+          >
             <Star
               size={14}
               color={colors.primary[900]}
               fill={colors.primary[900]}
             />
-            <Text className="text-primary-900 text-sm font-semibold">
+            <Text className="text-primary-900 text-sm font-semibold" style={ta}>
               {formatNumber(coins)}
             </Text>
           </View>
@@ -49,7 +57,7 @@ export default function ChallengesListScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 40, gap: 16 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 40, gap: 16 })}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -58,13 +66,18 @@ export default function ChallengesListScreen() {
           end={{ x: 1, y: 0 }}
           style={{ borderRadius: 16, padding: 16 }}
         >
-          <View className="flex-row items-center justify-between mb-2">
-            <View className="flex-row items-center gap-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
               <Flame size={18} color={colors.accent[300]} />
-              <Text className="text-white font-semibold">Scenario Mode</Text>
+              <Text className="text-white font-semibold" style={ta}>
+                {t('challenges.scenarioMode')}
+              </Text>
             </View>
-            <Text className="text-white/80 text-sm">
-              {done}/{challenges.length} complete
+            <Text className="text-white/80 text-sm" style={ta}>
+              {t('challenges.completeCount', {
+                done,
+                total: challenges.length,
+              })}
             </Text>
           </View>
           <ProgressBar
@@ -73,18 +86,17 @@ export default function ChallengesListScreen() {
             trackClassName="bg-white/20"
             color={colors.accent[400]}
           />
-          <Text className="text-white/80 text-xs mt-2">
-            Pick the best decision and learn from feedback.
+          <Text className="text-white/80 text-xs mt-2" style={ta}>
+            {t('challenges.pickBest')}
           </Text>
         </LinearGradient>
 
         <Card className="bg-primary-50 border-primary-100">
-          <Text className="text-gray-800 font-semibold mb-2">
-            🧠 How it works
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
+            🧠 {t('challenges.howItWorks')}
           </Text>
-          <Text className="text-sm text-gray-600">
-            Each challenge is a real-life money situation. Choose one answer.
-            You’ll get coins + XP and an explanation.
+          <Text className="text-sm text-gray-600" style={ta}>
+            {t('challenges.howItWorksBody')}
           </Text>
         </Card>
 
@@ -96,7 +108,7 @@ export default function ChallengesListScreen() {
                 key={c.id}
                 onPress={() => router.push(`/challenges/${c.id}` as never)}
               >
-                <View className="flex-row items-start gap-3">
+                <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12 })}>
                   <View
                     className="w-12 h-12 rounded-xl items-center justify-center"
                     style={{
@@ -114,8 +126,15 @@ export default function ChallengesListScreen() {
                   </View>
 
                   <View className="flex-1">
-                    <View className="flex-row items-start justify-between gap-2 mb-1">
-                      <Text className="text-gray-900 font-semibold flex-1">
+                    <View
+                      style={rtlRowMerge(rtl, {
+                        alignItems: 'flex-start',
+                        justifyContent: 'space-between',
+                        gap: 8,
+                        marginBottom: 4,
+                      })}
+                    >
+                      <Text className="text-gray-900 font-semibold flex-1" style={ta}>
                         {c.title}
                       </Text>
                       <Badge
@@ -127,18 +146,25 @@ export default function ChallengesListScreen() {
                               : 'danger'
                         }
                       >
-                        {c.difficulty.toUpperCase()}
+                        {t(`challenges.difficulty.${c.difficulty}`)}
                       </Badge>
                     </View>
-                    <Text className="text-sm text-gray-600 mb-2">
+                    <Text className="text-sm text-gray-600 mb-2" style={ta}>
                       {c.description}
                     </Text>
-                    <View className="flex-row items-center justify-between">
-                      <Text className="text-xs text-gray-500">
-                        Reward: +{c.coinReward} coins · +{c.xpReward} XP
+                    <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
+                      <Text className="text-xs text-gray-500" style={ta}>
+                        {t('challenges.reward', {
+                          coins: c.coinReward,
+                          xp: c.xpReward,
+                        })}
                       </Text>
-                      <Button size="sm" variant={isDone ? 'outline' : 'primary'}>
-                        {isDone ? 'Review' : 'Play'}
+                      <Button
+                        size="sm"
+                        variant={isDone ? 'outline' : 'primary'}
+                        onPress={() => router.push(`/challenges/${c.id}` as never)}
+                      >
+                        {isDone ? t('challenges.review') : t('challenges.play')}
                       </Button>
                     </View>
                   </View>
@@ -151,4 +177,3 @@ export default function ChallengesListScreen() {
     </View>
   );
 }
-

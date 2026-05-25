@@ -12,11 +12,15 @@ import {
   adminPullProfiles,
 } from '@/lib/syncServiceApi';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/stores';
 
 type Metric = 'coins' | 'xp' | 'streak';
 
 export default function AdminLeaderboardScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
 
   const [loading, setLoading] = useState(false);
@@ -73,12 +77,14 @@ export default function AdminLeaderboardScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -93,7 +99,7 @@ export default function AdminLeaderboardScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Leaderboard"
         showBack
@@ -102,11 +108,13 @@ export default function AdminLeaderboardScreen() {
 
       <View className="px-4 pt-3 pb-2">
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
             <Trophy size={18} color={colors.accent[500]} />
-            <Text className="text-gray-900 font-semibold">Metric</Text>
+            <Text className="text-gray-900 font-semibold" style={ta}>
+              Metric
+            </Text>
           </View>
-          <View className="flex-row gap-2 flex-wrap">
+          <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
             {(
               [
                 { id: 'coins', label: 'Coins' },
@@ -137,13 +145,18 @@ export default function AdminLeaderboardScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
           </Card>
         )}
 
@@ -160,26 +173,34 @@ export default function AdminLeaderboardScreen() {
               metric === 'xp' ? u.xp ?? 0 : metric === 'streak' ? u.streak ?? 0 : u.coins ?? 0;
             return (
               <Card key={u.id} className={rank <= 3 ? 'border border-yellow-200 bg-yellow-50' : ''}>
-                <View className="flex-row items-center justify-between">
-                  <View className="flex-row items-center gap-3 flex-1">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
                     <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
                       <Text className="text-xl">{u.avatar ?? '👤'}</Text>
                     </View>
                     <View className="flex-1">
-                      <View className="flex-row items-center gap-2">
-                        <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                      <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
+                        <Text
+                          className="text-gray-900 font-semibold"
+                          numberOfLines={1}
+                          style={ta}
+                        >
                           #{rank} {u.display_name}
                         </Text>
                         {icon}
                       </View>
-                      <Text className="text-xs text-gray-500" numberOfLines={1}>
+                      <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                         {u.id}
                       </Text>
                     </View>
                   </View>
                   <View className="items-end">
-                    <Text className="text-gray-900 font-bold text-lg">{value}</Text>
-                    <Text className="text-xs text-gray-500">{metric}</Text>
+                    <Text className="text-gray-900 font-bold text-lg" style={ta}>
+                      {value}
+                    </Text>
+                    <Text className="text-xs text-gray-500" style={ta}>
+                      {metric}
+                    </Text>
                   </View>
                 </View>
               </Card>

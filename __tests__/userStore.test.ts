@@ -1,3 +1,4 @@
+import { localDateStamp } from '@/lib/dateStamp';
 import { useUserStore, xpProgressToNextLevel } from '@/stores/useUserStore';
 
 describe('useUserStore', () => {
@@ -52,6 +53,36 @@ describe('useUserStore', () => {
     expect(p.current).toBe(250);
     expect(p.target).toBe(500);
     expect(p.pct).toBeCloseTo(50);
+  });
+
+  test('checkInDaily increments streak on consecutive local day', async () => {
+    const yesterday = new Date();
+    yesterday.setDate(yesterday.getDate() - 1);
+    useUserStore.setState({
+      streak: 4,
+      longestStreak: 4,
+      lastActiveDate: localDateStamp(yesterday),
+      remoteUserId: null,
+    } as never);
+
+    const { newStreak, streakChanged } = await useUserStore.getState().checkInDaily();
+    expect(streakChanged).toBe(true);
+    expect(newStreak).toBe(5);
+    expect(useUserStore.getState().lastActiveDate).toBe(localDateStamp());
+  });
+
+  test('checkInDaily is idempotent same day', async () => {
+    const today = localDateStamp();
+    useUserStore.setState({
+      streak: 3,
+      longestStreak: 3,
+      lastActiveDate: today,
+      remoteUserId: null,
+    } as never);
+
+    const { streakChanged } = await useUserStore.getState().checkInDaily();
+    expect(streakChanged).toBe(false);
+    expect(useUserStore.getState().streak).toBe(3);
   });
 });
 

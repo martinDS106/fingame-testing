@@ -25,6 +25,13 @@ import { useLocaleStore } from '@/stores/useLocaleStore';
 
 import { asyncStorage } from './storage';
 
+type QuizSubmitResult =
+  | { ok: true; coinsEarned: number }
+  | { ok: false; error: string };
+
+/** Coalesce rapid duplicate submit taps into a single in-flight attempt per quiz. */
+const quizSubmitInFlight = new Map<string, Promise<QuizSubmitResult>>();
+
 // --------------------------------------------------------------------------
 // Normalized app-shape types (camelCase). We keep a local fallback so the
 // app is usable offline / before first sync.
@@ -278,6 +285,8 @@ interface ContentState {
   questions: Question[];
   completedLessons: string[];
   completedQuizzes: string[];
+  /** Best score 0–100 per quiz (local attempts + merged from server progress). */
+  quizBestPercent: Record<string, number>;
   loaded: boolean;
   lastSyncedAt: number | null;
   syncStatus: 'idle' | 'syncing' | 'success' | 'error';
@@ -326,6 +335,7 @@ export const useContentStore = create<ContentState>()(
       questions: [],
       completedLessons: [],
       completedQuizzes: [],
+      quizBestPercent: {},
       watchedVideos: [],
       loaded: false,
       lastSyncedAt: null,
@@ -476,6 +486,7 @@ export const useContentStore = create<ContentState>()(
         set({
           completedLessons: [],
           completedQuizzes: [],
+          quizBestPercent: {},
           watchedVideos: [],
         });
       },
@@ -487,18 +498,28 @@ export const useContentStore = create<ContentState>()(
           const rows = await pullProgress();
           if (rows === null) return;
           const completedLessons: string[] = [];
-          const completedQuizzes: string[] = [];
+          const completedQuizSet = new Set<string>();
           const watchedVideos: string[] = [];
+          const quizBestPercent: Record<string, number> = { ...get().quizBestPercent };
           for (const r of rows) {
+            if (r.kind === 'quiz') {
+              const prev = quizBestPercent[r.ref_id] ?? 0;
+              quizBestPercent[r.ref_id] = Math.min(
+                100,
+                Math.max(prev, r.progress, r.completed ? 100 : 0)
+              );
+              if (r.completed) completedQuizSet.add(r.ref_id);
+              continue;
+            }
             if (!r.completed) continue;
             if (r.kind === 'lesson') completedLessons.push(r.ref_id);
-            else if (r.kind === 'quiz') completedQuizzes.push(r.ref_id);
             else if (r.kind === 'video') watchedVideos.push(r.ref_id);
           }
           set({
-            completedLessons,
-            completedQuizzes,
-            watchedVideos,
+            completedLessons: [...new Set([...get().completedLessons, ...completedLessons])],
+            completedQuizzes: [...new Set([...get().completedQuizzes, ...completedQuizSet])],
+            watchedVideos: [...new Set([...get().watchedVideos, ...watchedVideos])],
+            quizBestPercent,
           });
         } catch (err) {
           console.warn('[content] syncProgressFromServer failed', err);
@@ -506,66 +527,90 @@ export const useContentStore = create<ContentState>()(
       },
 
       submitAttempt: async (quizId, score, total) => {
-        const quiz = get().quizFor(quizId);
-        if (!quiz) return { ok: false, error: 'Quiz not found' };
-        const ratio = total > 0 ? score / total : 0;
-        const coinsEarned = Math.round(quiz.coinReward * ratio);
+        const existing = quizSubmitInFlight.get(quizId);
+        if (existing) return existing;
 
-        if (!isApiConfigured) {
-          if (coinsEarned > 0) {
-            const reason = ratio === 1 ? 'quiz_perfect' : 'quiz_correct';
-            await useUserStore.getState().addCoins(coinsEarned, reason);
+        const run = async (): Promise<QuizSubmitResult> => {
+          const quiz = get().quizFor(quizId);
+          if (!quiz) return { ok: false, error: 'Quiz not found' };
+          const ratio = total > 0 ? score / total : 0;
+          const coinsEarned = Math.round(quiz.coinReward * ratio);
+          const pct = Math.round(ratio * 100);
+
+          const bumpQuizStats = () => {
+            set((state) => {
+              const nextBest = {
+                ...state.quizBestPercent,
+                [quizId]: Math.max(state.quizBestPercent[quizId] ?? 0, pct),
+              };
+              const nextDone = state.completedQuizzes.includes(quizId)
+                ? state.completedQuizzes
+                : [...state.completedQuizzes, quizId];
+              return { completedQuizzes: nextDone, quizBestPercent: nextBest };
+            });
+          };
+
+          if (!isApiConfigured) {
+            if (coinsEarned > 0) {
+              const reason = ratio === 1 ? 'quiz_perfect' : 'quiz_correct';
+              await useUserStore.getState().addCoins(coinsEarned, reason);
+            }
+            bumpQuizStats();
+            return { ok: true, coinsEarned };
           }
-          if (!get().completedQuizzes.includes(quizId)) {
-            set((state) => ({
-              completedQuizzes: [...state.completedQuizzes, quizId],
-            }));
-          }
-          return { ok: true, coinsEarned };
-        }
-        const userId = useUserStore.getState().remoteUserId;
-        if (!userId) return { ok: false, error: 'Not signed in' };
+          const userId = useUserStore.getState().remoteUserId;
+          if (!userId) return { ok: false, error: 'Not signed in' };
 
-        const attemptRes = await recordQuizAttempt({ quiz_id: quizId, score, total });
-        if (!attemptRes.ok) {
-          // If auth is expired, don't proceed with follow-up sync calls that can
-          // overwrite local state with older remote values.
-          return { ok: false, error: attemptRes.error };
-        }
-
-        if (!get().completedQuizzes.includes(quizId)) {
-          set((state) => ({
-            completedQuizzes: [...state.completedQuizzes, quizId],
-          }));
-        }
-
-        const serverCoins = Number(attemptRes.coinsEarned ?? 0);
-        await upsertProgress(userId, 'quiz', quizId, ratio * 100, true);
-
-        const remote = await pullProfile();
-        if (remote) {
-          const merged = remoteProfileToLocal(remote);
-          useUserStore.setState((state) => {
-            const XP_PER_LEVEL = 500;
-            const nextLevel = Math.max(1, Math.floor(merged.xp / XP_PER_LEVEL) + 1);
-            return {
-              profile: {
-                ...state.profile,
-                ...merged.profile,
-                email: state.profile.email || merged.profile.email,
-              },
-              coins: merged.coins,
-              xp: merged.xp,
-              level: nextLevel,
-              streak: merged.streak,
-              longestStreak: merged.longestStreak,
-              lastActiveDate: merged.lastActiveDate,
-              isAdmin: merged.isAdmin,
-            };
+          const attemptRes = await recordQuizAttempt({
+            quiz_id: quizId,
+            score,
+            total,
           });
-        }
+          if (!attemptRes.ok) {
+            return { ok: false, error: attemptRes.error };
+          }
 
-        return { ok: true, coinsEarned: serverCoins };
+          bumpQuizStats();
+
+          const serverCoins = Number(attemptRes.coinsEarned ?? 0);
+          await upsertProgress(userId, 'quiz', quizId, ratio * 100, true);
+
+          const remote = await pullProfile();
+          if (remote) {
+            const merged = remoteProfileToLocal(remote);
+            useUserStore.setState((state) => {
+              const XP_PER_LEVEL = 500;
+              const nextLevel = Math.max(
+                1,
+                Math.floor(merged.xp / XP_PER_LEVEL) + 1
+              );
+              return {
+                profile: {
+                  ...state.profile,
+                  ...merged.profile,
+                  email: state.profile.email || merged.profile.email,
+                },
+                coins: merged.coins,
+                xp: merged.xp,
+                level: nextLevel,
+                streak: merged.streak,
+                longestStreak: merged.longestStreak,
+                lastActiveDate: merged.lastActiveDate,
+                isAdmin: merged.isAdmin,
+              };
+            });
+          }
+
+          return { ok: true, coinsEarned: serverCoins };
+        };
+
+        const promise = run().finally(() => {
+          if (quizSubmitInFlight.get(quizId) === promise) {
+            quizSubmitInFlight.delete(quizId);
+          }
+        });
+        quizSubmitInFlight.set(quizId, promise);
+        return promise;
       },
     }),
     {
@@ -584,6 +629,7 @@ export const useContentStore = create<ContentState>()(
         questions: state.questions,
         completedLessons: state.completedLessons,
         completedQuizzes: state.completedQuizzes,
+        quizBestPercent: state.quizBestPercent,
         watchedVideos: state.watchedVideos,
         lastSyncedAt: state.lastSyncedAt,
       }),

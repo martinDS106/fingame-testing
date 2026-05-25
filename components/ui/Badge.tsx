@@ -1,6 +1,9 @@
 import { type ReactNode } from 'react';
 import { Text, View } from 'react-native';
 
+import { useT } from '@/hooks/useT';
+import { rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
+
 export type BadgeVariant =
   | 'default'
   | 'success'
@@ -33,15 +36,20 @@ export function Badge({
   className = '',
   leftIcon,
 }: BadgeProps) {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const v = variantClasses[variant];
 
   return (
     <View
-      className={`flex-row items-center gap-1 px-2 py-0.5 rounded-md border ${v.container} ${className}`}
+      className={`px-2 py-0.5 rounded-md border ${v.container} ${className}`}
+      style={rtlRowMerge(rtl, { alignItems: 'center', gap: 4 })}
     >
       {leftIcon}
       {typeof children === 'string' ? (
-        <Text className={`text-xs font-medium ${v.text}`}>{children}</Text>
+        <Text style={ta} className={`text-xs font-medium ${v.text}`}>
+          {children}
+        </Text>
       ) : (
         children
       )}

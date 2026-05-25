@@ -16,6 +16,8 @@ import { Badge } from '@/components/ui/Badge';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import {
   useMarketplaceStore,
   useUserStore,
@@ -59,6 +61,8 @@ function formatDate(ts: number): string {
 
 export default function ApplicationTrackingScreen() {
   const { id } = useLocalSearchParams<{ id?: string }>();
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const coins = useUserStore((s) => s.coins);
   const applications = useMarketplaceStore((s) => s.applications);
   const advance = useMarketplaceStore((s) => s.advanceApplication);
@@ -78,7 +82,7 @@ export default function ApplicationTrackingScreen() {
 
   if (!application) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader
           title="Application Status"
           coins={coins}
@@ -87,10 +91,10 @@ export default function ApplicationTrackingScreen() {
         />
         <View className="flex-1 items-center justify-center p-6">
           <Text className="text-5xl mb-4">📄</Text>
-          <Text className="text-lg text-gray-800 font-semibold mb-2">
+          <Text className="text-lg text-gray-800 font-semibold mb-2" style={ta}>
             No applications yet
           </Text>
-          <Text className="text-sm text-gray-600 text-center mb-6">
+          <Text className="text-sm text-gray-600 text-center mb-6" style={ta}>
             Apply for a credit card to start tracking its progress here.
           </Text>
           <Button onPress={() => router.replace('/marketplace/credit-cards')}>
@@ -107,7 +111,7 @@ export default function ApplicationTrackingScreen() {
     application.status === 'approved' || application.status === 'rejected';
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Application Status"
         coins={coins}
@@ -117,19 +121,20 @@ export default function ApplicationTrackingScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-start gap-3 mb-3">
+          <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12, marginBottom: 12 })}>
             <View className="w-12 h-12 bg-purple-50 rounded-lg items-center justify-center">
               <Text className="text-2xl">{application.bankLogo}</Text>
             </View>
             <View className="flex-1">
-              <Text className="text-gray-800 font-semibold">
+              <Text className="text-gray-800 font-semibold" style={ta}>
                 {application.productName}
               </Text>
-              <Text className="text-xs text-gray-500">
+              <Text className="text-xs text-gray-500" style={ta}>
                 Application ID: #{application.id.slice(-8).toUpperCase()}
               </Text>
               <View className="mt-2 self-start">
@@ -153,15 +158,15 @@ export default function ApplicationTrackingScreen() {
             </View>
           </View>
           <View className="pt-3 border-t border-gray-100">
-            <Text className="text-xs text-gray-600">
+            <Text className="text-xs text-gray-600" style={ta}>
               Submitted on {formatDate(application.submittedAt)}
             </Text>
             {application.decidedAt ? (
-              <Text className="text-xs text-gray-600">
+              <Text className="text-xs text-gray-600" style={ta}>
                 Decided on {formatDate(application.decidedAt)}
               </Text>
             ) : (
-              <Text className="text-xs text-gray-600">
+              <Text className="text-xs text-gray-600" style={ta}>
                 Expected decision: 3-5 business days
               </Text>
             )}
@@ -177,10 +182,10 @@ export default function ApplicationTrackingScreen() {
           >
             <View className="items-center">
               <Award size={40} color={colors.white} />
-              <Text className="text-white text-xl font-bold mt-2">
+              <Text className="text-white text-xl font-bold mt-2" style={ta}>
                 Congratulations!
               </Text>
-              <Text className="text-white/90 text-sm text-center mt-1">
+              <Text className="text-white/90 text-sm text-center mt-1" style={ta}>
                 Your application has been approved.
               </Text>
             </View>
@@ -188,8 +193,8 @@ export default function ApplicationTrackingScreen() {
         )}
 
         <Card>
-          <View className="flex-row items-center justify-between mb-4">
-            <Text className="text-gray-800 font-semibold">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 16 })}>
+            <Text className="text-gray-800 font-semibold" style={ta}>
               Application Progress
             </Text>
             {!isDone && (
@@ -198,7 +203,7 @@ export default function ApplicationTrackingScreen() {
                 hitSlop={6}
                 className="px-3 py-1 bg-purple-100 rounded-lg"
               >
-                <Text className="text-xs text-purple-700 font-medium">
+                <Text className="text-xs text-purple-700 font-medium" style={ta}>
                   Simulate next step
                 </Text>
               </Pressable>
@@ -212,7 +217,7 @@ export default function ApplicationTrackingScreen() {
               const isLast = index === STEP_FLOW.length - 1;
 
               return (
-                <View key={step.status} className="flex-row items-start gap-3">
+                <View key={step.status} style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12 })}>
                   <View className="items-center">
                     <View
                       className={`w-10 h-10 rounded-full items-center justify-center ${
@@ -250,6 +255,7 @@ export default function ApplicationTrackingScreen() {
                           ? 'text-gray-800'
                           : 'text-gray-400'
                       }`}
+                      style={ta}
                     >
                       {step.label}
                     </Text>
@@ -261,6 +267,7 @@ export default function ApplicationTrackingScreen() {
                             ? 'text-green-600'
                             : 'text-gray-500'
                       }`}
+                      style={ta}
                     >
                       {isCompleted
                         ? '✓ Completed'
@@ -276,25 +283,31 @@ export default function ApplicationTrackingScreen() {
         </Card>
 
         <Card className="bg-blue-50 border border-blue-200">
-          <Text className="text-gray-800 font-semibold mb-2">
+          <Text className="text-gray-800 font-semibold mb-2" style={ta}>
             What happens next?
           </Text>
           <View className="gap-2">
-            <View className="flex-row gap-2">
-              <Text className="text-blue-600 font-semibold">1.</Text>
-              <Text className="text-sm text-gray-700 flex-1">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
+              <Text className="text-blue-600 font-semibold" style={ta}>
+                1.
+              </Text>
+              <Text className="text-sm text-gray-700 flex-1" style={ta}>
                 Bank reviews your application and documents
               </Text>
             </View>
-            <View className="flex-row gap-2">
-              <Text className="text-blue-600 font-semibold">2.</Text>
-              <Text className="text-sm text-gray-700 flex-1">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
+              <Text className="text-blue-600 font-semibold" style={ta}>
+                2.
+              </Text>
+              <Text className="text-sm text-gray-700 flex-1" style={ta}>
                 You will receive an email with the decision
               </Text>
             </View>
-            <View className="flex-row gap-2">
-              <Text className="text-blue-600 font-semibold">3.</Text>
-              <Text className="text-sm text-gray-700 flex-1">
+            <View style={rtlRowMerge(rtl, { gap: 8 })}>
+              <Text className="text-blue-600 font-semibold" style={ta}>
+                3.
+              </Text>
+              <Text className="text-sm text-gray-700 flex-1" style={ta}>
                 If approved, your card will be delivered in 7-10 days
               </Text>
             </View>
@@ -303,7 +316,7 @@ export default function ApplicationTrackingScreen() {
 
         {alternatives.length > 0 && (
           <View>
-            <Text className="text-gray-800 font-semibold mb-3">
+            <Text className="text-gray-800 font-semibold mb-3" style={ta}>
               While you wait, check these out
             </Text>
             <View className="gap-2">
@@ -315,18 +328,18 @@ export default function ApplicationTrackingScreen() {
                   }
                 >
                   <Card>
-                    <View className="flex-row items-start gap-3">
+                    <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12 })}>
                       <View className="w-12 h-12 bg-purple-50 rounded-lg items-center justify-center">
                         <Text className="text-2xl">{alt.logo}</Text>
                       </View>
                       <View className="flex-1">
-                        <Text className="text-sm text-gray-800 font-semibold">
+                        <Text className="text-sm text-gray-800 font-semibold" style={ta}>
                           {alt.name}
                         </Text>
-                        <Text className="text-xs text-gray-600 mb-2">
+                        <Text className="text-xs text-gray-600 mb-2" style={ta}>
                           {alt.bank}
                         </Text>
-                        <View className="flex-row items-center gap-2 mb-2">
+                        <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8, marginBottom: 8 })}>
                           <Badge variant="neutral">{`APR ${alt.apr}%`}</Badge>
                           <Badge variant="neutral">
                             {alt.annualFee === 0
@@ -334,7 +347,7 @@ export default function ApplicationTrackingScreen() {
                               : `Fee ${alt.annualFee}`}
                           </Badge>
                         </View>
-                        <View className="flex-row justify-end">
+                        <View style={rtlRowMerge(rtl, { justifyContent: 'flex-end' })}>
                           <Button
                             size="sm"
                             variant="outline"
@@ -355,8 +368,10 @@ export default function ApplicationTrackingScreen() {
         )}
 
         <Card>
-          <Text className="text-gray-800 font-semibold mb-3">Need Help?</Text>
-          <View className="flex-row gap-2">
+          <Text className="text-gray-800 font-semibold mb-3" style={ta}>
+            Need Help?
+          </Text>
+          <View style={rtlRowMerge(rtl, { gap: 8 })}>
             <View className="flex-1">
               <Button
                 variant="outline"
@@ -392,9 +407,9 @@ export default function ApplicationTrackingScreen() {
         </Card>
 
         <Card className="bg-yellow-50 border border-yellow-200">
-          <View className="flex-row items-center gap-2">
+          <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
             <Coins size={18} color="#ca8a04" />
-            <Text className="text-sm text-gray-700 flex-1">
+            <Text className="text-sm text-gray-700 flex-1" style={ta}>
               You earned{' '}
               <Text className="font-bold text-yellow-700">+100 coins</Text>{' '}
               for submitting your first application!

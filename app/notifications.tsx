@@ -9,12 +9,20 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
+import {
+  localeBannerAlignStyle,
+  localeIconRowStyle,
+  mergeScrollContentRtl,
+  rtlRootDirection,
+  rtlTextStyle,
+} from '@/lib/rtlStyle';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useUserStore } from '@/stores';
 import { pullRedemptions, type RemoteRedemption } from '@/lib/syncServiceApi';
 
 export default function NotificationsInboxScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const notificationsEnabled = useSettingsStore((s) => s.notificationsEnabled);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
 
@@ -37,24 +45,32 @@ export default function NotificationsInboxScreen() {
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [remoteUserId]);
 
+  const reminderState = notificationsEnabled
+    ? t('notifications.on')
+    : t('notifications.off');
+
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('profile.notifications')} showBack />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, {
+          padding: 16,
+          paddingBottom: 100,
+          gap: 12,
+        })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View style={localeIconRowStyle(rtl)} className="mb-2">
             <Bell size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">
+            <Text style={ta} className="text-gray-900 font-semibold">
               {t('profile.notifications')}
             </Text>
           </View>
-          <Text className="text-sm text-gray-700">
-            Daily reminder: {notificationsEnabled ? 'On' : 'Off'} (8:00 PM)
+          <Text style={ta} className="text-sm text-gray-700">
+            {t('notifications.dailyReminder', { state: reminderState })}
           </Text>
           <View className="mt-3">
             <Button
@@ -62,70 +78,88 @@ export default function NotificationsInboxScreen() {
               fullWidth
               onPress={() => router.push('/settings' as never)}
             >
-              Manage in Settings
+              {t('notifications.manageSettings')}
             </Button>
           </View>
         </Card>
 
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View style={localeIconRowStyle(rtl)} className="mb-2">
             <Gift size={18} color={colors.primary[700]} />
-            <Text className="text-gray-900 font-semibold">Reward updates</Text>
+            <Text style={ta} className="text-gray-900 font-semibold">
+              {t('notifications.rewardUpdates')}
+            </Text>
           </View>
 
           {!remoteUserId && (
-            <Text className="text-sm text-gray-700">
-              Sign in to see your redemption updates.
+            <Text style={ta} className="text-sm text-gray-700">
+              {t('notifications.signInForRewards')}
             </Text>
           )}
 
           {remoteUserId && redemptions.length === 0 && (
-            <Text className="text-sm text-gray-700">
-              No reward updates yet.
+            <Text style={ta} className="text-sm text-gray-700">
+              {t('notifications.noRewardUpdates')}
             </Text>
           )}
 
           {remoteUserId &&
             redemptions.map((r) => (
               <View key={r.id} className="py-2 border-t border-gray-100">
-                <Text className="text-sm text-gray-900 font-medium" numberOfLines={1}>
+                <Text
+                  style={ta}
+                  className="text-sm text-gray-900 font-medium"
+                  numberOfLines={1}
+                >
                   {r.reward_title}
                 </Text>
-                <Text className="text-xs text-gray-500">
-                  Status: {r.status} · Cost: {r.cost}
+                <Text style={ta} className="text-xs text-gray-500">
+                  {t('notifications.statusLine', {
+                    status: r.status,
+                    cost: r.cost,
+                  })}
                 </Text>
               </View>
             ))}
 
           {remoteUserId && (
             <View className="mt-3">
-              <Button variant="outline" fullWidth onPress={refresh} disabled={loading}>
-                {loading ? 'Loading…' : 'Refresh'}
+              <Button
+                variant="outline"
+                fullWidth
+                onPress={refresh}
+                disabled={loading}
+              >
+                {loading ? t('notifications.loading') : t('notifications.refresh')}
               </Button>
             </View>
           )}
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <View className="flex-row items-center gap-2 mb-1">
+          <View style={localeIconRowStyle(rtl)} className="mb-1">
             <Info size={18} color={colors.gray[600]} />
-            <Text className="text-gray-900 font-semibold">Inbox</Text>
+            <Text style={ta} className="text-gray-900 font-semibold">
+              {t('notifications.inbox')}
+            </Text>
           </View>
-          <Text className="text-sm text-gray-700">
-            This is a simple notifications inbox. Next we can add streak alerts, quiz
-            reminders, and unread counts.
+          <Text style={ta} className="text-sm text-gray-700">
+            {t('notifications.inboxBody')}
           </Text>
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <View className="flex-row items-center gap-2 mb-1">
+          <View style={localeIconRowStyle(rtl)} className="mb-1">
             <Info size={18} color={colors.gray[600]} />
-            <Text className="text-gray-900 font-semibold">Coming soon</Text>
+            <Text style={ta} className="text-gray-900 font-semibold">
+              {t('notifications.comingSoon')}
+            </Text>
           </View>
-          <Text className="text-sm text-gray-700">
-            - Streak & level-up alerts{'\n'}- New course drops{'\n'}- Quiz challenge
-            invites{'\n'}- FinTok highlights
-          </Text>
+          <View style={localeBannerAlignStyle(rtl)}>
+            <Text style={ta} className="text-sm text-gray-700">
+              {t('notifications.comingSoonList')}
+            </Text>
+          </View>
         </Card>
       </ScrollView>
 
@@ -133,4 +167,3 @@ export default function NotificationsInboxScreen() {
     </View>
   );
 }
-

@@ -17,9 +17,11 @@ import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
 import { apiPostJson } from '@/lib/api';
+import { mergeScrollContentRtl, rtlMirrorStyle, rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
 
 export default function ForgotPasswordScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
@@ -53,27 +55,34 @@ export default function ForgotPasswordScreen() {
 
   return (
     <LinearGradient colors={[colors.primary[500], colors.primary[700]]} style={{ flex: 1 }}>
-      <SafeAreaView className="flex-1">
+      <SafeAreaView className="flex-1" style={rtlRootDirection(rtl)}>
         <KeyboardAvoidingView
-          style={{ flex: 1 }}
+          style={[{ flex: 1 }, rtlRootDirection(rtl)]}
           behavior={Platform.OS === 'ios' ? 'padding' : undefined}
         >
           <Pressable onPress={() => router.back()} hitSlop={12} className="p-4 active:opacity-60">
-            <ArrowLeft size={24} color={colors.white} />
+            <ArrowLeft size={24} color={colors.white} style={rtlMirrorStyle(rtl)} />
           </Pressable>
 
-          <ScrollView contentContainerStyle={{ flexGrow: 1, padding: 24 }} keyboardShouldPersistTaps="handled">
+          <ScrollView contentContainerStyle={mergeScrollContentRtl(rtl, { flexGrow: 1, padding: 24 })} keyboardShouldPersistTaps="handled">
             <View className="mb-8">
-              <Text className="text-3xl text-white font-bold mb-2">Reset password</Text>
-              <Text className="text-base text-primary-100">
+              <Text className="text-3xl text-white font-bold mb-2" style={ta}>
+                Reset password
+              </Text>
+              <Text className="text-base text-primary-100" style={ta}>
                 Enter your email and we’ll send a 6-digit reset code.
               </Text>
             </View>
 
             <View className="bg-white rounded-2xl p-5 gap-4">
               <View>
-                <Text className="text-sm text-gray-700 font-medium mb-2">{t('auth.email')}</Text>
-                <View className="flex-row items-center border border-gray-200 rounded-xl px-3">
+                <Text className="text-sm text-gray-700 font-medium mb-2" style={ta}>
+                  {t('auth.email')}
+                </Text>
+                <View
+                  className="items-center border border-gray-200 rounded-xl px-3"
+                  style={rtlRowMerge(rtl, { alignItems: 'center' })}
+                >
                   <Mail size={18} color={colors.gray[500]} />
                   <TextInput
                     value={email}
@@ -84,19 +93,22 @@ export default function ForgotPasswordScreen() {
                     autoCapitalize="none"
                     autoComplete="email"
                     className="flex-1 px-3 py-3 text-base text-gray-900"
+                    style={ta}
                   />
                 </View>
               </View>
 
               {error && (
                 <View className="bg-red-50 border border-red-200 rounded-lg p-3">
-                  <Text className="text-sm text-red-700">{error}</Text>
+                  <Text className="text-sm text-red-700" style={ta}>
+                    {error}
+                  </Text>
                 </View>
               )}
 
               {sent && (
                 <View className="bg-green-50 border border-green-200 rounded-lg p-3">
-                  <Text className="text-sm text-green-800">
+                  <Text className="text-sm text-green-800" style={ta}>
                     If this email exists, a 6-digit reset code has been sent. Check your inbox.
                   </Text>
                   <View className="mt-3">
@@ -122,7 +134,9 @@ export default function ForgotPasswordScreen() {
             </View>
 
             <Pressable onPress={() => router.replace('/(auth)/login')} className="mt-6 items-center" hitSlop={8}>
-              <Text className="text-white/80 text-sm">Back to login</Text>
+              <Text className="text-white/80 text-sm" style={ta}>
+                Back to login
+              </Text>
             </Pressable>
           </ScrollView>
         </KeyboardAvoidingView>
@@ -130,4 +144,3 @@ export default function ForgotPasswordScreen() {
     </LinearGradient>
   );
 }
-

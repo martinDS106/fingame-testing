@@ -22,6 +22,8 @@ import {
   type RemoteMarketplaceProduct,
 } from '@/lib/syncServiceApi';
 import { isApiConfigured } from '@/lib/api';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
+import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
@@ -58,6 +60,8 @@ const TIER_OPTIONS: { id: Tier; label: string }[] = [
 ];
 
 export default function AdminMarketplaceProductsScreen() {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const apiMode = isApiConfigured;
 
@@ -268,12 +272,14 @@ export default function AdminMarketplaceProductsScreen() {
 
   if (!allowed) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Access denied</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Access denied
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               This area is restricted to admins.
             </Text>
           </Card>
@@ -289,12 +295,14 @@ export default function AdminMarketplaceProductsScreen() {
 
   if (apiMode) {
     return (
-      <View className="flex-1 bg-gray-50">
+      <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
         <ScreenHeader title="Admin • Marketplace" showBack />
         <View className="flex-1 px-4 py-6">
           <Card className="border border-yellow-200 bg-yellow-50">
-            <Text className="text-gray-900 font-semibold mb-1">Not supported</Text>
-            <Text className="text-sm text-gray-700">
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Not supported
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
               Marketplace admin tools are not available in MySQL API mode yet.
             </Text>
           </Card>
@@ -309,7 +317,7 @@ export default function AdminMarketplaceProductsScreen() {
   }
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title="Marketplace Products"
         showBack
@@ -317,10 +325,14 @@ export default function AdminMarketplaceProductsScreen() {
       />
 
       <View className="px-4 pt-3 pb-2">
-        <View className="flex-row items-center justify-between">
+        <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
           <View>
-            <Text className="text-xs text-gray-500">Credit cards</Text>
-            <Text className="text-sm text-gray-800 font-semibold">{subtitle}</Text>
+            <Text className="text-xs text-gray-500" style={ta}>
+              Credit cards
+            </Text>
+            <Text className="text-sm text-gray-800 font-semibold" style={ta}>
+              {subtitle}
+            </Text>
           </View>
           <Button
             size="sm"
@@ -335,18 +347,23 @@ export default function AdminMarketplaceProductsScreen() {
 
       <View className="px-4 pb-2">
         <View className="bg-white border border-gray-200 rounded-2xl p-3">
-          <Text className="text-xs text-gray-500 mb-1">Search</Text>
+          <Text className="text-xs text-gray-500 mb-1" style={ta}>
+            Search
+          </Text>
           <TextInput
             value={q}
             onChangeText={setQ}
             placeholder="Search by id, name, or bank…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
+            style={ta}
           />
 
           <View className="mt-3">
-            <Text className="text-xs text-gray-500 mb-2">Filters</Text>
-            <View className="flex-row gap-2 flex-wrap">
+            <Text className="text-xs text-gray-500 mb-2" style={ta}>
+              Filters
+            </Text>
+            <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
               {(
                 [
                   { id: 'all', label: 'All tiers' },
@@ -370,6 +387,7 @@ export default function AdminMarketplaceProductsScreen() {
                       className={`text-sm font-medium ${
                         active ? 'text-white' : 'text-gray-800'
                       }`}
+                      style={ta}
                     >
                       {opt.label}
                     </Text>
@@ -378,7 +396,7 @@ export default function AdminMarketplaceProductsScreen() {
               })}
             </View>
 
-            <View className="mt-3 flex-row gap-2 flex-wrap">
+            <View className="mt-3" style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
               {(
                 [
                   { id: 'all', label: 'Best value: All' },
@@ -401,6 +419,7 @@ export default function AdminMarketplaceProductsScreen() {
                       className={`text-sm font-medium ${
                         active ? 'text-white' : 'text-gray-800'
                       }`}
+                      style={ta}
                     >
                       {opt.label}
                     </Text>
@@ -411,8 +430,10 @@ export default function AdminMarketplaceProductsScreen() {
           </View>
 
           <View className="mt-3">
-            <Text className="text-xs text-gray-500 mb-2">Sort</Text>
-            <View className="flex-row gap-2 flex-wrap">
+            <Text className="text-xs text-gray-500 mb-2" style={ta}>
+              Sort
+            </Text>
+            <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
               {(
                 [
                   { id: 'sort_order', label: 'Sort order' },
@@ -435,6 +456,7 @@ export default function AdminMarketplaceProductsScreen() {
                       className={`text-sm font-medium ${
                         active ? 'text-white' : 'text-gray-800'
                       }`}
+                      style={ta}
                     >
                       {opt.label}
                     </Text>
@@ -446,7 +468,7 @@ export default function AdminMarketplaceProductsScreen() {
                 onPress={() => setSortDir((d) => (d === 'asc' ? 'desc' : 'asc'))}
                 className="px-3 py-2 rounded-lg border bg-white border-gray-200"
               >
-                <Text className="text-sm font-medium text-gray-800">
+                <Text className="text-sm font-medium text-gray-800" style={ta}>
                   {sortDir === 'asc' ? 'Asc' : 'Desc'}
                 </Text>
               </Pressable>
@@ -473,13 +495,18 @@ export default function AdminMarketplaceProductsScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 24, gap: 10 }}
+        style={rtlRootDirection(rtl)}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 24, gap: 10 })}
         showsVerticalScrollIndicator={false}
       >
         {error && (
           <Card className="border border-red-200 bg-red-50">
-            <Text className="text-gray-900 font-semibold mb-1">Load failed</Text>
-            <Text className="text-sm text-gray-700">{error}</Text>
+            <Text className="text-gray-900 font-semibold mb-1" style={ta}>
+              Load failed
+            </Text>
+            <Text className="text-sm text-gray-700" style={ta}>
+              {error}
+            </Text>
             <View className="mt-3">
               <Button variant="outline" fullWidth onPress={refresh}>
                 Retry
@@ -491,22 +518,28 @@ export default function AdminMarketplaceProductsScreen() {
         {!error &&
           visibleProducts.map((p) => (
             <PressableCard key={p.id} onPress={() => openEdit(p)}>
-              <View className="flex-row items-start justify-between gap-3">
-                <View className="flex-row items-center gap-3 flex-1">
+              <View
+                style={rtlRowMerge(rtl, {
+                  alignItems: 'flex-start',
+                  justifyContent: 'space-between',
+                  gap: 12,
+                })}
+              >
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
                   <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center">
                     <Text className="text-xl">{p.logo}</Text>
                   </View>
                   <View className="flex-1">
-                    <Text className="text-gray-900 font-semibold" numberOfLines={1}>
+                    <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
                       {p.name}
                     </Text>
-                    <Text className="text-xs text-gray-500" numberOfLines={1}>
+                    <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
                       {p.id} · {p.bank} · tier: {p.tier}
                     </Text>
                   </View>
                 </View>
 
-                <View className="flex-row items-center gap-2">
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                   <Pressable
                     onPress={(e) => {
                       e.stopPropagation();
@@ -542,8 +575,8 @@ export default function AdminMarketplaceProductsScreen() {
             className="bg-white rounded-t-3xl p-4"
             onPress={(e) => e.stopPropagation()}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-lg text-gray-900 font-semibold">
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-lg text-gray-900 font-semibold" style={ta}>
                 {editing ? 'Edit product' : 'New product'}
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
@@ -552,84 +585,108 @@ export default function AdminMarketplaceProductsScreen() {
             </View>
 
             <ScrollView
-              contentContainerStyle={{ paddingBottom: 16, gap: 10 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">id (slug)</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  id (slug)
+                </Text>
                 <TextInput
                   value={draft.id}
                   onChangeText={(v) => setDraft((s) => ({ ...s, id: v }))}
                   placeholder="cib-smart"
                   autoCapitalize="none"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">bank</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    bank
+                  </Text>
                   <TextInput
                     value={draft.bank}
                     onChangeText={(v) => setDraft((s) => ({ ...s, bank: v }))}
                     placeholder="CIB"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="w-28 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">logo</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    logo
+                  </Text>
                   <TextInput
                     value={draft.logo}
                     onChangeText={(v) => setDraft((s) => ({ ...s, logo: v }))}
                     placeholder="🏦"
                     className="px-3 py-2 rounded-lg border border-gray-200 text-center"
+                    style={ta}
                   />
                 </Card>
               </View>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">name</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  name
+                </Text>
                 <TextInput
                   value={draft.name}
                   onChangeText={(v) => setDraft((s) => ({ ...s, name: v }))}
                   placeholder="CIB Smart Credit Card"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">APR</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    APR
+                  </Text>
                   <TextInput
                     value={draft.apr}
                     onChangeText={(v) => setDraft((s) => ({ ...s, apr: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">annual fee</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    annual fee
+                  </Text>
                   <TextInput
                     value={draft.annualFee}
                     onChangeText={(v) => setDraft((s) => ({ ...s, annualFee: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">cashback</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    cashback
+                  </Text>
                   <TextInput
                     value={draft.cashback}
                     onChangeText={(v) => setDraft((s) => ({ ...s, cashback: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-2">tier</Text>
-                <View className="flex-row gap-2 flex-wrap">
+                <Text className="text-xs text-gray-500 mb-2" style={ta}>
+                  tier
+                </Text>
+                <View style={rtlRowMerge(rtl, { gap: 8, flexWrap: 'wrap' })}>
                   {TIER_OPTIONS.map((opt) => {
                     const active = draft.tier === opt.id;
                     return (
@@ -646,6 +703,7 @@ export default function AdminMarketplaceProductsScreen() {
                           className={`text-sm font-medium ${
                             active ? 'text-white' : 'text-gray-800'
                           }`}
+                          style={ta}
                         >
                           {opt.label}
                         </Text>
@@ -655,27 +713,35 @@ export default function AdminMarketplaceProductsScreen() {
                 </View>
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">min income</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    min income
+                  </Text>
                   <TextInput
                     value={draft.minIncome}
                     onChangeText={(v) => setDraft((s) => ({ ...s, minIncome: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">min age</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    min age
+                  </Text>
                   <TextInput
                     value={draft.minAge}
                     onChangeText={(v) => setDraft((s) => ({ ...s, minAge: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">min score</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    min score
+                  </Text>
                   <TextInput
                     value={draft.minCreditScore}
                     onChangeText={(v) =>
@@ -683,22 +749,26 @@ export default function AdminMarketplaceProductsScreen() {
                     }
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
               </View>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">best for</Text>
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                  best for
+                </Text>
                 <TextInput
                   value={draft.bestFor}
                   onChangeText={(v) => setDraft((s) => ({ ...s, bestFor: v }))}
                   placeholder="Regular spenders with travel needs"
                   className="px-3 py-2 rounded-lg border border-gray-200"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
                   benefits (one per line)
                 </Text>
                 <TextInput
@@ -706,11 +776,12 @@ export default function AdminMarketplaceProductsScreen() {
                   onChangeText={(v) => setDraft((s) => ({ ...s, benefits: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
                   pros (one per line)
                 </Text>
                 <TextInput
@@ -718,11 +789,12 @@ export default function AdminMarketplaceProductsScreen() {
                   onChangeText={(v) => setDraft((s) => ({ ...s, pros: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
               <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1">
+                <Text className="text-xs text-gray-500 mb-1" style={ta}>
                   cons (one per line)
                 </Text>
                 <TextInput
@@ -730,22 +802,28 @@ export default function AdminMarketplaceProductsScreen() {
                   onChangeText={(v) => setDraft((s) => ({ ...s, cons: v }))}
                   multiline
                   className="px-3 py-2 rounded-lg border border-gray-200 min-h-[88px]"
+                  style={ta}
                 />
               </Card>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">sort order</Text>
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    sort order
+                  </Text>
                   <TextInput
                     value={draft.sortOrder}
                     onChangeText={(v) => setDraft((s) => ({ ...s, sortOrder: v }))}
                     keyboardType="numeric"
                     className="px-3 py-2 rounded-lg border border-gray-200"
+                    style={ta}
                   />
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1">best value</Text>
-                  <View className="flex-row gap-2">
+                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                    best value
+                  </Text>
+                  <View style={rtlRowMerge(rtl, { gap: 8 })}>
                     <Button
                       size="sm"
                       variant={draft.isBestValue ? 'primary' : 'outline'}
@@ -766,7 +844,7 @@ export default function AdminMarketplaceProductsScreen() {
                 </Card>
               </View>
 
-              <View className="flex-row gap-2">
+              <View style={rtlRowMerge(rtl, { gap: 8 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"

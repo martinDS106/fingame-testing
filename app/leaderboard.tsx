@@ -9,6 +9,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
 
 function rankBadgeClass(rank: number) {
@@ -26,7 +27,8 @@ function rankTextClass(rank: number) {
 }
 
 export default function LeaderboardScreen() {
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [loading, setLoading] = useState(false);
   const [rows, setRows] = useState<RemoteLeaderboardEntry[]>([]);
 
@@ -45,7 +47,7 @@ export default function LeaderboardScreen() {
   }, []);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader
         title={t('dashboard.leaderboard')}
         showBack
@@ -54,13 +56,16 @@ export default function LeaderboardScreen() {
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 12 }}
+        contentContainerStyle={mergeScrollContentRtl(rtl, { padding: 16, paddingBottom: 100, gap: 12 })}
         showsVerticalScrollIndicator={false}
       >
         <Card>
-          <View className="flex-row items-center gap-2 mb-2">
+          <View
+            className="mb-2"
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}
+          >
             <Trophy size={18} color={colors.accent[500]} />
-            <Text className="text-gray-900 font-semibold">
+            <Text style={ta} className="text-gray-900 font-semibold">
               {t('dashboard.leaderboard')}
             </Text>
           </View>
@@ -73,35 +78,39 @@ export default function LeaderboardScreen() {
             {rows.map((user, idx) => {
               const rank = idx + 1;
               return (
-              <View
-                key={user.user_id}
-                className="flex-row items-center gap-3 py-2"
-              >
-                <Text className="text-2xl">{user.avatar ?? '👤'}</Text>
-                <View className="flex-1">
-                  <Text className="text-sm text-gray-900 font-medium">
-                    {user.display_name}
-                  </Text>
-                  <Text className="text-xs text-gray-500">
-                    {t('dashboard.points', {
-                      points: (user.coins ?? 0).toLocaleString(),
-                    })}
-                  </Text>
-                </View>
                 <View
-                  className={`px-3 py-1 rounded-full ${rankBadgeClass(rank)}`}
+                  key={user.user_id}
+                  className="py-2"
+                  style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
                 >
-                  <Text
-                    className={`text-sm font-semibold ${rankTextClass(rank)}`}
+                  <Text className="text-2xl">{user.avatar ?? '👤'}</Text>
+                  <View className="flex-1">
+                    <Text style={ta} className="text-sm text-gray-900 font-medium">
+                      {user.display_name}
+                    </Text>
+                    <Text style={ta} className="text-xs text-gray-500">
+                      {t('dashboard.points', {
+                        points: (user.coins ?? 0).toLocaleString(),
+                      })}
+                    </Text>
+                  </View>
+                  <View
+                    className={`px-3 py-1 rounded-full ${rankBadgeClass(rank)}`}
                   >
-                    #{rank}
-                  </Text>
+                    <Text
+                      style={ta}
+                      className={`text-sm font-semibold ${rankTextClass(rank)}`}
+                    >
+                      #{rank}
+                    </Text>
+                  </View>
                 </View>
-              </View>
               );
             })}
             {!loading && rows.length === 0 && (
-              <Text className="text-sm text-gray-600">No leaderboard data yet.</Text>
+              <Text style={ta} className="text-sm text-gray-600">
+                No leaderboard data yet.
+              </Text>
             )}
           </View>
         </Card>
@@ -119,4 +128,3 @@ export default function LeaderboardScreen() {
     </View>
   );
 }
-

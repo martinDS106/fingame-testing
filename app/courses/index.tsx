@@ -12,27 +12,47 @@ import { Card, PressableCard } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { Skeleton } from '@/components/ui/Skeleton';
 import { colors } from '@/theme';
+import { useLearningProgress } from '@/hooks/useLearningProgress';
 import { useContentStore } from '@/stores';
 import { useT } from '@/hooks/useT';
+import {
+  rtlRootDirection,
+  rtlRow,
+  rtlRowMerge,
+  rtlTextStyle,
+  rtlMirrorStyle,
+  mergeScrollContentRtl,
+  localeBannerAlignStyle,
+  localeIconRowStyle,
+  localeTextBesideIconStyle,
+} from '@/lib/rtlStyle';
+
+function topicChipLabel(t: (k: string) => string, k: string) {
+  if (k === 'all') return t('common.all');
+  const key = `courses.topic.${k}`;
+  const translated = t(key);
+  return translated === key ? k : translated;
+}
 
 export default function CoursesScreen() {
   const router = useRouter();
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const courses = useContentStore((s) => s.courses);
   const lessons = useContentStore((s) => s.lessons);
   const loaded = useContentStore((s) => s.loaded);
   const syncStatus = useContentStore((s) => s.syncStatus);
   const syncError = useContentStore((s) => s.syncError);
   const syncFromCloud = useContentStore((s) => s.syncFromCloud);
-  const completedLessons = useContentStore((s) => s.completedLessons);
   const [topic, setTopic] = useState<string>('all');
+  const { lessonProgress: overall } = useLearningProgress();
 
   useEffect(() => {
     void syncFromCloud();
   }, [syncFromCloud]);
 
-  const overall = computeOverallProgress(courses, lessons, completedLessons);
   const showSkeleton = syncStatus === 'syncing' || !loaded;
+  const completedLessons = useContentStore((s) => s.completedLessons);
 
   const topics = useMemo(() => {
     const set = new Set<string>();
@@ -46,12 +66,15 @@ export default function CoursesScreen() {
   }, [courses, topic]);
 
   return (
-    <View className="flex-1 bg-gray-50">
+    <View className="flex-1 bg-gray-50" style={rtlRootDirection(rtl)}>
       <ScreenHeader title={t('courses.title')} showBack showBell={false} />
 
       <ScrollView
         className="flex-1"
-        contentContainerStyle={{ padding: 16, paddingBottom: 100, gap: 16 }}
+        contentContainerStyle={[
+          { padding: 16, paddingBottom: 100, gap: 16 },
+          rtlRootDirection(rtl),
+        ]}
         showsVerticalScrollIndicator={false}
       >
         <LinearGradient
@@ -60,10 +83,18 @@ export default function CoursesScreen() {
           end={{ x: 1, y: 0 }}
           style={{ borderRadius: 16, padding: 16 }}
         >
-          <View className="flex-row justify-between items-center mb-2">
-            <Text className="text-white text-sm">{t('courses.overallProgress')}</Text>
+          <View
+            className="mb-2"
+            style={[
+              { alignItems: 'center', justifyContent: 'space-between' },
+              rtlRow(rtl),
+            ]}
+          >
+            <Text style={ta} className="text-white text-sm">
+              {t('courses.overallProgress')}
+            </Text>
             {!showSkeleton ? (
-              <Text className="text-white font-semibold text-sm">
+              <Text style={ta} className="text-white font-semibold text-sm">
                 {t('courses.completePct', { pct: overall.percent })}
               </Text>
             ) : (
@@ -76,11 +107,17 @@ export default function CoursesScreen() {
             trackClassName="bg-white/20"
             color={colors.accent[400]}
           />
-          <View className="flex-row items-center gap-4 mt-3">
-            <View className="flex-row items-center gap-1">
+          <View
+            className="mt-3"
+            style={[{ alignItems: 'center', gap: 16 }, rtlRow(rtl)]}
+          >
+            <View
+              className="gap-1"
+              style={[{ alignItems: 'center' }, rtlRow(rtl)]}
+            >
               <BookOpen size={14} color={colors.white} />
               {!showSkeleton ? (
-                <Text className="text-white text-sm">
+                <Text style={ta} className="text-white text-sm">
                   {t('courses.lessonsCount', {
                     done: overall.completedLessons,
                     total: overall.totalLessons,
@@ -90,10 +127,13 @@ export default function CoursesScreen() {
                 <Skeleton className="h-4 w-24 bg-white/30" />
               )}
             </View>
-            <View className="flex-row items-center gap-1">
+            <View
+              className="gap-1"
+              style={[{ alignItems: 'center' }, rtlRow(rtl)]}
+            >
               <Award size={14} color={colors.accent[300]} />
               {!showSkeleton ? (
-                <Text className="text-sm font-semibold text-accent-300">
+                <Text style={ta} className="text-sm font-semibold text-accent-300">
                   {t('courses.coinsEarned', { coins: overall.coinsEarned })}
                 </Text>
               ) : (
@@ -105,31 +145,40 @@ export default function CoursesScreen() {
 
         {syncStatus === 'error' && (
           <Card className="bg-red-50 border border-red-200">
-            <Text className="text-red-900 font-semibold mb-1">
+            <Text style={ta} className="text-red-900 font-semibold mb-1">
               {t('courses.couldNotRefresh')}
             </Text>
-            <Text className="text-sm text-red-800 mb-3">
+            <Text style={ta} className="text-sm text-red-800 mb-3">
               {syncError ?? t('common.unknownError')}
             </Text>
             <PressableCard onPress={() => void syncFromCloud()}>
-              <Text className="text-red-800 font-semibold">{t('action.retry')}</Text>
+              <Text style={ta} className="text-red-800 font-semibold">
+                {t('action.retry')}
+              </Text>
             </PressableCard>
           </Card>
         )}
 
         <View>
-          <Text className="text-lg text-gray-800 font-semibold mb-3">
-            {t('courses.availableCourses')}
-          </Text>
+          <View style={localeBannerAlignStyle(rtl)} className="mb-3">
+            <Text style={[ta, { alignSelf: 'stretch' }]} className="text-lg text-gray-800 font-semibold">
+              {t('courses.availableCourses')}
+            </Text>
+          </View>
           {!showSkeleton && topics.length > 1 && (
             <ScrollView
               horizontal
               showsHorizontalScrollIndicator={false}
-              contentContainerStyle={{ gap: 8, paddingBottom: 8 }}
+              style={rtlRootDirection(rtl)}
+              contentContainerStyle={mergeScrollContentRtl(rtl, {
+                gap: 8,
+                paddingBottom: 8,
+                ...rtlRow(rtl),
+              })}
             >
               {topics.map((k) => {
                 const active = topic === k;
-                const label = k === 'all' ? 'All' : k;
+                const label = topicChipLabel(t, k);
                 return (
                   <Button
                     key={k}
@@ -148,12 +197,14 @@ export default function CoursesScreen() {
               <>
                 {[0, 1, 2].map((i) => (
                   <Card key={i} padded={false}>
-                    <View className="flex-row">
+                    <View style={rtlRow(rtl)}>
                       <Skeleton
                         className="w-[72px] h-[92px] rounded-none"
                         style={{
-                          borderTopLeftRadius: 12,
-                          borderBottomLeftRadius: 12,
+                          borderTopLeftRadius: rtl ? 0 : 12,
+                          borderBottomLeftRadius: rtl ? 0 : 12,
+                          borderTopRightRadius: rtl ? 12 : 0,
+                          borderBottomRightRadius: rtl ? 12 : 0,
                         }}
                       />
                       <View className="flex-1 p-3 gap-2">
@@ -161,7 +212,7 @@ export default function CoursesScreen() {
                         <Skeleton className="h-3 w-full" />
                         <Skeleton className="h-3 w-5/6" />
                         <Skeleton className="h-2 w-full rounded-full" />
-                        <View className="flex-row gap-2 mt-1">
+                        <View className="gap-2 mt-1" style={rtlRow(rtl)}>
                           <Skeleton className="h-5 w-20 rounded-full" />
                           <Skeleton className="h-5 w-24 rounded-full" />
                         </View>
@@ -172,14 +223,17 @@ export default function CoursesScreen() {
               </>
             ) : visibleCourses.length === 0 ? (
               <Card className="items-center py-8">
-                <Text className="text-gray-800 font-semibold mb-1">
+                <Text style={ta} className="text-gray-800 font-semibold mb-1">
                   {t('courses.noCoursesYet')}
                 </Text>
-                <Text className="text-sm text-gray-500 text-center mb-4">
+                <Text
+                  style={[ta, { textAlign: 'center' }]}
+                  className="text-sm text-gray-500 mb-4"
+                >
                   {t('courses.trySyncAgain')}
                 </Text>
                 <PressableCard onPress={() => void syncFromCloud()}>
-                  <Text className="text-primary-700 font-semibold">
+                  <Text style={ta} className="text-primary-700 font-semibold">
                     {t('courses.retrySync')}
                   </Text>
                 </PressableCard>
@@ -201,50 +255,146 @@ export default function CoursesScreen() {
                     onPress={() => router.push(`/courses/${course.id}` as never)}
                     padded={false}
                   >
-                    <View className="flex-row">
-                      <View
-                        style={{
-                          width: 72,
-                          backgroundColor: course.color,
-                          alignItems: 'center',
-                          justifyContent: 'center',
-                        }}
-                      >
-                        <Text style={{ fontSize: 32 }}>{course.icon}</Text>
-                      </View>
-                      <View className="flex-1 p-3">
-                        <View className="flex-row items-start justify-between">
-                          <Text className="text-base text-gray-900 font-semibold flex-1 pr-2">
-                            {course.title}
-                          </Text>
-                          <ChevronRight size={18} color={colors.gray[400]} />
-                        </View>
-                        <Text className="text-xs text-gray-500 mt-0.5">
-                          {course.description}
-                        </Text>
-                        <View className="mt-2">
-                          <ProgressBar value={percent} height={4} />
-                        </View>
-                        <View className="flex-row items-center gap-3 mt-2">
-                          <View className="flex-row items-center gap-1">
-                            <Clock size={12} color={colors.gray[500]} />
-                            <Text className="text-xs text-gray-500">
-                              {t('courses.lessonsLabel', {
-                                n: courseLessons.length,
+                    <View style={localeIconRowStyle(rtl)}>
+                      {rtl ? (
+                        <>
+                          <View style={[localeTextBesideIconStyle(rtl), { padding: 12 }]}>
+                            <View
+                              className="mb-1"
+                              style={rtlRowMerge(rtl, {
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                width: '100%',
                               })}
+                            >
+                              <Text
+                                style={[ta, { flex: 1, alignSelf: 'stretch' }]}
+                                className="text-base text-gray-900 font-semibold"
+                              >
+                                {course.title}
+                              </Text>
+                              <ChevronRight
+                                size={18}
+                                color={colors.gray[400]}
+                                style={rtlMirrorStyle(rtl)}
+                              />
+                            </View>
+                            <Text
+                              style={[ta, { alignSelf: 'stretch' }]}
+                              className="text-xs text-gray-500 mt-0.5"
+                            >
+                              {course.description}
                             </Text>
-                          </View>
-                          <Badge variant={percent === 100 ? 'success' : 'default'}>
-                            {percent === 100
-                              ? t('courses.completed')
-                              : percent > 0
-                                ? t('courses.inProgress')
-                                : t('marketplace.earnCoinsSuffix', {
-                                    n: course.coinReward,
+                            <View className="mt-2">
+                              <ProgressBar value={percent} height={4} />
+                            </View>
+                            <View
+                              className="mt-2"
+                              style={[{ alignItems: 'center', gap: 12 }, rtlRow(rtl)]}
+                            >
+                              <View
+                                className="gap-1"
+                                style={[{ alignItems: 'center' }, rtlRow(rtl)]}
+                              >
+                                <Clock size={12} color={colors.gray[500]} />
+                                <Text style={ta} className="text-xs text-gray-500">
+                                  {t('courses.lessonsLabel', {
+                                    n: courseLessons.length,
                                   })}
-                          </Badge>
-                        </View>
-                      </View>
+                                </Text>
+                              </View>
+                              <Badge variant={percent === 100 ? 'success' : 'default'}>
+                                {percent === 100
+                                  ? t('courses.completed')
+                                  : percent > 0
+                                    ? t('courses.inProgress')
+                                    : t('marketplace.earnCoinsSuffix', {
+                                        n: course.coinReward,
+                                      })}
+                              </Badge>
+                            </View>
+                          </View>
+                          <View
+                            style={{
+                              width: 72,
+                              backgroundColor: course.color,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Text style={{ fontSize: 32 }}>{course.icon}</Text>
+                          </View>
+                        </>
+                      ) : (
+                        <>
+                          <View
+                            style={{
+                              width: 72,
+                              backgroundColor: course.color,
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                            }}
+                          >
+                            <Text style={{ fontSize: 32 }}>{course.icon}</Text>
+                          </View>
+                          <View style={{ flex: 1, minWidth: 0, padding: 12 }}>
+                            <View
+                              className="mb-1"
+                              style={rtlRowMerge(rtl, {
+                                alignItems: 'center',
+                                justifyContent: 'space-between',
+                                width: '100%',
+                              })}
+                            >
+                              <Text
+                                style={[ta, { flex: 1, alignSelf: 'stretch' }]}
+                                className="text-base text-gray-900 font-semibold"
+                              >
+                                {course.title}
+                              </Text>
+                              <ChevronRight
+                                size={18}
+                                color={colors.gray[400]}
+                                style={rtlMirrorStyle(rtl)}
+                              />
+                            </View>
+                            <Text
+                              style={[ta, { alignSelf: 'stretch' }]}
+                              className="text-xs text-gray-500 mt-0.5"
+                            >
+                              {course.description}
+                            </Text>
+                            <View className="mt-2">
+                              <ProgressBar value={percent} height={4} />
+                            </View>
+                            <View
+                              className="mt-2"
+                              style={[{ alignItems: 'center', gap: 12 }, rtlRow(rtl)]}
+                            >
+                              <View
+                                className="gap-1"
+                                style={[{ alignItems: 'center' }, rtlRow(rtl)]}
+                              >
+                                <Clock size={12} color={colors.gray[500]} />
+                                <Text style={ta} className="text-xs text-gray-500">
+                                  {t('courses.lessonsLabel', {
+                                    n: courseLessons.length,
+                                  })}
+                                </Text>
+                              </View>
+                              <Badge variant={percent === 100 ? 'success' : 'default'}>
+                                {percent === 100
+                                  ? t('courses.completed')
+                                  : percent > 0
+                                    ? t('courses.inProgress')
+                                    : t('marketplace.earnCoinsSuffix', {
+                                        n: course.coinReward,
+                                      })}
+                              </Badge>
+                            </View>
+                          </View>
+                        </>
+                      )}
                     </View>
                   </PressableCard>
                 );
@@ -254,16 +404,46 @@ export default function CoursesScreen() {
         </View>
 
         <Card className="bg-purple-50 border-purple-100">
-          <View className="flex-row items-center gap-3">
-            <Text style={{ fontSize: 28 }}>🧠</Text>
-            <View className="flex-1">
-              <Text className="text-gray-800 font-semibold">
-                {t('courses.quizEarnCoinsTitle')}
-              </Text>
-              <Text className="text-sm text-gray-600">
-                {t('courses.quizEarnCoinsBody')}
-              </Text>
-            </View>
+          <View
+            style={[localeIconRowStyle(rtl), { alignItems: 'flex-start', gap: 12 }]}
+          >
+            {rtl ? (
+              <>
+                <View style={localeTextBesideIconStyle(rtl)}>
+                  <Text
+                    style={[ta, { alignSelf: 'stretch', marginBottom: 8 }]}
+                    className="text-gray-800 font-semibold"
+                  >
+                    {t('courses.quizEarnCoinsTitle')}
+                  </Text>
+                  <Text
+                    style={[ta, { alignSelf: 'stretch', lineHeight: 22 }]}
+                    className="text-sm text-gray-600"
+                  >
+                    {t('courses.quizEarnCoinsBody')}
+                  </Text>
+                </View>
+                <Text style={{ fontSize: 28 }}>🧠</Text>
+              </>
+            ) : (
+              <>
+                <Text style={{ fontSize: 28 }}>🧠</Text>
+                <View style={localeTextBesideIconStyle(rtl)}>
+                  <Text
+                    style={[ta, { alignSelf: 'stretch', marginBottom: 8 }]}
+                    className="text-gray-800 font-semibold"
+                  >
+                    {t('courses.quizEarnCoinsTitle')}
+                  </Text>
+                  <Text
+                    style={[ta, { alignSelf: 'stretch', lineHeight: 22 }]}
+                    className="text-sm text-gray-600"
+                  >
+                    {t('courses.quizEarnCoinsBody')}
+                  </Text>
+                </View>
+              </>
+            )}
           </View>
           <View className="mt-3">
             <Button fullWidth onPress={() => router.push('/quizzes' as never)}>
@@ -276,23 +456,5 @@ export default function CoursesScreen() {
       <BottomNav />
     </View>
   );
-}
-
-function computeOverallProgress(
-  courses: ReturnType<typeof useContentStore.getState>['courses'],
-  lessons: ReturnType<typeof useContentStore.getState>['lessons'],
-  completed: string[]
-) {
-  const totalLessons = lessons.length;
-  const completedLessons = lessons.filter((l) => completed.includes(l.id)).length;
-  const percent =
-    totalLessons > 0 ? Math.round((completedLessons / totalLessons) * 100) : 0;
-  const coinsEarned = courses.reduce((sum, course) => {
-    const cl = lessons.filter((l) => l.courseId === course.id);
-    if (cl.length === 0) return sum;
-    const done = cl.every((l) => completed.includes(l.id));
-    return done ? sum + course.coinReward : sum;
-  }, 0);
-  return { totalLessons, completedLessons, percent, coinsEarned };
 }
 

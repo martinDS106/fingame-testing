@@ -10,6 +10,7 @@ describe('useContentStore', () => {
       questions: [],
       completedLessons: [],
       completedQuizzes: [],
+      quizBestPercent: {},
       watchedVideos: [],
       loaded: true,
       lastSyncedAt: null,

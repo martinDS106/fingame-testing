@@ -4,6 +4,7 @@ import {
   Dimensions,
   FlatList,
   Pressable,
+  ScrollView,
   Share,
   Text,
   TextInput,
@@ -30,6 +31,7 @@ import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
 import { useFintokStore, useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
+import { rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
@@ -47,6 +49,8 @@ const EMPTY_COMMENTS: { id: string; video_id: string; user_id: string; body: str
   [];
 
 function ActiveVideo({ url, isActive }: { url: string; isActive: boolean }) {
+  const { rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const [probe, setProbe] = useState<{ ok: boolean; status?: number; err?: string } | null>(
     null
   );
@@ -146,46 +150,52 @@ function ActiveVideo({ url, isActive }: { url: string; isActive: boolean }) {
         />
       </Pressable>
 
-      <View
-        pointerEvents="none"
-        style={{
-          position: 'absolute',
-          left: 16,
-          right: 16,
-          top: 86,
-          paddingVertical: 8,
-          paddingHorizontal: 10,
-          borderRadius: 12,
-          backgroundColor: 'rgba(0,0,0,0.35)',
-        }}
-      >
-        <Text className="text-white/90 text-xs" numberOfLines={1}>
-          status: {status}
-        </Text>
-        {!!playerErr && (
-          <Text className="text-white/90 text-xs" numberOfLines={4}>
-            error: {safeOneLine(playerErr)}
-          </Text>
-        )}
-      </View>
-      {probe && !probe.ok && (
-        <View
-          pointerEvents="none"
-          style={{
-            position: 'absolute',
-            left: 16,
-            right: 16,
-            top: 120,
-            padding: 12,
-            borderRadius: 12,
-            backgroundColor: 'rgba(0,0,0,0.65)',
-          }}
-        >
-          <Text className="text-white font-semibold">Video not playable</Text>
-          <Text className="text-white/80 text-xs">
-            {probe.status != null ? `HTTP ${probe.status}` : probe.err || 'Unknown error'}
-          </Text>
-        </View>
+      {__DEV__ && (
+        <>
+          <View
+            pointerEvents="none"
+            style={{
+              position: 'absolute',
+              left: 16,
+              right: 16,
+              top: 86,
+              paddingVertical: 8,
+              paddingHorizontal: 10,
+              borderRadius: 12,
+              backgroundColor: 'rgba(0,0,0,0.35)',
+            }}
+          >
+            <Text className="text-white/90 text-xs" numberOfLines={1} style={ta}>
+              status: {status}
+            </Text>
+            {!!playerErr && (
+              <Text className="text-white/90 text-xs" numberOfLines={4} style={ta}>
+                error: {safeOneLine(playerErr)}
+              </Text>
+            )}
+          </View>
+          {probe && !probe.ok && (
+            <View
+              pointerEvents="none"
+              style={{
+                position: 'absolute',
+                left: 16,
+                right: 16,
+                top: 120,
+                padding: 12,
+                borderRadius: 12,
+                backgroundColor: 'rgba(0,0,0,0.65)',
+              }}
+            >
+              <Text className="text-white font-semibold" style={ta}>
+                Video not playable
+              </Text>
+              <Text className="text-white/80 text-xs" style={ta}>
+                {probe.status != null ? `HTTP ${probe.status}` : probe.err || 'Unknown error'}
+              </Text>
+            </View>
+          )}
+        </>
       )}
     </>
   );
@@ -193,7 +203,8 @@ function ActiveVideo({ url, isActive }: { url: string; isActive: boolean }) {
 
 function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
   const isActive = forceActive ? true : videoId === activeVideoId;
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const locale = useLocaleStore((s) => s.locale);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
 
@@ -293,8 +304,14 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
 
       <View
         pointerEvents="box-none"
-        className="absolute right-3 flex-col gap-5 items-center"
-        style={{ bottom: BOTTOM_NAV_HEIGHT + 140, zIndex: 50, elevation: 50 }}
+        className="flex-col gap-5 items-center"
+        style={{
+          position: 'absolute',
+          end: 12,
+          bottom: BOTTOM_NAV_HEIGHT + 140,
+          zIndex: 50,
+          elevation: 50,
+        }}
       >
         <Pressable
           onPress={() => {
@@ -319,7 +336,12 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               fill={liked ? colors.white : 'transparent'}
             />
           </View>
-          <Text className="text-white text-xs">{liked ? 'Liked' : 'Like'}</Text>
+          <Text
+            className="text-white text-xs"
+            style={{ textAlign: 'center', writingDirection: rtl ? 'rtl' : 'ltr' }}
+          >
+            {liked ? 'Liked' : 'Like'}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -339,7 +361,12 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           >
             <MessageCircle size={22} color={colors.white} />
           </View>
-          <Text className="text-white text-xs">{formatNumber(comments.length)}</Text>
+          <Text
+            className="text-white text-xs"
+            style={{ textAlign: 'center', writingDirection: rtl ? 'rtl' : 'ltr' }}
+          >
+            {formatNumber(comments.length)}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -365,7 +392,12 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               fill={saved ? colors.white : 'transparent'}
             />
           </View>
-          <Text className="text-white text-xs">{t('fintok.save')}</Text>
+          <Text
+            className="text-white text-xs"
+            style={{ textAlign: 'center', writingDirection: rtl ? 'rtl' : 'ltr' }}
+          >
+            {t('fintok.save')}
+          </Text>
         </Pressable>
 
         <Pressable
@@ -382,7 +414,12 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           >
             <Share2 size={22} color={colors.white} />
           </View>
-          <Text className="text-white text-xs">Share</Text>
+          <Text
+            className="text-white text-xs"
+            style={{ textAlign: 'center', writingDirection: rtl ? 'rtl' : 'ltr' }}
+          >
+            Share
+          </Text>
         </Pressable>
       </View>
 
@@ -400,7 +437,10 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           paddingBottom: 16,
         }}
       >
-        <View className="flex-row items-center gap-3 mb-3 pr-20">
+        <View
+          className="mb-3"
+          style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, paddingEnd: 80 })}
+        >
           <LinearGradient
             colors={[colors.accent[400], '#fb923c']}
             start={{ x: 0, y: 0 }}
@@ -413,13 +453,15 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               justifyContent: 'center',
             }}
           >
-            <Text className="text-lg">{video.creator_avatar}</Text>
+            <Text className="text-lg" style={ta}>
+              {video.creator_avatar}
+            </Text>
           </LinearGradient>
           <View className="flex-1">
-            <Text className="text-white text-sm font-semibold">
+            <Text className="text-white text-sm font-semibold" style={ta}>
               {creatorName}
             </Text>
-            <Text className="text-white/60 text-xs">
+            <Text className="text-white/60 text-xs" style={ta}>
               {t('fintok.finEducator')}
             </Text>
           </View>
@@ -428,17 +470,21 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           </Button>
         </View>
 
-        <Text className="text-white text-lg font-semibold mb-3 pr-20">
+        <Text className="text-white text-lg font-semibold mb-3" style={[ta, { paddingEnd: 80 }]}>
           {title}
         </Text>
 
         {!!caption && (
-          <Text className="text-white/80 text-sm mb-3 pr-20" numberOfLines={3}>
+          <Text
+            className="text-white/80 text-sm mb-3"
+            numberOfLines={3}
+            style={[ta, { paddingEnd: 80 }]}
+          >
             {caption}
           </Text>
         )}
 
-        <View className="pr-20 mb-2">
+        <View className="mb-2" style={{ paddingEnd: 80 }}>
           <Button
             variant="accent"
             fullWidth
@@ -451,7 +497,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           </Button>
         </View>
 
-        <View className="flex-row gap-2 pr-20">
+        <View style={rtlRowMerge(rtl, { gap: 8, paddingEnd: 80 })}>
           <View
             className="px-2 py-0.5 rounded-md border"
             style={{
@@ -459,7 +505,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               borderColor: 'rgba(250, 204, 21, 0.3)',
             }}
           >
-            <Text className="text-xs text-accent-300 font-medium">
+            <Text className="text-xs text-accent-300 font-medium" style={ta}>
               {t('fintok.coinsForWatching', { n: 5 })}
             </Text>
           </View>
@@ -470,7 +516,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               borderColor: 'rgba(96, 165, 250, 0.3)',
             }}
           >
-            <Text className="text-xs text-primary-300 font-medium">
+            <Text className="text-xs text-primary-300 font-medium" style={ta}>
               {t('fintok.xpBonus', { n: 10 })}
             </Text>
           </View>
@@ -494,48 +540,62 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
               borderTopLeftRadius: 18,
               borderTopRightRadius: 18,
               padding: 14,
+              ...rtlRootDirection(rtl),
             }}
           >
-            <View className="flex-row items-center justify-between mb-2">
-              <Text className="text-gray-900 font-semibold">Comments</Text>
+            <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
+              <Text className="text-gray-900 font-semibold" style={ta}>
+                Comments
+              </Text>
               <Pressable onPress={() => setCommentsOpen(false)} hitSlop={10}>
-                <Text className="text-gray-600">Close</Text>
+                <Text className="text-gray-600" style={ta}>
+                  Close
+                </Text>
               </Pressable>
             </View>
 
-            <View style={{ gap: 8 }}>
-              {comments.length === 0 ? (
-                <Card className="bg-gray-50 border border-gray-200">
-                  <Text className="text-sm text-gray-700">
-                    No comments yet. Be the first.
-                  </Text>
-                </Card>
-              ) : (
-                <View style={{ gap: 10 }}>
-                  {comments.slice(0, 30).map((c) => (
-                    <View key={c.id} className="border-b border-gray-100 pb-2">
-                      <Text className="text-sm text-gray-900">{c.body}</Text>
-                      <Text className="text-xs text-gray-500">{c.created_at}</Text>
-                    </View>
-                  ))}
-                </View>
-              )}
-            </View>
+            <ScrollView style={{ maxHeight: 280 }} keyboardShouldPersistTaps="handled">
+              <View style={{ gap: 8 }}>
+                {comments.length === 0 ? (
+                  <Card className="bg-gray-50 border border-gray-200">
+                    <Text className="text-sm text-gray-700" style={ta}>
+                      No comments yet. Be the first.
+                    </Text>
+                  </Card>
+                ) : (
+                  <View style={{ gap: 10 }}>
+                    {comments.slice(0, 30).map((c) => (
+                      <View key={c.id} className="border-b border-gray-100 pb-2">
+                        <Text className="text-sm text-gray-900" style={ta}>
+                          {c.body}
+                        </Text>
+                        <Text className="text-xs text-gray-500" style={ta}>
+                          {c.created_at}
+                        </Text>
+                      </View>
+                    ))}
+                  </View>
+                )}
+              </View>
+            </ScrollView>
 
-            <View className="mt-3 flex-row items-center gap-2">
+            <View className="mt-3" style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
               <View className="flex-1">
                 <TextInput
                   value={commentDraft}
                   onChangeText={setCommentDraft}
                   placeholder="Write a comment…"
                   placeholderTextColor="#9ca3af"
-                  style={{
-                    borderWidth: 1,
-                    borderColor: '#e5e7eb',
-                    borderRadius: 12,
-                    paddingHorizontal: 12,
-                    paddingVertical: 10,
-                  }}
+                  style={[
+                    {
+                      borderWidth: 1,
+                      borderColor: '#e5e7eb',
+                      borderRadius: 12,
+                      paddingHorizontal: 12,
+                      paddingVertical: 10,
+                    },
+                    ta,
+                  ]}
                 />
               </View>
               <Button onPress={submitComment} size="sm">
@@ -552,10 +612,11 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
 export default function FinTokScreen() {
   const [activeVideoId, setActiveVideoId] = useState<string | null>(null);
   const { startId } = useLocalSearchParams<{ startId?: string }>();
-  const watchedIds = useState(() => new Set<string>())[0];
+  const watchedIdsRef = useRef(new Set<string>());
   const addCoins = useUserStore((s) => s.addCoins);
   const addXP = useUserStore((s) => s.addXP);
-  const { t } = useT();
+  const { t, rtl } = useT();
+  const ta = rtlTextStyle(rtl);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
 
   const loading = useFintokStore((s) => s.loading);
@@ -587,11 +648,13 @@ export default function FinTokScreen() {
     if (!id) return;
 
     setActiveVideoId((prev) => (prev === id ? prev : id));
-    if (!watchedIds.has(id)) {
+    if (!watchedIdsRef.current.has(id)) {
+      watchedIdsRef.current.add(id);
       void (async () => {
         const reward = rewardFor('watch_video');
         const okCoins = await addCoins(reward.coins, 'watch_video');
         if (!okCoins) {
+          watchedIdsRef.current.delete(id);
           Alert.alert(
             'Could not save reward',
             'Your watch progress was not saved. Please sign in again and retry.',
@@ -600,23 +663,23 @@ export default function FinTokScreen() {
         }
         const okXp = await addXP(reward.xp);
         if (!okXp) {
+          watchedIdsRef.current.delete(id);
           await useUserStore.getState().spendCoins(reward.coins, 'watch_video');
           Alert.alert(
             'Could not save XP',
             'Coins were saved, but XP did not sync. Please try again.',
           );
-          return;
         }
-        watchedIds.add(id);
       })();
     }
   }).current;
 
   return (
-    <View className="flex-1 bg-black">
+    <View className="flex-1 bg-black" style={rtlRootDirection(rtl)}>
       <FlatList
         data={data}
         keyExtractor={(item) => item.id}
+        style={[{ flex: 1 }, rtlRootDirection(rtl)]}
         renderItem={({ item, index }) => (
           <VideoItem
             videoId={item.id}
@@ -637,9 +700,14 @@ export default function FinTokScreen() {
         onMomentumScrollEnd={(e) => {
           onScrollEnd(e.nativeEvent.contentOffset.y);
         }}
+        onScrollToIndexFailed={({ index }) => {
+          setTimeout(() => {
+            setActiveVideoId(data[Math.min(index, data.length - 1)]?.id ?? null);
+          }, 100);
+        }}
         ListEmptyComponent={
           <View style={{ height: ITEM_HEIGHT }} className="items-center justify-center">
-            <Text className="text-white/80" style={{ paddingHorizontal: 18, textAlign: 'center' }}>
+            <Text className="text-white/80" style={[ta, { paddingHorizontal: 18 }]}>
               {loading
                 ? 'Loading…'
                 : lastError
@@ -653,8 +721,12 @@ export default function FinTokScreen() {
       <SafeAreaView
         edges={['top']}
         className="absolute top-0 left-0 right-0 px-4 pt-2"
+        style={rtlRootDirection(rtl)}
       >
-        <Text className="text-white text-2xl font-bold text-center">
+        <Text
+          className="text-white text-2xl font-bold"
+          style={{ textAlign: 'center', writingDirection: rtl ? 'rtl' : 'ltr' }}
+        >
           {t('fintok.title')}
         </Text>
       </SafeAreaView>
