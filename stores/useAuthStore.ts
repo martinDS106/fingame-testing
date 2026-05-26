@@ -69,13 +69,13 @@ interface AuthState {
   continueAsGuest: () => void;
 }
 
-let authInitialized = false;
+let authInitInFlight: Promise<void> | null = null;
 
 export function resetAuthInitialization(): void {
-  authInitialized = false;
+  authInitInFlight = null;
 }
 
-export const useAuthStore = create<AuthState>((set) => ({
+export const useAuthStore = create<AuthState>((set, get) => ({
   status: 'loading',
   session: null,
   user: null,
@@ -83,21 +83,58 @@ export const useAuthStore = create<AuthState>((set) => ({
   error: null,
 
   init: async () => {
-    if (authInitialized) return;
-    authInitialized = true;
+    if (authInitInFlight) return authInitInFlight;
 
-    if (!isApiConfigured) {
-      set({ status: 'guest', isOfflineMode: true });
-      return;
-    }
-
-    // Prefer Nest API when configured (no Supabase required).
-    if (isApiConfigured) {
+    authInitInFlight = (async () => {
       try {
-        await loadApiTokens();
-        await bootstrapApiSessionFromRefresh();
-        const access = getApiAccessToken();
-        if (!access) {
+        if (!isApiConfigured) {
+          set({ status: 'guest', isOfflineMode: true });
+          return;
+        }
+
+        try {
+          await loadApiTokens();
+          await bootstrapApiSessionFromRefresh();
+          const access = getApiAccessToken();
+          if (!access) {
+            set({
+              status: 'guest',
+              session: null,
+              user: null,
+              isOfflineMode: false,
+            });
+            syncUserOnAuth(null);
+            return;
+          }
+
+          const me = await apiGetJson<ApiMeResponse>('/me', { auth: true });
+          if (!me.user) {
+            await clearPersistedApiAccessToken();
+            set({
+              status: 'guest',
+              session: null,
+              user: null,
+              isOfflineMode: false,
+            });
+            syncUserOnAuth(null);
+            return;
+          }
+
+          const syntheticUser: AuthUser = {
+            id: me.user.id,
+            email: me.user.email,
+          };
+
+          set({
+            status: 'authenticated',
+            session: null,
+            user: syntheticUser,
+            isOfflineMode: false,
+          });
+          syncUserOnAuth(me.user.id, me.user.email);
+        } catch (err) {
+          console.warn('[Auth] API init failed', err);
+          await clearPersistedApiAccessToken().catch(() => undefined);
           set({
             status: 'guest',
             session: null,
@@ -105,12 +142,10 @@ export const useAuthStore = create<AuthState>((set) => ({
             isOfflineMode: false,
           });
           syncUserOnAuth(null);
-          return;
         }
-
-        const me = await apiGetJson<ApiMeResponse>('/me', { auth: true });
-        if (!me.user) {
-          await clearPersistedApiAccessToken();
+      } finally {
+        // Web Fast Refresh can remount with status=loading while init was skipped earlier.
+        if (get().status === 'loading') {
           set({
             status: 'guest',
             session: null,
@@ -118,34 +153,11 @@ export const useAuthStore = create<AuthState>((set) => ({
             isOfflineMode: false,
           });
           syncUserOnAuth(null);
-          return;
         }
-
-      const syntheticUser: AuthUser = {
-        id: me.user.id,
-        email: me.user.email,
-      };
-
-        set({
-          status: 'authenticated',
-          session: null,
-          user: syntheticUser,
-          isOfflineMode: false,
-        });
-        syncUserOnAuth(me.user.id, me.user.email);
-      } catch (err) {
-        console.warn('[Auth] API init failed', err);
-        await clearPersistedApiAccessToken().catch(() => undefined);
-        set({
-          status: 'guest',
-          session: null,
-          user: null,
-          isOfflineMode: false,
-        });
-        syncUserOnAuth(null);
       }
-      return;
-    }
+    })();
+
+    return authInitInFlight;
   },
 
   signInWithEmail: async (email, password) => {

@@ -45,18 +45,18 @@ export default function RootLayout() {
   useEffect(() => {
     void (async () => {
       await initAuth();
-      // If user is signed in, hydrate simulator portfolio from backend.
-      // This makes investment state survive reinstall / new device.
-      try {
-        const remoteUserId = useUserStore.getState().remoteUserId;
-        if (remoteUserId) {
-          await useInvestmentStore.getState().pullRemote();
+      void performDailyCheckIn();
+      void (async () => {
+        try {
+          const remoteUserId = useUserStore.getState().remoteUserId;
+          if (remoteUserId) {
+            await useInvestmentStore.getState().pullRemote();
+          }
+        } catch (err) {
+          console.warn('[sim] pullRemote failed', err);
         }
-      } catch (err) {
-        console.warn('[sim] pullRemote failed', err);
-      }
-      await syncContent();
-      await performDailyCheckIn();
+        await syncContent();
+      })();
     })();
   }, [initAuth, syncContent]);
 
@@ -64,10 +64,13 @@ export default function RootLayout() {
   // ignores `direction: 'rtl'` alone). `lib/rtlStyle.ts` `rtlRow` uses plain `row`
   // when `I18nManager.isRTL` is true to avoid double-reversing rows.
   useLayoutEffect(() => {
+    if (Platform.OS === 'web') return;
     try {
       I18nManager.allowRTL(true);
       I18nManager.forceRTL(isRTL(locale));
-      I18nManager.swapLeftAndRightInRTL(false);
+      if (typeof I18nManager.swapLeftAndRightInRTL === 'function') {
+        I18nManager.swapLeftAndRightInRTL(false);
+      }
     } catch (err) {
       console.warn('[i18n] RTL sync failed', err);
     }
@@ -93,7 +96,12 @@ export default function RootLayout() {
           <Stack
             screenOptions={{
               headerShown: false,
-              animation: rtl ? 'slide_from_left' : 'slide_from_right',
+              animation:
+                Platform.OS === 'web'
+                  ? 'fade'
+                  : rtl
+                    ? 'slide_from_left'
+                    : 'slide_from_right',
             }}
           >
             <Stack.Screen name="index" />

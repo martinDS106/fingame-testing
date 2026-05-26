@@ -1,4 +1,13 @@
 [build]
-  command = "npm ci && npx expo export -p web && node scripts/patch-expo-web-modules.mjs"
+  command = "npm run web:export"
   publish = "dist"
 
+[[redirects]]
+  from = "/_expo/*"
+  to = "/_expo/:splat"
+  status = 200
+
+[[redirects]]
+  from = "/*"
+  to = "/index.html"
+  status = 200

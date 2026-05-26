@@ -26,6 +26,17 @@ export default function WelcomeScreen() {
     }
   }, [status]);
 
+  // If auth init hangs (slow API / hot reload), unblock the welcome screen.
+  useEffect(() => {
+    if (status !== 'loading') return;
+    const t = setTimeout(() => {
+      if (useAuthStore.getState().status === 'loading') {
+        useAuthStore.getState().continueAsGuest();
+      }
+    }, 12000);
+    return () => clearTimeout(t);
+  }, [status]);
+
   return (
     <LinearGradient
       colors={[colors.primary[500], colors.primary[600]]}

@@ -1,5 +1,5 @@
 import type { ReactNode } from 'react';
-import type { ViewStyle, StyleProp } from 'react-native';
+import { Platform, View, type ViewStyle, type StyleProp } from 'react-native';
 import Animated, { FadeIn, FadeInDown, FadeInUp } from 'react-native-reanimated';
 
 export type FadeDirection = 'none' | 'up' | 'down';
@@ -23,6 +23,15 @@ export function FadeInView({
   style,
   className,
 }: FadeInViewProps) {
+  // Reanimated layout entering crashes on Expo Web (reading 'top' of undefined).
+  if (Platform.OS === 'web') {
+    return (
+      <View style={style} className={className}>
+        {children}
+      </View>
+    );
+  }
+
   const animation =
     direction === 'up'
       ? FadeInDown.duration(duration).delay(delay).springify().damping(18)

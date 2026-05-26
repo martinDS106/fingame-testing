@@ -11,6 +11,8 @@
     "android": "expo start --android",
     "ios": "expo start --ios",
     "web": "expo start --web",
+    "web:clear": "expo start --web --clear",
+    "web:export": "expo export --platform web && node scripts/patch-expo-web-modules.mjs",
     "lint": "expo lint",
     "test": "jest",
     "test:watch": "jest --watch"
