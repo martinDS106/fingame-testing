@@ -8,6 +8,7 @@ import {
   localDateStamp,
   normalizeDateStamp,
 } from '@/lib/dateStamp';
+import { mergeStreakFields } from '@/lib/streakMerge';
 import {
   logCoinChange,
   pullProfile,
@@ -292,6 +293,11 @@ export const useUserStore = create<UserState>()(
 
       bindToUser: async (userId, email) => {
         const prevId = get().remoteUserId;
+        const localStreak = {
+          streak: get().streak,
+          longestStreak: get().longestStreak,
+          lastActiveDate: get().lastActiveDate,
+        };
         set({ remoteUserId: userId, syncStatus: 'syncing' });
 
         try {
@@ -299,6 +305,11 @@ export const useUserStore = create<UserState>()(
 
           if (remote) {
             const merged = remoteProfileToLocal(remote);
+            const streakMerged = mergeStreakFields(localStreak, {
+              streak: merged.streak,
+              longestStreak: merged.longestStreak,
+              lastActiveDate: merged.lastActiveDate,
+            });
             set({
               profile: {
                 ...merged.profile,
@@ -307,13 +318,29 @@ export const useUserStore = create<UserState>()(
               coins: merged.coins,
               xp: merged.xp,
               level: computeLevel(merged.xp),
-              streak: merged.streak,
-              longestStreak: merged.longestStreak,
-              lastActiveDate: merged.lastActiveDate,
+              streak: streakMerged.streak,
+              longestStreak: streakMerged.longestStreak,
+              lastActiveDate: streakMerged.lastActiveDate,
               isAdmin: merged.isAdmin,
               syncStatus: 'synced',
               lastSyncedAt: Date.now(),
             });
+            const remoteStreak = {
+              streak: merged.streak,
+              longestStreak: merged.longestStreak,
+              lastActiveDate: merged.lastActiveDate,
+            };
+            if (
+              streakMerged.streak !== remoteStreak.streak ||
+              streakMerged.longestStreak !== remoteStreak.longestStreak ||
+              streakMerged.lastActiveDate !== remoteStreak.lastActiveDate
+            ) {
+              void pushProfile({
+                streak: streakMerged.streak,
+                longest_streak: streakMerged.longestStreak,
+                last_active_date: streakMerged.lastActiveDate,
+              });
+            }
           } else {
             const s = get();
             await pushProfile({

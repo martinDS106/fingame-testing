@@ -12,6 +12,7 @@ import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
 import { performDailyCheckIn } from '@/hooks/useDailyCheckIn';
+import { waitForPersistHydration } from '@/lib/waitForStoreHydration';
 import { paperTheme } from '@/theme';
 import { useAuthStore, useContentStore, useInvestmentStore, useLocaleStore, useUserStore } from '@/stores';
 import { isRTL } from '@/lib/i18n';
@@ -44,8 +45,9 @@ export default function RootLayout() {
 
   useEffect(() => {
     void (async () => {
+      await waitForPersistHydration(useUserStore);
       await initAuth();
-      void performDailyCheckIn();
+      await performDailyCheckIn();
       void (async () => {
         try {
           const remoteUserId = useUserStore.getState().remoteUserId;

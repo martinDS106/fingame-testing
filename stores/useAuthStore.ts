@@ -37,10 +37,10 @@ type ApiMeResponse = {
   user: { id: string; email: string; isAdmin: boolean } | null;
 };
 
-function syncUserOnAuth(userId: string | null, email?: string) {
+async function syncUserOnAuth(userId: string | null, email?: string) {
   const userStore = useUserStore.getState();
   if (userId) {
-    userStore.bindToUser(userId, email);
+    await userStore.bindToUser(userId, email);
   } else {
     userStore.unbindFromUser();
   }
@@ -103,7 +103,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               user: null,
               isOfflineMode: false,
             });
-            syncUserOnAuth(null);
+            await syncUserOnAuth(null);
             return;
           }
 
@@ -116,7 +116,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
               user: null,
               isOfflineMode: false,
             });
-            syncUserOnAuth(null);
+            await syncUserOnAuth(null);
             return;
           }
 
@@ -131,7 +131,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: syntheticUser,
             isOfflineMode: false,
           });
-          syncUserOnAuth(me.user.id, me.user.email);
+          await syncUserOnAuth(me.user.id, me.user.email);
         } catch (err) {
           console.warn('[Auth] API init failed', err);
           await clearPersistedApiAccessToken().catch(() => undefined);
@@ -141,7 +141,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: null,
             isOfflineMode: false,
           });
-          syncUserOnAuth(null);
+          await syncUserOnAuth(null);
         }
       } finally {
         // Web Fast Refresh can remount with status=loading while init was skipped earlier.
@@ -152,7 +152,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             user: null,
             isOfflineMode: false,
           });
-          syncUserOnAuth(null);
+          await syncUserOnAuth(null);
         }
       }
     })();
@@ -185,7 +185,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         isOfflineMode: false,
       });
       resetAuthInitialization();
-      syncUserOnAuth(res.user.id, res.user.email);
+      await syncUserOnAuth(res.user.id, res.user.email);
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
@@ -230,7 +230,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
       if (displayName) {
         useUserStore.getState().updateProfile({ name: displayName });
       }
-      syncUserOnAuth(res.user.id, res.user.email);
+      await syncUserOnAuth(res.user.id, res.user.email);
       return { ok: true, needsVerification: false };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Signup failed';
