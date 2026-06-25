@@ -11,6 +11,7 @@ import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
 import 'react-native-reanimated';
 
+import { ReferralOnboardingModal } from '@/components/ReferralOnboardingModal';
 import { performDailyCheckIn } from '@/hooks/useDailyCheckIn';
 import { waitForPersistHydration } from '@/lib/waitForStoreHydration';
 import { paperTheme } from '@/theme';
@@ -113,6 +114,7 @@ export default function RootLayout() {
             />
           </Stack>
         </View>
+        <ReferralOnboardingModal />
       </PaperProvider>
     </GestureHandlerRootView>
   );

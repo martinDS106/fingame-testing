@@ -67,6 +67,7 @@ export class AuthService {
         passwordHash,
         isAdmin: isAdminEmail(email),
         referralCode,
+        referralOnboardingPending: true,
         ...(displayName?.trim() ? { displayName: displayName.trim() } : {}),
       },
       select: {

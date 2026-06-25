@@ -45,6 +45,7 @@ export interface ExtendedProfileFields {
   parentPhone: string;
   referralCode: string;
   referredByCode: string;
+  referralOnboardingPending: boolean;
   profileCompletedAt: string | null;
 }
 
@@ -67,6 +68,7 @@ export const EMPTY_EXTENDED_PROFILE: ExtendedProfileFields = {
   parentPhone: '',
   referralCode: '',
   referredByCode: '',
+  referralOnboardingPending: false,
   profileCompletedAt: null,
 };
 

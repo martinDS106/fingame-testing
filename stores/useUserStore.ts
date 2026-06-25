@@ -21,6 +21,8 @@ import {
   remoteProfileToLocal,
   fetchApiHealth,
   fetchMyReferralCode,
+  applyFriendReferralCode,
+  skipReferralOnboarding as skipReferralOnboardingApi,
 } from '@/lib/syncServiceApi';
 
 export type UserLevel =
@@ -93,6 +95,8 @@ interface UserState {
   unbindFromUser: () => void;
   pushSnapshot: () => Promise<void>;
   refreshMyReferralCode: () => Promise<{ code: string | null; staleApi: boolean }>;
+  applyFriendReferral: (code: string) => Promise<{ ok: boolean; coins?: number; error?: string }>;
+  skipReferralOnboarding: () => Promise<{ ok: boolean; error?: string }>;
 }
 
 const XP_PER_LEVEL = 500;
@@ -125,7 +129,6 @@ function profileToApiPayload(
     persona: p.persona,
     parent_email: p.parentEmail || null,
     parent_phone: p.parentPhone || null,
-    referred_by_code: p.referredByCode || null,
     profile_completed_at: extras?.profile_completed_at ?? p.profileCompletedAt,
   };
 }
@@ -489,6 +492,43 @@ export const useUserStore = create<UserState>()(
         }
 
         return { code: null, staleApi: serverOld || !!remote };
+      },
+
+      applyFriendReferral: async (code) => {
+        const res = await applyFriendReferralCode(code);
+        if (!res.ok) return { ok: false, error: res.error };
+        set((s) => ({
+          profile: {
+            ...s.profile,
+            ...res.profile.profile,
+            email: s.profile.email || res.profile.profile.email,
+          },
+          coins: res.profile.coins,
+          xp: res.profile.xp,
+          level: computeLevel(res.profile.xp),
+          streak: res.profile.streak,
+          longestStreak: res.profile.longestStreak,
+          lastActiveDate: res.profile.lastActiveDate,
+          isAdmin: res.profile.isAdmin,
+        }));
+        return { ok: true, coins: res.inviteeCoins };
+      },
+
+      skipReferralOnboarding: async () => {
+        const res = await skipReferralOnboardingApi();
+        if (!res.ok) return { ok: false, error: res.error };
+        set((s) => ({
+          profile: {
+            ...s.profile,
+            ...res.profile.profile,
+            referralOnboardingPending: false,
+            email: s.profile.email || res.profile.profile.email,
+          },
+          coins: res.profile.coins,
+          xp: res.profile.xp,
+          level: computeLevel(res.profile.xp),
+        }));
+        return { ok: true };
       },
     }),
     {

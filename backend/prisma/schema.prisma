@@ -44,6 +44,7 @@ model User {
   parentPhone  String?  @db.VarChar(32)
   referredByCode String? @db.VarChar(64)
   referralCode   String? @unique @db.VarChar(5)
+  referralOnboardingPending Boolean @default(false)
   profileCompletedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt

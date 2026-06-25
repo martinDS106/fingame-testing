@@ -15,6 +15,7 @@ import { StocksModule } from './stocks/stocks.module';
 import { SimModule } from './sim/sim.module';
 import { MailModule } from './mail/mail.module';
 import { ContentModule } from './content/content.module';
+import { ReferralService } from './referral/referral.service';
 
 @Module({
   imports: [
@@ -32,6 +33,6 @@ import { ContentModule } from './content/content.module';
     ContentModule,
   ],
   controllers: [AppController, HealthController, MeController],
-  providers: [AppService],
+  providers: [AppService, ReferralService],
 })
 export class AppModule {}

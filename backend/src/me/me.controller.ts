@@ -16,7 +16,9 @@ import type { JwtPayload } from '../auth/jwt.strategy';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { AppendCoinsDto } from './dto/append-coins.dto';
 import { meUserSelect } from './user-select';
+import { ApplyReferralDto } from './dto/apply-referral.dto';
 import { ensureUserReferralCode } from '../referral/referral-code.util';
+import { ReferralService } from '../referral/referral.service';
 
 function parseGoals(raw: string[] | undefined): string | null | undefined {
   if (raw === undefined) return undefined;
@@ -26,7 +28,27 @@ function parseGoals(raw: string[] | undefined): string | null | undefined {
 @ApiTags('Me')
 @Controller('me')
 export class MeController {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly referral: ReferralService,
+  ) {}
+
+  @Post('referral/apply')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  async applyReferral(
+    @CurrentUser() user: JwtPayload,
+    @Body() dto: ApplyReferralDto,
+  ) {
+    return this.referral.applyReferral(user.sub, dto.code);
+  }
+
+  @Post('referral/skip')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  async skipReferral(@CurrentUser() user: JwtPayload) {
+    return this.referral.skipReferralOnboarding(user.sub);
+  }
 
   @Get('referral-code')
   @UseGuards(JwtAuthGuard)
@@ -165,19 +187,6 @@ export class MeController {
     if (dto.persona !== undefined) data.persona = dto.persona;
     if (dto.parentEmail !== undefined) data.parentEmail = dto.parentEmail;
     if (dto.parentPhone !== undefined) data.parentPhone = dto.parentPhone;
-    if (dto.referredByCode !== undefined) {
-      const normalized = dto.referredByCode?.trim().toUpperCase() || null;
-      if (normalized) {
-        const self = await this.prisma.user.findUnique({
-          where: { id: user.sub },
-          select: { referralCode: true },
-        });
-        if (self?.referralCode && normalized === self.referralCode) {
-          throw new BadRequestException('Cannot use your own referral code');
-        }
-      }
-      data.referredByCode = normalized;
-    }
     if (dto.profileCompletedAt !== undefined) {
       data.profileCompletedAt = dto.profileCompletedAt
         ? new Date(dto.profileCompletedAt)

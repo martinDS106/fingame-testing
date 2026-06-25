@@ -30,6 +30,7 @@ export const meUserSelect = {
   parentPhone: true,
   referredByCode: true,
   referralCode: true,
+  referralOnboardingPending: true,
   profileCompletedAt: true,
   createdAt: true,
   updatedAt: true,

@@ -45,6 +45,7 @@ export interface RemoteProfile {
   parent_phone: string | null;
   referral_code: string | null;
   referred_by_code: string | null;
+  referral_onboarding_pending: boolean;
   profile_completed_at: string | null;
   created_at: string;
   updated_at: string;
@@ -252,6 +253,7 @@ type ApiUser = {
   parentPhone: string | null;
   referralCode: string | null;
   referredByCode: string | null;
+  referralOnboardingPending: boolean;
   profileCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
@@ -316,6 +318,7 @@ function apiUserToRemoteProfile(u: ApiUser): RemoteProfile {
     parent_phone: u.parentPhone,
     referral_code: u.referralCode,
     referred_by_code: u.referredByCode,
+    referral_onboarding_pending: u.referralOnboardingPending ?? false,
     profile_completed_at: u.profileCompletedAt,
     created_at: u.createdAt,
     updated_at: u.updatedAt,
@@ -399,6 +402,59 @@ export async function fetchMyReferralCode(): Promise<string | null> {
     return res.referralCode?.trim() || null;
   } catch {
     return null;
+  }
+}
+
+type ApplyReferralResponse = {
+  user: ApiUser;
+  inviteeCoins: number;
+  referrerCoins: number;
+};
+
+export async function applyFriendReferralCode(
+  code: string,
+): Promise<
+  | { ok: true; inviteeCoins: number; profile: ReturnType<typeof remoteProfileToLocal> }
+  | { ok: false; error: string }
+> {
+  if (!isApiConfigured) return { ok: false, error: 'API not configured' };
+  const authed = await ensureApiAccessTokenLoaded();
+  if (!authed) return { ok: false, error: 'Not authenticated' };
+  try {
+    const res = await apiPostJson<ApplyReferralResponse, { code: string }>(
+      '/me/referral/apply',
+      { code: code.trim().toUpperCase() },
+      { auth: true },
+    );
+    const remote = apiUserToRemoteProfile(res.user);
+    return {
+      ok: true,
+      inviteeCoins: res.inviteeCoins,
+      profile: remoteProfileToLocal(remote),
+    };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
+  }
+}
+
+export async function skipReferralOnboarding(): Promise<
+  { ok: true; profile: ReturnType<typeof remoteProfileToLocal> } | { ok: false; error: string }
+> {
+  if (!isApiConfigured) return { ok: false, error: 'API not configured' };
+  const authed = await ensureApiAccessTokenLoaded();
+  if (!authed) return { ok: false, error: 'Not authenticated' };
+  try {
+    const res = await apiPostJson<{ user: ApiUser }>(
+      '/me/referral/skip',
+      {},
+      { auth: true },
+    );
+    const remote = apiUserToRemoteProfile(res.user);
+    return { ok: true, profile: remoteProfileToLocal(remote) };
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    return { ok: false, error: msg };
   }
 }
 
@@ -1623,6 +1679,7 @@ export function remoteProfileToLocal(remote: RemoteProfile): {
       parentPhone: remote.parent_phone ?? '',
       referralCode: remote.referral_code ?? '',
       referredByCode: remote.referred_by_code ?? '',
+      referralOnboardingPending: remote.referral_onboarding_pending ?? false,
       profileCompletedAt: normalizeDateStamp(remote.profile_completed_at),
     },
     coins: remote.coins ?? 0,

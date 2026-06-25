@@ -1,5 +1,6 @@
 import { simulationAr, simulationEn } from './i18nSimulation';
 import { profileAr, profileEn } from './i18nProfile';
+import { referralAr, referralEn } from './i18nReferral';
 
 export type Locale = 'en' | 'ar';
 
@@ -489,6 +490,7 @@ const en: Dict = {
 
   ...simulationEn,
   ...profileEn,
+  ...referralEn,
 };
 
 const ar: Dict = {
@@ -965,6 +967,7 @@ const ar: Dict = {
 
   ...simulationAr,
   ...profileAr,
+  ...referralAr,
 };
 
 const DICTS: Record<Locale, Dict> = { en, ar };
