@@ -15,6 +15,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import type { JwtPayload } from '../auth/jwt.strategy';
 import { UpdateMeDto } from './dto/update-me.dto';
 import { AppendCoinsDto } from './dto/append-coins.dto';
+import { meUserSelect } from './user-select';
+import { ensureUserReferralCode } from '../referral/referral-code.util';
+
+function parseGoals(raw: string[] | undefined): string | null | undefined {
+  if (raw === undefined) return undefined;
+  return JSON.stringify(raw);
+}
 
 @ApiTags('Me')
 @Controller('me')
@@ -25,23 +32,14 @@ export class MeController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   async me(@CurrentUser() user: JwtPayload) {
+    try {
+      await ensureUserReferralCode(this.prisma, user.sub);
+    } catch (err) {
+      console.warn('[me] ensureUserReferralCode failed', err);
+    }
     const dbUser = await this.prisma.user.findUnique({
       where: { id: user.sub },
-      select: {
-        id: true,
-        email: true,
-        isAdmin: true,
-        displayName: true,
-        avatar: true,
-        level: true,
-        coins: true,
-        xp: true,
-        streak: true,
-        longestStreak: true,
-        lastActiveDate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: meUserSelect,
     });
     return { user: dbUser };
   }
@@ -118,16 +116,7 @@ export class MeController {
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')
   async updateMe(@CurrentUser() user: JwtPayload, @Body() dto: UpdateMeDto) {
-    const data: {
-      displayName?: string;
-      avatar?: string | null;
-      level?: string;
-      coins?: number;
-      xp?: number;
-      streak?: number;
-      longestStreak?: number;
-      lastActiveDate?: Date | null;
-    } = {};
+    const data: Record<string, unknown> = {};
     if (dto.displayName !== undefined) data.displayName = dto.displayName;
     if (dto.avatar !== undefined) data.avatar = dto.avatar;
     if (dto.level !== undefined) data.level = dto.level;
@@ -140,25 +129,52 @@ export class MeController {
         ? new Date(dto.lastActiveDate)
         : null;
     }
+    if (dto.dateOfBirth !== undefined) {
+      data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    }
+    if (dto.gender !== undefined) data.gender = dto.gender;
+    if (dto.mobile !== undefined) data.mobile = dto.mobile;
+    if (dto.governorate !== undefined) data.governorate = dto.governorate;
+    if (dto.city !== undefined) data.city = dto.city;
+    if (dto.userType !== undefined) data.userType = dto.userType;
+    if (dto.schoolName !== undefined) data.schoolName = dto.schoolName;
+    if (dto.facultyMajor !== undefined) data.facultyMajor = dto.facultyMajor;
+    if (dto.academicYear !== undefined) data.academicYear = dto.academicYear;
+    if (dto.employer !== undefined) data.employer = dto.employer;
+    if (dto.monthlyIncomeRange !== undefined) {
+      data.monthlyIncomeRange = dto.monthlyIncomeRange;
+    }
+    const goalsJson = parseGoals(dto.financialGoals);
+    if (goalsJson !== undefined) data.financialGoals = goalsJson;
+    if (dto.financialLiteracy !== undefined) {
+      data.financialLiteracy = dto.financialLiteracy;
+    }
+    if (dto.persona !== undefined) data.persona = dto.persona;
+    if (dto.parentEmail !== undefined) data.parentEmail = dto.parentEmail;
+    if (dto.parentPhone !== undefined) data.parentPhone = dto.parentPhone;
+    if (dto.referredByCode !== undefined) {
+      const normalized = dto.referredByCode?.trim().toUpperCase() || null;
+      if (normalized) {
+        const self = await this.prisma.user.findUnique({
+          where: { id: user.sub },
+          select: { referralCode: true },
+        });
+        if (self?.referralCode && normalized === self.referralCode) {
+          throw new BadRequestException('Cannot use your own referral code');
+        }
+      }
+      data.referredByCode = normalized;
+    }
+    if (dto.profileCompletedAt !== undefined) {
+      data.profileCompletedAt = dto.profileCompletedAt
+        ? new Date(dto.profileCompletedAt)
+        : null;
+    }
 
     const dbUser = await this.prisma.user.update({
       where: { id: user.sub },
       data,
-      select: {
-        id: true,
-        email: true,
-        isAdmin: true,
-        displayName: true,
-        avatar: true,
-        level: true,
-        coins: true,
-        xp: true,
-        streak: true,
-        longestStreak: true,
-        lastActiveDate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: meUserSelect,
     });
     return { user: dbUser };
   }
@@ -173,21 +189,7 @@ export class MeController {
     if (dto.amount === 0) {
       const dbUser = await this.prisma.user.findUnique({
         where: { id: user.sub },
-        select: {
-          id: true,
-          email: true,
-          isAdmin: true,
-          displayName: true,
-          avatar: true,
-          level: true,
-          coins: true,
-          xp: true,
-          streak: true,
-          longestStreak: true,
-          lastActiveDate: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: meUserSelect,
       });
       return { user: dbUser };
     }
@@ -212,21 +214,7 @@ export class MeController {
           coins: nextCoins,
           lastActiveDate: new Date(),
         },
-        select: {
-          id: true,
-          email: true,
-          isAdmin: true,
-          displayName: true,
-          avatar: true,
-          level: true,
-          coins: true,
-          xp: true,
-          streak: true,
-          longestStreak: true,
-          lastActiveDate: true,
-          createdAt: true,
-          updatedAt: true,
-        },
+        select: meUserSelect,
       });
 
       await tx.coinsLog.create({

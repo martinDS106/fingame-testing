@@ -9,6 +9,7 @@ import {
   loadApiTokens,
 } from '@/lib/api';
 import { normalizeDateStamp } from '@/lib/dateStamp';
+import { parseFinancialGoals } from '@/lib/profileTypes';
 import type { CoinsReason, UserLevel, UserProfile } from '@/stores/useUserStore';
 
 // ---------------------------------------------------------------------------
@@ -26,6 +27,25 @@ export interface RemoteProfile {
   streak: number;
   longest_streak: number;
   last_active_date: string | null;
+  date_of_birth: string | null;
+  gender: string | null;
+  mobile: string | null;
+  governorate: string | null;
+  city: string | null;
+  user_type: string | null;
+  school_name: string | null;
+  faculty_major: string | null;
+  academic_year: string | null;
+  employer: string | null;
+  monthly_income_range: string | null;
+  financial_goals: string[];
+  financial_literacy: string | null;
+  persona: string | null;
+  parent_email: string | null;
+  parent_phone: string | null;
+  referral_code: string | null;
+  referred_by_code: string | null;
+  profile_completed_at: string | null;
   created_at: string;
   updated_at: string;
 }
@@ -214,6 +234,25 @@ type ApiUser = {
   streak: number;
   longestStreak: number;
   lastActiveDate: string | null;
+  dateOfBirth: string | null;
+  gender: string | null;
+  mobile: string | null;
+  governorate: string | null;
+  city: string | null;
+  userType: string | null;
+  schoolName: string | null;
+  facultyMajor: string | null;
+  academicYear: string | null;
+  employer: string | null;
+  monthlyIncomeRange: string | null;
+  financialGoals: string | null;
+  financialLiteracy: string | null;
+  persona: string | null;
+  parentEmail: string | null;
+  parentPhone: string | null;
+  referralCode: string | null;
+  referredByCode: string | null;
+  profileCompletedAt: string | null;
   createdAt: string;
   updatedAt: string;
 };
@@ -251,7 +290,7 @@ function apiUserToRemoteProfile(u: ApiUser): RemoteProfile {
   return {
     id: u.id,
     display_name: u.displayName ?? 'Player',
-    avatar: u.avatar ?? '👤',
+    avatar: u.avatar ?? 'default',
     level: (u.level ?? 'Beginner') as UserLevel,
     is_admin: !!u.isAdmin,
     coins: u.coins ?? 0,
@@ -259,6 +298,25 @@ function apiUserToRemoteProfile(u: ApiUser): RemoteProfile {
     streak: u.streak ?? 0,
     longest_streak: u.longestStreak ?? 0,
     last_active_date: u.lastActiveDate,
+    date_of_birth: u.dateOfBirth,
+    gender: u.gender,
+    mobile: u.mobile,
+    governorate: u.governorate,
+    city: u.city,
+    user_type: u.userType,
+    school_name: u.schoolName,
+    faculty_major: u.facultyMajor,
+    academic_year: u.academicYear,
+    employer: u.employer,
+    monthly_income_range: u.monthlyIncomeRange,
+    financial_goals: parseFinancialGoals(u.financialGoals),
+    financial_literacy: u.financialLiteracy,
+    persona: u.persona,
+    parent_email: u.parentEmail,
+    parent_phone: u.parentPhone,
+    referral_code: u.referralCode,
+    referred_by_code: u.referredByCode,
+    profile_completed_at: u.profileCompletedAt,
     created_at: u.createdAt,
     updated_at: u.updatedAt,
   };
@@ -327,6 +385,24 @@ export async function pushProfile(
     streak: number;
     longest_streak: number;
     last_active_date: string | null;
+    date_of_birth: string | null;
+    gender: string | null;
+    mobile: string | null;
+    governorate: string | null;
+    city: string | null;
+    user_type: string | null;
+    school_name: string | null;
+    faculty_major: string | null;
+    academic_year: string | null;
+    employer: string | null;
+    monthly_income_range: string | null;
+    financial_goals: string[];
+    financial_literacy: string | null;
+    persona: string | null;
+    parent_email: string | null;
+    parent_phone: string | null;
+    referred_by_code: string | null;
+    profile_completed_at: string | null;
   }>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isApiConfigured) return { ok: false, error: 'API not configured' };
@@ -345,6 +421,24 @@ export async function pushProfile(
         streak: payload.streak,
         longestStreak: payload.longest_streak,
         lastActiveDate: payload.last_active_date,
+        dateOfBirth: payload.date_of_birth,
+        gender: payload.gender,
+        mobile: payload.mobile,
+        governorate: payload.governorate,
+        city: payload.city,
+        userType: payload.user_type,
+        schoolName: payload.school_name,
+        facultyMajor: payload.faculty_major,
+        academicYear: payload.academic_year,
+        employer: payload.employer,
+        monthlyIncomeRange: payload.monthly_income_range,
+        financialGoals: payload.financial_goals,
+        financialLiteracy: payload.financial_literacy,
+        persona: payload.persona,
+        parentEmail: payload.parent_email,
+        parentPhone: payload.parent_phone,
+        referredByCode: payload.referred_by_code,
+        profileCompletedAt: payload.profile_completed_at,
       },
       { auth: true },
     );
@@ -689,7 +783,7 @@ export async function pullLeaderboardTop(
     return (rows ?? []).map((r) => ({
       user_id: r.userId,
       display_name: r.displayName ?? 'Player',
-      avatar: r.avatar ?? '👤',
+      avatar: r.avatar ?? 'default',
       coins: r.coins ?? 0,
       xp: r.xp ?? 0,
       streak: r.streak ?? 0,
@@ -1479,8 +1573,30 @@ export function remoteProfileToLocal(remote: RemoteProfile): {
     profile: {
       name: remote.display_name,
       email: '',
-      avatar: remote.avatar ?? '👤',
+      avatar: remote.avatar ?? 'default',
+      avatarImageUri: null,
       level: (remote.level ?? 'Beginner') as UserLevel,
+      dateOfBirth: normalizeDateStamp(remote.date_of_birth),
+      gender: (remote.gender as UserProfile['gender']) ?? null,
+      mobile: remote.mobile ?? '',
+      governorate: remote.governorate ?? '',
+      city: remote.city ?? '',
+      userType: (remote.user_type as UserProfile['userType']) ?? null,
+      schoolName: remote.school_name ?? '',
+      facultyMajor: remote.faculty_major ?? '',
+      academicYear: remote.academic_year ?? '',
+      employer: remote.employer ?? '',
+      monthlyIncomeRange:
+        (remote.monthly_income_range as UserProfile['monthlyIncomeRange']) ?? null,
+      financialGoals: parseFinancialGoals(remote.financial_goals),
+      financialLiteracy:
+        (remote.financial_literacy as UserProfile['financialLiteracy']) ?? null,
+      persona: remote.persona,
+      parentEmail: remote.parent_email ?? '',
+      parentPhone: remote.parent_phone ?? '',
+      referralCode: remote.referral_code ?? '',
+      referredByCode: remote.referred_by_code ?? '',
+      profileCompletedAt: normalizeDateStamp(remote.profile_completed_at),
     },
     coins: remote.coins ?? 0,
     xp: remote.xp ?? 0,

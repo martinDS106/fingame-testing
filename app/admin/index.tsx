@@ -11,7 +11,7 @@ import { useT } from '@/hooks/useT';
 import { useAuthStore, useUserStore } from '@/stores';
 
 export default function AdminDashboardScreen() {
-  const { rtl } = useT();
+  const { t, rtl } = useT();
   const ta = rtlTextStyle(rtl);
   const allowed = useUserStore((s) => s.isAdmin);
   const syncStatus = useUserStore((s) => s.syncStatus);
@@ -29,17 +29,20 @@ export default function AdminDashboardScreen() {
             <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, marginBottom: 8 })}>
               <Shield size={18} color="#ef4444" />
               <Text className="text-gray-900 font-semibold" style={ta}>
-                Access denied
+                {t('admin.accessDenied')}
               </Text>
             </View>
             <Text className="text-sm text-gray-700" style={ta}>
-              This area is restricted to admins.
+              {t('admin.accessDeniedBody')}
+            </Text>
+            <Text className="text-sm text-gray-600 mt-3" style={ta}>
+              {t('admin.accessDeniedHint')}
             </Text>
           </Card>
 
           <Card className="mt-3">
             <Text className="text-sm text-gray-900 font-semibold mb-2" style={ta}>
-              Debug info
+              {t('admin.debugInfo')}
             </Text>
             <View className="gap-1">
               <Text className="text-xs text-gray-700" style={ta}>
@@ -69,10 +72,14 @@ export default function AdminDashboardScreen() {
                   await bindToUser(sessionUser.id, sessionUser.email ?? undefined);
                 }}
               >
-                Retry sync
+                {t('admin.retrySync')}
               </Button>
-              <Button variant="outline" fullWidth onPress={() => router.back()}>
-                Go Back
+              <Button
+                variant="outline"
+                fullWidth
+                onPress={() => router.replace('/(auth)/login')}
+              >
+                {t('admin.backToLogin')}
               </Button>
             </View>
           </View>

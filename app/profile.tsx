@@ -1,6 +1,5 @@
 import { Alert, DevSettings, Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Image } from 'expo-image';
 import {
   Award,
   Bell,
@@ -14,11 +13,13 @@ import {
   RefreshCw,
   Settings,
   TrendingUp,
+  UserRound,
 } from 'lucide-react-native';
-import { router } from 'expo-router';
+import { router, useFocusEffect } from 'expo-router';
 import type { ComponentType } from 'react';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { BottomNav } from '@/components/BottomNav';
 import { LocaleChevron } from '@/components/LocaleChevron';
 import { ScreenHeader } from '@/components/ScreenHeader';
@@ -32,6 +33,7 @@ import { LOCALES, isRTL } from '@/lib/i18n';
 import { isAdminEmail, isAdminUIEnabled } from '@/lib/admin';
 import { useT } from '@/hooks/useT';
 import { useProfileGamification } from '@/hooks/useProfileGamification';
+import { profileCompletionPercent } from '@/lib/profileCompletion';
 import {
   listRowLeadingStyle,
   listRowStyle,
@@ -98,6 +100,7 @@ export default function ProfileScreen() {
   const syncStatus = useUserStore((s) => s.syncStatus);
   const lastSyncedAt = useUserStore((s) => s.lastSyncedAt);
   const pushSnapshot = useUserStore((s) => s.pushSnapshot);
+  const refreshMyReferralCode = useUserStore((s) => s.refreshMyReferralCode);
   const remoteUserId = useUserStore((s) => s.remoteUserId);
   const locale = useLocaleStore((s) => s.locale);
   const setLocale = useLocaleStore((s) => s.setLocale);
@@ -105,6 +108,10 @@ export default function ProfileScreen() {
   const signOut = useAuthStore((s) => s.signOut);
 
   const profileStats = useProfileGamification();
+  const profileCompletePct = useMemo(
+    () => profileCompletionPercent(profile),
+    [profile],
+  );
 
   useEffect(() => {
     const email = authEmail?.trim();
@@ -112,6 +119,13 @@ export default function ProfileScreen() {
     if (profile.email === email) return;
     useUserStore.getState().updateProfile({ email });
   }, [authEmail, profile.email]);
+
+  useFocusEffect(
+    useCallback(() => {
+      if (!remoteUserId) return;
+      void refreshMyReferralCode();
+    }, [remoteUserId, refreshMyReferralCode]),
+  );
 
   const currentLocale = LOCALES.find((l) => l.code === locale) ?? LOCALES[0];
 
@@ -267,17 +281,11 @@ export default function ProfileScreen() {
                 justifyContent: 'center',
               }}
             >
-              {profile.avatarImageUri ? (
-                <Image
-                  source={{ uri: profile.avatarImageUri }}
-                  style={{ width: 80, height: 80, borderRadius: 40 }}
-                  contentFit="cover"
-                />
-              ) : (
-                <Text className="text-4xl" style={ta}>
-                  {profile.avatar || '👤'}
-                </Text>
-              )}
+              <ProfileAvatar
+                avatar={profile.avatar}
+                avatarImageUri={profile.avatarImageUri}
+                size={80}
+              />
             </LinearGradient>
 
             <View className="flex-1">
@@ -341,6 +349,37 @@ export default function ProfileScreen() {
               gradient={[colors.accent[400], colors.accent[500]]}
             />
           </View>
+        </Card>
+
+        <Card className="border border-primary-200">
+          <Pressable
+            onPress={() => router.push('/complete-profile' as never)}
+            className="active:opacity-90"
+          >
+            <View className="items-center gap-3 mb-3" style={rtlRow(rtl)}>
+              <UserRound size={22} color={colors.primary[600]} />
+              <View className="flex-1">
+                <Text style={ta} className="text-lg text-gray-900 font-semibold">
+                  {t('profile.completeYourProfile')}
+                </Text>
+                <Text style={ta} className="text-sm text-gray-600 mt-1">
+                  {t('profile.completionPct', { pct: profileCompletePct })}
+                </Text>
+              </View>
+              <LocaleChevron rtl={rtl} color={colors.gray[500]} />
+            </View>
+            <ProgressBar value={profileCompletePct} height={6} />
+            {profile.referralCode ? (
+              <View className="mt-3 pt-3 border-t border-primary-100">
+                <Text style={ta} className="text-xs text-gray-500">
+                  {t('profile.myReferralCode')}
+                </Text>
+                <Text style={ta} className="text-base text-primary-700 font-semibold tracking-widest mt-1">
+                  {profile.referralCode}
+                </Text>
+              </View>
+            ) : null}
+          </Pressable>
         </Card>
 
         <Card>

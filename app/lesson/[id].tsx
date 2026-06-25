@@ -1,5 +1,5 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Alert, ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -17,7 +17,7 @@ import { useContentStore } from '@/stores';
 export default function LessonPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
-  const { rtl } = useT();
+  const { rtl, t } = useT();
   const ta = rtlTextStyle(rtl);
 
   const allLessons = useContentStore((s) => s.lessons);
@@ -61,6 +61,18 @@ export default function LessonPlayerScreen() {
   const [status, setStatus] = useState<string>('loading');
   const awardedRef = useRef(false);
 
+  const onCourseCompleted = useCallback(
+    (event: Awaited<ReturnType<typeof completeLesson>>) => {
+      if (event) {
+        Alert.alert(
+          t('course.completedTitle'),
+          t('course.completedBody', { n: event.bonusCoins }),
+        );
+      }
+    },
+    [t],
+  );
+
   // Listen to status and error events on the player.
   useEffect(() => {
     if (!video?.url) return;
@@ -90,7 +102,7 @@ export default function LessonPlayerScreen() {
 
         if (!awardedRef.current && total > 0 && t / total >= 0.9) {
           awardedRef.current = true;
-          markVideoWatched(video.id, video.lessonId);
+          void markVideoWatched(video.id, video.lessonId).then(onCourseCompleted);
         }
       } catch (err) {
         console.warn('[video] poll error', err);
@@ -98,7 +110,7 @@ export default function LessonPlayerScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [player, video, markVideoWatched]);
+  }, [player, video, markVideoWatched, onCourseCompleted]);
 
   if (!lesson) {
     return (
@@ -123,9 +135,16 @@ export default function LessonPlayerScreen() {
   const progressPct =
     duration > 0 ? Math.min(100, (watchedSec / duration) * 100) : 0;
 
-  const handleManualComplete = () => {
-    completeLesson(lesson.id, 10);
-    Alert.alert('Lesson complete', '+10 coins');
+  const handleManualComplete = async () => {
+    const event = await completeLesson(lesson.id, 10);
+    if (event) {
+      Alert.alert(
+        t('course.completedTitle'),
+        t('course.completedBody', { n: event.bonusCoins }),
+      );
+    } else {
+      Alert.alert('Lesson complete', '+10 coins');
+    }
     router.back();
   };
 

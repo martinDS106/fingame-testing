@@ -20,6 +20,7 @@ import {
   type RemoteVideo,
 } from '@/lib/syncServiceApi';
 import { isApiConfigured } from '@/lib/api';
+import { playCourseCelebrationSound } from '@/lib/playCelebrationSound';
 import { useUserStore } from '@/stores/useUserStore';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
@@ -36,6 +37,22 @@ const quizSubmitInFlight = new Map<string, Promise<QuizSubmitResult>>();
 // Normalized app-shape types (camelCase). We keep a local fallback so the
 // app is usable offline / before first sync.
 // --------------------------------------------------------------------------
+export interface CourseCompletionEvent {
+  courseId: string;
+  courseTitle: string;
+  bonusCoins: number;
+}
+
+function courseJustCompleted(
+  courseId: string,
+  lessons: Lesson[],
+  completedLessonIds: string[],
+): boolean {
+  const siblings = lessons.filter((l) => l.courseId === courseId);
+  if (!siblings.length) return false;
+  return siblings.every((l) => completedLessonIds.includes(l.id));
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -305,8 +322,14 @@ interface ContentState {
   syncFromCloud: () => Promise<void>;
   syncQuestionsForQuiz: (quizId: string) => Promise<void>;
   relocalizeFromCache: () => void;
-  completeLesson: (lessonId: string, coinReward?: number) => Promise<void>;
-  markVideoWatched: (videoId: string, lessonId: string) => Promise<void>;
+  completeLesson: (
+    lessonId: string,
+    coinReward?: number,
+  ) => Promise<CourseCompletionEvent | null>;
+  markVideoWatched: (
+    videoId: string,
+    lessonId: string,
+  ) => Promise<CourseCompletionEvent | null>;
   submitAttempt: (
     quizId: string,
     score: number,
@@ -360,23 +383,31 @@ export const useContentStore = create<ContentState>()(
       isVideoWatched: (videoId) => get().watchedVideos.includes(videoId),
 
       markVideoWatched: async (videoId, lessonId) => {
-        if (get().watchedVideos.includes(videoId)) return;
+        if (get().watchedVideos.includes(videoId)) return null;
         set((state) => ({
           watchedVideos: [...state.watchedVideos, videoId],
         }));
-        // Completing the video counts as completing the lesson.
-        await get().completeLesson(lessonId, 15);
         const userId = useUserStore.getState().remoteUserId;
         if (userId) {
           void upsertProgress(userId, 'video', videoId, 100, true);
         }
+        return get().completeLesson(lessonId, 15);
       },
 
       completeLesson: async (lessonId, coinReward = 10) => {
-        if (get().completedLessons.includes(lessonId)) return;
+        if (get().completedLessons.includes(lessonId)) return null;
+
+        const lesson = get().lessons.find((l) => l.id === lessonId);
+        const courseId = lesson?.courseId;
+        const nextCompleted = [...get().completedLessons, lessonId];
+        const finishesCourse =
+          !!courseId &&
+          courseJustCompleted(courseId, get().lessons, nextCompleted);
+
         set((state) => ({
-          completedLessons: [...state.completedLessons, lessonId],
+          completedLessons: nextCompleted,
         }));
+
         const userStore = useUserStore.getState();
         await userStore.addCoins(coinReward, 'lesson_complete');
         await userStore.addXP(25);
@@ -385,6 +416,27 @@ export const useContentStore = create<ContentState>()(
         if (userId) {
           void upsertProgress(userId, 'lesson', lessonId, 100, true);
         }
+
+        if (!finishesCourse || !courseId) return null;
+
+        const course = get().courses.find((c) => c.id === courseId);
+        const bonusCoins = course?.coinReward ?? 0;
+        const granted = await userStore.claimRewardOnce(
+          `course_complete:${courseId}`,
+          bonusCoins,
+          100,
+          'lesson_complete',
+        );
+
+        if (!granted) return null;
+
+        void playCourseCelebrationSound();
+
+        return {
+          courseId,
+          courseTitle: course?.title ?? 'Course',
+          bonusCoins,
+        };
       },
 
       syncFromCloud: async () => {

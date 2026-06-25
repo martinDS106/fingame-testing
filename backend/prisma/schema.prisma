@@ -26,6 +26,25 @@ model User {
   longestStreak Int     @default(0)
   lastActiveDate DateTime?
   simCash      Int      @default(100000)
+  dateOfBirth  DateTime?
+  gender       String?  @db.VarChar(32)
+  mobile       String?  @db.VarChar(32)
+  governorate  String?  @db.VarChar(120)
+  city         String?  @db.VarChar(120)
+  userType     String?  @db.VarChar(32)
+  schoolName   String?  @db.VarChar(200)
+  facultyMajor String?  @db.VarChar(200)
+  academicYear String?  @db.VarChar(64)
+  employer     String?  @db.VarChar(200)
+  monthlyIncomeRange String? @db.VarChar(64)
+  financialGoals   String? @db.Text
+  financialLiteracy String? @db.VarChar(32)
+  persona      String?  @db.VarChar(64)
+  parentEmail  String?  @db.VarChar(200)
+  parentPhone  String?  @db.VarChar(32)
+  referredByCode String? @db.VarChar(64)
+  referralCode   String? @unique @db.VarChar(5)
+  profileCompletedAt DateTime?
   createdAt    DateTime @default(now())
   updatedAt    DateTime @updatedAt
 

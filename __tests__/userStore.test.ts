@@ -4,7 +4,7 @@ import { useUserStore, xpProgressToNextLevel } from '@/stores/useUserStore';
 describe('useUserStore', () => {
   beforeEach(() => {
     useUserStore.setState({
-      profile: { name: 'Player', email: '', avatar: '👤', level: 'Beginner' },
+      profile: { name: 'Player', email: '', avatar: 'default', level: 'Beginner' },
       coins: 100,
       xp: 0,
       level: 1,

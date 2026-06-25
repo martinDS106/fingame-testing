@@ -6,11 +6,14 @@ import * as ImagePicker from 'expo-image-picker';
 import { Image } from 'expo-image';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { BottomNav } from '@/components/BottomNav';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
+import { DEFAULT_AVATAR_ID } from '@/lib/avatarPresets';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useUserStore } from '@/stores';
 
@@ -27,13 +30,15 @@ export default function EditProfileScreen() {
   const [avatar, setAvatar] = useState(profile.avatar);
   const [avatarImageUri, setAvatarImageUri] = useState(profile.avatarImageUri ?? null);
 
+  const [avatarOpen, setAvatarOpen] = useState(false);
+
   const canSave = useMemo(() => name.trim().length > 0, [name]);
 
   async function save() {
     if (!canSave) return;
     updateProfile({
       name: name.trim(),
-      avatar: avatar.trim() || '👤',
+      avatar: avatar || DEFAULT_AVATAR_ID,
       avatarImageUri,
     });
     if (remoteUserId) {
@@ -64,7 +69,7 @@ export default function EditProfileScreen() {
             </Text>
           </View>
           <Text style={ta} className="text-sm text-gray-700">
-            Update your display name, avatar emoji, and profile photo.
+            Update your display name, character avatar, and profile photo.
           </Text>
         </Card>
 
@@ -93,7 +98,7 @@ export default function EditProfileScreen() {
                   contentFit="cover"
                 />
               ) : (
-                <Text className="text-3xl">{avatar || '👤'}</Text>
+                <ProfileAvatar avatar={avatar} size={72} />
               )}
             </View>
 
@@ -150,17 +155,29 @@ export default function EditProfileScreen() {
         </Card>
 
         <Card className="border border-gray-200 bg-white" padded>
-          <Text style={ta} className="text-xs text-gray-500 mb-1">
-            Avatar (emoji)
+          <Text style={ta} className="text-xs text-gray-500 mb-2">
+            {t('profile.avatar')}
           </Text>
-          <TextInput
-            value={avatar}
-            onChangeText={setAvatar}
-            placeholder="👤"
-            className="px-3 py-2 rounded-lg border border-gray-200"
-            style={{ textAlign: inputAlign, writingDirection: rtl ? 'rtl' : 'ltr' }}
-          />
+          <Pressable
+            onPress={() => setAvatarOpen(true)}
+            style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
+            className="active:opacity-80"
+          >
+            <ProfileAvatar avatar={avatar} size={56} />
+            <Text style={ta} className="text-sm text-primary-600 font-semibold">
+              {t('profile.chooseAvatarBtn')}
+            </Text>
+          </Pressable>
         </Card>
+
+        <AvatarPickerModal
+          visible={avatarOpen}
+          rtl={rtl}
+          selected={avatar}
+          title={t('profile.avatar')}
+          onClose={() => setAvatarOpen(false)}
+          onSelect={setAvatar}
+        />
 
         <View style={rtlRowMerge(rtl, { gap: 8 })}>
           <View className="flex-1">

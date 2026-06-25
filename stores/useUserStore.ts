@@ -10,6 +10,11 @@ import {
 } from '@/lib/dateStamp';
 import { mergeStreakFields } from '@/lib/streakMerge';
 import {
+  EMPTY_EXTENDED_PROFILE,
+  type ExtendedProfileFields,
+} from '@/lib/profileTypes';
+import { isProfileComplete } from '@/lib/profileCompletion';
+import {
   logCoinChange,
   pullProfile,
   pushProfile,
@@ -22,7 +27,7 @@ export type UserLevel =
   | 'Advanced'
   | 'Expert';
 
-export interface UserProfile {
+export interface UserProfile extends ExtendedProfileFields {
   name: string;
   email: string;
   avatar: string;
@@ -78,12 +83,14 @@ interface UserState {
   checkInDaily: () => Promise<{ newStreak: number; streakChanged: boolean }>;
   resetStreak: () => Promise<void>;
   updateProfile: (patch: Partial<UserProfile>) => void;
+  saveExtendedProfile: () => Promise<{ ok: boolean; error?: string }>;
   hydrate: () => void;
 
   /** Cloud ↔ local sync */
   bindToUser: (userId: string, email?: string) => Promise<void>;
   unbindFromUser: () => void;
   pushSnapshot: () => Promise<void>;
+  refreshMyReferralCode: () => Promise<{ code: string | null; staleApi: boolean }>;
 }
 
 const XP_PER_LEVEL = 500;
@@ -92,12 +99,42 @@ function computeLevel(xp: number): number {
   return Math.max(1, Math.floor(xp / XP_PER_LEVEL) + 1);
 }
 
+function profileToApiPayload(
+  p: UserProfile,
+  extras?: { profile_completed_at?: string | null },
+) {
+  return {
+    display_name: p.name,
+    avatar: p.avatar,
+    level: p.level,
+    date_of_birth: p.dateOfBirth,
+    gender: p.gender,
+    mobile: p.mobile || null,
+    governorate: p.governorate || null,
+    city: p.city || null,
+    user_type: p.userType,
+    school_name: p.schoolName || null,
+    faculty_major: p.facultyMajor || null,
+    academic_year: p.academicYear || null,
+    employer: p.employer || null,
+    monthly_income_range: p.monthlyIncomeRange,
+    financial_goals: p.financialGoals,
+    financial_literacy: p.financialLiteracy,
+    persona: p.persona,
+    parent_email: p.parentEmail || null,
+    parent_phone: p.parentPhone || null,
+    referred_by_code: p.referredByCode || null,
+    profile_completed_at: extras?.profile_completed_at ?? p.profileCompletedAt,
+  };
+}
+
 const defaultProfile: UserProfile = {
   name: 'Player',
   email: '',
-  avatar: '👤',
+  avatar: 'default',
   avatarImageUri: null,
   level: 'Beginner',
+  ...EMPTY_EXTENDED_PROFILE,
 };
 
 export const useUserStore = create<UserState>()(
@@ -289,6 +326,29 @@ export const useUserStore = create<UserState>()(
         }
       },
 
+      saveExtendedProfile: async () => {
+        const { profile, remoteUserId } = get();
+        const completedAt = isProfileComplete(profile)
+          ? new Date().toISOString()
+          : profile.profileCompletedAt;
+
+        if (completedAt && completedAt !== profile.profileCompletedAt) {
+          set((state) => ({
+            profile: { ...state.profile, profileCompletedAt: completedAt },
+          }));
+        }
+
+        if (!remoteUserId || !isApiConfigured) {
+          return { ok: true };
+        }
+
+        const p = get().profile;
+        const res = await pushProfile(
+          profileToApiPayload(p, { profile_completed_at: completedAt }),
+        );
+        return res.ok ? { ok: true } : { ok: false, error: res.error };
+      },
+
       hydrate: () => {},
 
       bindToUser: async (userId, email) => {
@@ -344,9 +404,7 @@ export const useUserStore = create<UserState>()(
           } else {
             const s = get();
             await pushProfile({
-              display_name: s.profile.name,
-              avatar: s.profile.avatar,
-              level: s.profile.level,
+              ...profileToApiPayload(s.profile),
               coins: s.coins,
               xp: s.xp,
               streak: s.streak,
@@ -404,6 +462,25 @@ export const useUserStore = create<UserState>()(
           syncStatus: res.ok ? 'synced' : 'error',
           lastSyncedAt: res.ok ? Date.now() : s.lastSyncedAt,
         });
+      },
+
+      refreshMyReferralCode: async () => {
+        const { remoteUserId } = get();
+        if (!remoteUserId || !isApiConfigured) {
+          return { code: null, staleApi: false };
+        }
+        const remote = await pullProfile(remoteUserId);
+        if (!remote) {
+          return { code: null, staleApi: false };
+        }
+        const code = remote.referral_code?.trim() ?? '';
+        if (!code) {
+          return { code: null, staleApi: true };
+        }
+        set((s) => ({
+          profile: { ...s.profile, referralCode: code },
+        }));
+        return { code, staleApi: false };
       },
     }),
     {

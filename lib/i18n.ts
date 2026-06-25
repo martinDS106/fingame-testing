@@ -1,4 +1,5 @@
 import { simulationAr, simulationEn } from './i18nSimulation';
+import { profileAr, profileEn } from './i18nProfile';
 
 export type Locale = 'en' | 'ar';
 
@@ -79,6 +80,13 @@ const en: Dict = {
   'profile.rewardRedemption': 'Reward Redemption',
   'profile.quizHistory': 'Quiz history',
   'profile.adminDashboard': 'Admin Dashboard',
+  'admin.accessDenied': 'Access denied',
+  'admin.accessDeniedBody': 'This area is restricted to admins.',
+  'admin.accessDeniedHint':
+    'If you are not signed in, tap “Back to login”, sign in with an admin email, then open /admin again.',
+  'admin.backToLogin': 'Back to login',
+  'admin.retrySync': 'Retry sync',
+  'admin.debugInfo': 'Debug info',
   'profile.restricted': 'Restricted',
   'profile.editProfile': 'Edit Profile',
   'profile.signOut': 'Sign Out',
@@ -480,6 +488,7 @@ const en: Dict = {
   'creditCards.tierHighCost': 'High Cost',
 
   ...simulationEn,
+  ...profileEn,
 };
 
 const ar: Dict = {
@@ -551,6 +560,13 @@ const ar: Dict = {
   'profile.rewardRedemption': 'تصريف المكافآت',
   'profile.quizHistory': 'سجل الكويزات',
   'profile.adminDashboard': 'لوحة الأدمن',
+  'admin.accessDenied': 'الوصول مرفوض',
+  'admin.accessDeniedBody': 'هذه المنطقة مخصصة للمسؤولين فقط.',
+  'admin.accessDeniedHint':
+    'لو مش مسجّل دخول، اضغط «الرجوع لتسجيل الدخول»، سجّل دخول بإيميل أدمن، ثم افتح /admin مرة تانية.',
+  'admin.backToLogin': 'الرجوع لتسجيل الدخول',
+  'admin.retrySync': 'إعادة المزامنة',
+  'admin.debugInfo': 'معلومات تشخيص',
   'profile.restricted': 'مقيد',
   'profile.editProfile': 'تعديل الملف',
   'profile.signOut': 'تسجيل الخروج',
@@ -948,6 +964,7 @@ const ar: Dict = {
   'creditCards.tierHighCost': 'تكلفة عالية',
 
   ...simulationAr,
+  ...profileAr,
 };
 
 const DICTS: Record<Locale, Dict> = { en, ar };

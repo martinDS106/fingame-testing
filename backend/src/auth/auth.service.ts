@@ -9,6 +9,7 @@ import * as crypto from 'crypto';
 import { PrismaService } from '../prisma/prisma.service';
 import { JWT_ACCESS_SECRET, JWT_REFRESH_SECRET } from './auth.constants';
 import { MailService } from '../mail/mail.service';
+import { allocateUniqueReferralCode } from '../referral/referral-code.util';
 
 type TokenPair = { accessToken: string; refreshToken: string };
 
@@ -59,14 +60,22 @@ export class AuthService {
     if (existing) throw new ConflictException('Email already in use');
 
     const passwordHash = await bcrypt.hash(password, 10);
+    const referralCode = await allocateUniqueReferralCode(this.prisma);
     const user = await this.prisma.user.create({
       data: {
         email,
         passwordHash,
         isAdmin: isAdminEmail(email),
+        referralCode,
         ...(displayName?.trim() ? { displayName: displayName.trim() } : {}),
       },
-      select: { id: true, email: true, isAdmin: true, createdAt: true },
+      select: {
+        id: true,
+        email: true,
+        isAdmin: true,
+        referralCode: true,
+        createdAt: true,
+      },
     });
 
     const tokens = await this.signTokens(user);
