@@ -1432,11 +1432,9 @@ export async function adminPullProfiles(limit = 200): Promise<RemoteProfile[]> {
     );
     return (rows ?? []).map(apiUserToRemoteProfile);
   } catch (err) {
-    console.warn(
-      '[sync] adminPullProfiles (API) failed',
-      err instanceof Error ? err.message : String(err),
-    );
-    return [];
+    const msg = err instanceof Error ? err.message : String(err);
+    console.warn('[sync] adminPullProfiles (API) failed', msg);
+    throw new Error(msg || 'Failed to load users from API');
   }
 }
 

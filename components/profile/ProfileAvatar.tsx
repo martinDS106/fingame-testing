@@ -1,7 +1,7 @@
 import { Image } from 'expo-image';
-import { View } from 'react-native';
+import { Platform, Text, View } from 'react-native';
 
-import { getAvatarPreset } from '@/lib/avatarPresets';
+import { avatarPresetEmoji, getAvatarPreset } from '@/lib/avatarPresets';
 
 type ProfileAvatarProps = {
   avatar: string;
@@ -25,20 +25,31 @@ export function ProfileAvatar({
   }
 
   const preset = getAvatarPreset(avatar);
+  const shellStyle = {
+    width: size,
+    height: size,
+    borderRadius: size / 2,
+    backgroundColor: preset.backgroundColor,
+    alignItems: 'center' as const,
+    justifyContent: 'center' as const,
+  };
+
+  // Lucide SVG icons often fail on Expo static web export — use emoji in a colored circle.
+  if (Platform.OS === 'web') {
+    return (
+      <View style={shellStyle}>
+        <Text style={{ fontSize: Math.round(size * 0.46), lineHeight: Math.round(size * 0.52) }}>
+          {avatarPresetEmoji(avatar)}
+        </Text>
+      </View>
+    );
+  }
+
   const Icon = preset.icon;
   const iconSize = Math.round(size * 0.48);
 
   return (
-    <View
-      style={{
-        width: size,
-        height: size,
-        borderRadius: size / 2,
-        backgroundColor: preset.backgroundColor,
-        alignItems: 'center',
-        justifyContent: 'center',
-      }}
-    >
+    <View style={shellStyle}>
       <Icon size={iconSize} color={preset.iconColor} strokeWidth={2.2} />
     </View>
   );

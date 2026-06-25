@@ -142,4 +142,24 @@ export function getAvatarPreset(avatar: string | null | undefined): AvatarPreset
   return PRESET_BY_ID[normalizeAvatarId(avatar)];
 }
 
+const ID_TO_EMOJI: Record<AvatarPresetId, string> = {
+  default: '👤',
+  gamer: '🎮',
+  investor: '📈',
+  saver: '💰',
+  champion: '🏆',
+  explorer: '🚀',
+  star: '⭐',
+  focused: '🎯',
+  student: '🎓',
+  professional: '💼',
+  mascot: '🐱',
+};
+
+/** Emoji fallback for web static export where Lucide SVG icons may not render. */
+export function avatarPresetEmoji(avatar: string | null | undefined): string {
+  const id = normalizeAvatarId(avatar);
+  return ID_TO_EMOJI[id] ?? '👤';
+}
+
 export const DEFAULT_AVATAR_ID: AvatarPresetId = 'default';

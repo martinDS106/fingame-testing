@@ -12,6 +12,8 @@ import { router } from 'expo-router';
 import { Pencil, Shield, X } from 'lucide-react-native';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { AdminUserProfileSummary } from '@/components/admin/AdminUserProfileSummary';
+import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
@@ -26,25 +28,6 @@ function safeInt(v: string, fallback = 0): number {
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
 }
 
-function fmtField(v: string | null | undefined): string {
-  const s = v?.trim();
-  return s ? s : '—';
-}
-
-function AdminReadOnlyRow({ label, value, rtl }: { label: string; value: string; rtl: boolean }) {
-  const ta = rtlTextStyle(rtl);
-  return (
-    <View>
-      <Text className="text-xs text-gray-500 mb-0.5" style={ta}>
-        {label}
-      </Text>
-      <Text className="text-sm text-gray-900" style={ta} selectable>
-        {value}
-      </Text>
-    </View>
-  );
-}
-
 export default function AdminUsersScreen() {
   const { rtl } = useT();
   const ta = rtlTextStyle(rtl);
@@ -57,6 +40,7 @@ export default function AdminUsersScreen() {
   const [q, setQ] = useState('');
   const [editing, setEditing] = useState<RemoteProfile | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
+  const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
 
   const [draft, setDraft] = useState({
     displayName: '',
@@ -126,7 +110,7 @@ export default function AdminUsersScreen() {
     setLoading(true);
     const res = await adminUpdateProfile(editing.id, {
       display_name: draft.displayName.trim() || 'Player',
-      avatar: draft.avatar.trim() || '👤',
+      avatar: draft.avatar.trim() || 'default',
       level: draft.level as any,
       coins: safeInt(draft.coins, editing.coins ?? 0),
       xp: safeInt(draft.xp, editing.xp ?? 0),
@@ -230,6 +214,14 @@ export default function AdminUsersScreen() {
           </Card>
         )}
 
+        {!error && visible.length === 0 && !loading && (
+          <Card>
+            <Text className="text-sm text-gray-600" style={ta}>
+              No users loaded. Check API URL and admin login, then tap Refresh.
+            </Text>
+          </Card>
+        )}
+
         {!error &&
           visible.map((u) => (
             <PressableCard key={u.id} onPress={() => openEdit(u)}>
@@ -240,8 +232,8 @@ export default function AdminUsersScreen() {
                   gap: 12,
                 })}
               >
-                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
-                  <ProfileAvatar avatar={u.avatar || 'default'} size={40} />
+                <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12, flex: 1 })}>
+                  <ProfileAvatar avatar={u.avatar || 'default'} size={44} />
                   <View className="flex-1">
                     <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                       <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
@@ -256,14 +248,9 @@ export default function AdminUsersScreen() {
                       )}
                     </View>
                     <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
-                      {u.email ?? u.id} · coins: {u.coins} · xp: {u.xp} · 🔥 {u.streak}
+                      coins: {u.coins} · xp: {u.xp} · 🔥 {u.streak}
                     </Text>
-                    {(u.referral_code || u.referred_by_code) && (
-                      <Text className="text-xs text-gray-400 mt-0.5" numberOfLines={1} style={ta}>
-                        code: {fmtField(u.referral_code)}
-                        {u.referred_by_code ? ` · referred by: ${u.referred_by_code}` : ''}
-                      </Text>
-                    )}
+                    <AdminUserProfileSummary user={u} rtl={rtl} />
                   </View>
                 </View>
 
@@ -335,57 +322,7 @@ export default function AdminUsersScreen() {
                   <Text className="text-sm text-gray-800 font-semibold mb-2" style={ta}>
                     Profile & referral (read-only)
                   </Text>
-                  <View className="gap-2">
-                    <AdminReadOnlyRow label="User id" value={editing.id} rtl={rtl} />
-                    <AdminReadOnlyRow label="Email" value={fmtField(editing.email)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Referral code" value={fmtField(editing.referral_code)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Referred by code" value={fmtField(editing.referred_by_code)} rtl={rtl} />
-                    <AdminReadOnlyRow
-                      label="Referral onboarding pending"
-                      value={editing.referral_onboarding_pending ? 'Yes' : 'No'}
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow label="Governorate" value={fmtField(editing.governorate)} rtl={rtl} />
-                    <AdminReadOnlyRow label="City" value={fmtField(editing.city)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Mobile" value={fmtField(editing.mobile)} rtl={rtl} />
-                    <AdminReadOnlyRow label="User type" value={fmtField(editing.user_type)} rtl={rtl} />
-                    <AdminReadOnlyRow label="School" value={fmtField(editing.school_name)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Faculty / major" value={fmtField(editing.faculty_major)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Academic year" value={fmtField(editing.academic_year)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Employer" value={fmtField(editing.employer)} rtl={rtl} />
-                    <AdminReadOnlyRow
-                      label="Monthly income"
-                      value={fmtField(editing.monthly_income_range)}
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow
-                      label="Financial goals"
-                      value={
-                        editing.financial_goals?.length
-                          ? editing.financial_goals.join(', ')
-                          : '—'
-                      }
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow
-                      label="Financial literacy"
-                      value={fmtField(editing.financial_literacy)}
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow label="Persona" value={fmtField(editing.persona)} rtl={rtl} />
-                    <AdminReadOnlyRow label="Streak" value={String(editing.streak ?? 0)} rtl={rtl} />
-                    <AdminReadOnlyRow
-                      label="Longest streak"
-                      value={String(editing.longest_streak ?? 0)}
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow
-                      label="Profile completed"
-                      value={fmtField(editing.profile_completed_at)}
-                      rtl={rtl}
-                    />
-                    <AdminReadOnlyRow label="Joined" value={fmtField(editing.created_at)} rtl={rtl} />
-                  </View>
+                  <AdminUserProfileSummary user={editing} rtl={rtl} compact={false} />
                 </Card>
               )}
 
@@ -402,16 +339,19 @@ export default function AdminUsersScreen() {
               </Card>
 
               <View style={rtlRowMerge(rtl, { gap: 8 })}>
-                <Card className="w-24 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
+                <Card className="flex-1 border border-gray-200" padded>
+                  <Text className="text-xs text-gray-500 mb-2" style={ta}>
                     avatar
                   </Text>
-                  <TextInput
-                    value={draft.avatar}
-                    onChangeText={(v) => setDraft((s) => ({ ...s, avatar: v }))}
-                    className="px-3 py-2 rounded-lg border border-gray-200 text-center"
-                    style={ta}
-                  />
+                  <Pressable
+                    onPress={() => setAvatarPickerOpen(true)}
+                    style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
+                  >
+                    <ProfileAvatar avatar={draft.avatar || 'default'} size={48} />
+                    <Text className="text-sm text-primary-600 font-medium" style={ta}>
+                      Change avatar
+                    </Text>
+                  </Pressable>
                 </Card>
                 <Card className="flex-1 border border-gray-200" padded>
                   <Text className="text-xs text-gray-500 mb-1" style={ta}>
@@ -496,6 +436,18 @@ export default function AdminUsersScreen() {
           </Pressable>
         </Pressable>
       </Modal>
+
+      <AvatarPickerModal
+        visible={avatarPickerOpen}
+        rtl={rtl}
+        selected={draft.avatar || 'default'}
+        title="Choose avatar"
+        onClose={() => setAvatarPickerOpen(false)}
+        onSelect={(avatarId) => {
+          setDraft((s) => ({ ...s, avatar: avatarId }));
+          setAvatarPickerOpen(false);
+        }}
+      />
     </View>
   );
 }

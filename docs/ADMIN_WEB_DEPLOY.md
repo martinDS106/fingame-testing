@@ -6,7 +6,7 @@
 
 نفس تطبيق Expo (ويب)، بما فيه مسارات `/admin/*`. الـ API يبقى على Railway:
 
-`https://fingame-testing-production.up.railway.app`
+`https://fingame-testing-production-557d.up.railway.app`
 
 ## المتطلبات
 
@@ -21,7 +21,7 @@
 
 | المتغير | مثال للإنتاج |
 |---------|----------------|
-| `EXPO_PUBLIC_API_BASE_URL` | `https://fingame-testing-production.up.railway.app` |
+| `EXPO_PUBLIC_API_BASE_URL` | `https://fingame-testing-production-557d.up.railway.app` |
 | `EXPO_PUBLIC_ENABLE_ADMIN_UI` | `true` |
 | `EXPO_PUBLIC_ADMIN_EMAILS` | `finadmin321@gmail.com,dev2@example.com` |
 

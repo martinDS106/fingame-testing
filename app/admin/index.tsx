@@ -129,7 +129,7 @@ export default function AdminDashboardScreen() {
               Analytics
             </Button>
             <Button variant="secondary" onPress={() => router.push('/admin/users')}>
-              User management
+              User management (full profile data)
             </Button>
             <Button
               variant="secondary"

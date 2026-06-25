@@ -4,6 +4,12 @@
   "outputDirectory": "dist",
   "installCommand": "npm install",
   "framework": null,
+  "build": {
+    "env": {
+      "EXPO_PUBLIC_API_BASE_URL": "https://fingame-testing-production-557d.up.railway.app",
+      "EXPO_PUBLIC_ENABLE_ADMIN_UI": "true"
+    }
+  },
   "rewrites": [
     { "source": "/((?!_expo/).*)", "destination": "/index.html" }
   ]
