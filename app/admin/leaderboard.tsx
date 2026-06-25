@@ -8,6 +8,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import {
   pullLeaderboardTop,
+  remoteProfileFromLeaderboard,
   type RemoteProfile,
   adminPullProfiles,
 } from '@/lib/syncServiceApi';
@@ -15,6 +16,7 @@ import { colors } from '@/theme';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 import { useUserStore } from '@/stores';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 
 type Metric = 'coins' | 'xp' | 'streak';
 
@@ -34,21 +36,7 @@ export default function AdminLeaderboardScreen() {
     try {
       if (metric === 'coins') {
         const top = await pullLeaderboardTop(50);
-        const mapped: RemoteProfile[] = top.map((r) => ({
-          id: r.user_id,
-          display_name: r.display_name,
-          avatar: r.avatar,
-          level: 'Beginner',
-          is_admin: false,
-          coins: r.coins,
-          xp: r.xp,
-          streak: r.streak,
-          longest_streak: r.streak,
-          last_active_date: null,
-          created_at: '',
-          updated_at: '',
-        }));
-        setUsers(mapped);
+        setUsers(top.map(remoteProfileFromLeaderboard));
       } else {
         const data = await adminPullProfiles(500);
         setUsers(data);
@@ -175,9 +163,7 @@ export default function AdminLeaderboardScreen() {
               <Card key={u.id} className={rank <= 3 ? 'border border-yellow-200 bg-yellow-50' : ''}>
                 <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between' })}>
                   <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
-                    <View className="w-10 h-10 rounded-lg bg-gray-100 items-center justify-center">
-                      <Text className="text-xl">{u.avatar ?? '👤'}</Text>
-                    </View>
+                    <ProfileAvatar avatar={u.avatar || 'default'} size={40} />
                     <View className="flex-1">
                       <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                         <Text

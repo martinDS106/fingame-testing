@@ -27,6 +27,7 @@ import { UpsertLessonDto } from './dto/upsert-lesson.dto';
 import { UpsertVideoDto } from './dto/upsert-video.dto';
 import { UpsertQuizDto } from './dto/upsert-quiz.dto';
 import { UpsertQuestionDto } from './dto/upsert-question.dto';
+import { meUserSelect } from '../me/user-select';
 
 @ApiTags('Admin')
 @ApiBearerAuth('access-token')
@@ -137,21 +138,7 @@ export class AdminController {
     const rows = await this.prisma.user.findMany({
       orderBy: [{ createdAt: 'desc' }],
       take,
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        avatar: true,
-        level: true,
-        isAdmin: true,
-        coins: true,
-        xp: true,
-        streak: true,
-        longestStreak: true,
-        lastActiveDate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: meUserSelect,
     });
     return rows;
   }
@@ -177,21 +164,7 @@ export class AdminController {
     const row = await this.prisma.user.update({
       where: { id },
       data,
-      select: {
-        id: true,
-        email: true,
-        displayName: true,
-        avatar: true,
-        level: true,
-        isAdmin: true,
-        coins: true,
-        xp: true,
-        streak: true,
-        longestStreak: true,
-        lastActiveDate: true,
-        createdAt: true,
-        updatedAt: true,
-      },
+      select: meUserSelect,
     });
     return row;
   }

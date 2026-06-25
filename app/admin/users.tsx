@@ -12,6 +12,7 @@ import { router } from 'expo-router';
 import { Pencil, Shield, X } from 'lucide-react-native';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
+import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
 import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
 import { adminPullProfiles, adminUpdateProfile, type RemoteProfile } from '@/lib/syncServiceApi';
@@ -23,6 +24,25 @@ import { useUserStore } from '@/stores';
 function safeInt(v: string, fallback = 0): number {
   const n = Number(v);
   return Number.isFinite(n) ? Math.trunc(n) : fallback;
+}
+
+function fmtField(v: string | null | undefined): string {
+  const s = v?.trim();
+  return s ? s : '—';
+}
+
+function AdminReadOnlyRow({ label, value, rtl }: { label: string; value: string; rtl: boolean }) {
+  const ta = rtlTextStyle(rtl);
+  return (
+    <View>
+      <Text className="text-xs text-gray-500 mb-0.5" style={ta}>
+        {label}
+      </Text>
+      <Text className="text-sm text-gray-900" style={ta} selectable>
+        {value}
+      </Text>
+    </View>
+  );
 }
 
 export default function AdminUsersScreen() {
@@ -70,7 +90,20 @@ export default function AdminUsersScreen() {
     const query = q.trim().toLowerCase();
     if (!query) return users;
     return users.filter((u) => {
-      const hay = `${u.id} ${u.display_name} ${u.level}`.toLowerCase();
+      const hay = [
+        u.id,
+        u.display_name,
+        u.level,
+        u.email,
+        u.referral_code,
+        u.referred_by_code,
+        u.mobile,
+        u.governorate,
+        u.city,
+      ]
+        .filter(Boolean)
+        .join(' ')
+        .toLowerCase();
       return hay.includes(query);
     });
   }, [users, q]);
@@ -79,7 +112,7 @@ export default function AdminUsersScreen() {
     setEditing(u);
     setDraft({
       displayName: u.display_name ?? '',
-      avatar: u.avatar ?? '👤',
+      avatar: u.avatar ?? 'default',
       level: u.level ?? 'Beginner',
       coins: String(u.coins ?? 0),
       xp: String(u.xp ?? 0),
@@ -167,7 +200,7 @@ export default function AdminUsersScreen() {
           <TextInput
             value={q}
             onChangeText={setQ}
-            placeholder="Search by id or name…"
+            placeholder="Search by name, email, referral code…"
             autoCapitalize="none"
             className="px-3 py-2 rounded-lg border border-gray-200"
             style={ta}
@@ -208,9 +241,7 @@ export default function AdminUsersScreen() {
                 })}
               >
                 <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
-                  <View className="w-10 h-10 bg-gray-100 rounded-lg items-center justify-center">
-                    <Text className="text-xl">{u.avatar ?? '👤'}</Text>
-                  </View>
+                  <ProfileAvatar avatar={u.avatar || 'default'} size={40} />
                   <View className="flex-1">
                     <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                       <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
@@ -225,8 +256,14 @@ export default function AdminUsersScreen() {
                       )}
                     </View>
                     <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
-                      {u.id} · coins: {u.coins} · xp: {u.xp}
+                      {u.email ?? u.id} · coins: {u.coins} · xp: {u.xp} · 🔥 {u.streak}
                     </Text>
+                    {(u.referral_code || u.referred_by_code) && (
+                      <Text className="text-xs text-gray-400 mt-0.5" numberOfLines={1} style={ta}>
+                        code: {fmtField(u.referral_code)}
+                        {u.referred_by_code ? ` · referred by: ${u.referred_by_code}` : ''}
+                      </Text>
+                    )}
                   </View>
                 </View>
 
@@ -282,6 +319,76 @@ export default function AdminUsersScreen() {
               contentContainerStyle={mergeScrollContentRtl(rtl, { paddingBottom: 16, gap: 10 })}
               showsVerticalScrollIndicator={false}
             >
+              {editing && (
+                <Card className="border border-gray-200" padded>
+                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, marginBottom: 12 })}>
+                    <ProfileAvatar avatar={editing.avatar || 'default'} size={48} />
+                    <View className="flex-1">
+                      <Text className="text-gray-900 font-semibold" style={ta}>
+                        {editing.display_name}
+                      </Text>
+                      <Text className="text-xs text-gray-500" style={ta}>
+                        {editing.email ?? editing.id}
+                      </Text>
+                    </View>
+                  </View>
+                  <Text className="text-sm text-gray-800 font-semibold mb-2" style={ta}>
+                    Profile & referral (read-only)
+                  </Text>
+                  <View className="gap-2">
+                    <AdminReadOnlyRow label="User id" value={editing.id} rtl={rtl} />
+                    <AdminReadOnlyRow label="Email" value={fmtField(editing.email)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Referral code" value={fmtField(editing.referral_code)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Referred by code" value={fmtField(editing.referred_by_code)} rtl={rtl} />
+                    <AdminReadOnlyRow
+                      label="Referral onboarding pending"
+                      value={editing.referral_onboarding_pending ? 'Yes' : 'No'}
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow label="Governorate" value={fmtField(editing.governorate)} rtl={rtl} />
+                    <AdminReadOnlyRow label="City" value={fmtField(editing.city)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Mobile" value={fmtField(editing.mobile)} rtl={rtl} />
+                    <AdminReadOnlyRow label="User type" value={fmtField(editing.user_type)} rtl={rtl} />
+                    <AdminReadOnlyRow label="School" value={fmtField(editing.school_name)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Faculty / major" value={fmtField(editing.faculty_major)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Academic year" value={fmtField(editing.academic_year)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Employer" value={fmtField(editing.employer)} rtl={rtl} />
+                    <AdminReadOnlyRow
+                      label="Monthly income"
+                      value={fmtField(editing.monthly_income_range)}
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow
+                      label="Financial goals"
+                      value={
+                        editing.financial_goals?.length
+                          ? editing.financial_goals.join(', ')
+                          : '—'
+                      }
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow
+                      label="Financial literacy"
+                      value={fmtField(editing.financial_literacy)}
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow label="Persona" value={fmtField(editing.persona)} rtl={rtl} />
+                    <AdminReadOnlyRow label="Streak" value={String(editing.streak ?? 0)} rtl={rtl} />
+                    <AdminReadOnlyRow
+                      label="Longest streak"
+                      value={String(editing.longest_streak ?? 0)}
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow
+                      label="Profile completed"
+                      value={fmtField(editing.profile_completed_at)}
+                      rtl={rtl}
+                    />
+                    <AdminReadOnlyRow label="Joined" value={fmtField(editing.created_at)} rtl={rtl} />
+                  </View>
+                </Card>
+              )}
+
               <Card className="border border-gray-200" padded>
                 <Text className="text-xs text-gray-500 mb-1" style={ta}>
                   display name

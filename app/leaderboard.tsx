@@ -5,26 +5,13 @@ import { router } from 'expo-router';
 
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { BottomNav } from '@/components/BottomNav';
+import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
-
-function rankBadgeClass(rank: number) {
-  if (rank === 1) return 'bg-accent-100';
-  if (rank === 2) return 'bg-gray-100';
-  if (rank === 3) return 'bg-orange-100';
-  return 'bg-gray-50';
-}
-
-function rankTextClass(rank: number) {
-  if (rank === 1) return 'text-accent-700';
-  if (rank === 2) return 'text-gray-700';
-  if (rank === 3) return 'text-orange-700';
-  return 'text-gray-700';
-}
 
 export default function LeaderboardScreen() {
   const { t, rtl } = useT();
@@ -78,33 +65,20 @@ export default function LeaderboardScreen() {
             {rows.map((user, idx) => {
               const rank = idx + 1;
               return (
-                <View
+                <LeaderboardRow
                   key={user.user_id}
-                  className="py-2"
-                  style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
-                >
-                  <Text className="text-2xl">{user.avatar ?? '👤'}</Text>
-                  <View className="flex-1">
-                    <Text style={ta} className="text-sm text-gray-900 font-medium">
-                      {user.display_name}
-                    </Text>
-                    <Text style={ta} className="text-xs text-gray-500">
-                      {t('dashboard.points', {
-                        points: (user.coins ?? 0).toLocaleString(),
-                      })}
-                    </Text>
-                  </View>
-                  <View
-                    className={`px-3 py-1 rounded-full ${rankBadgeClass(rank)}`}
-                  >
-                    <Text
-                      style={ta}
-                      className={`text-sm font-semibold ${rankTextClass(rank)}`}
-                    >
-                      #{rank}
-                    </Text>
-                  </View>
-                </View>
+                  rtl={rtl}
+                  rank={rank}
+                  displayName={user.display_name}
+                  avatar={user.avatar}
+                  coins={user.coins}
+                  xp={user.xp}
+                  streak={user.streak}
+                  pointsLabel={t('dashboard.points', {
+                    points: (user.coins ?? 0).toLocaleString(),
+                  })}
+                  showXpStreak
+                />
               );
             })}
             {!loading && rows.length === 0 && (

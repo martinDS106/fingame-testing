@@ -18,6 +18,7 @@ import type { CoinsReason, UserLevel, UserProfile } from '@/stores/useUserStore'
 
 export interface RemoteProfile {
   id: string;
+  email: string | null;
   display_name: string;
   avatar: string;
   level: UserLevel;
@@ -76,6 +77,45 @@ export interface RemoteLeaderboardEntry {
   coins: number;
   xp: number;
   streak: number;
+}
+
+/** Minimal RemoteProfile built from a leaderboard row (coins metric). */
+export function remoteProfileFromLeaderboard(r: RemoteLeaderboardEntry): RemoteProfile {
+  return {
+    id: r.user_id,
+    email: null,
+    display_name: r.display_name,
+    avatar: r.avatar || 'default',
+    level: 'Beginner',
+    is_admin: false,
+    coins: r.coins ?? 0,
+    xp: r.xp ?? 0,
+    streak: r.streak ?? 0,
+    longest_streak: r.streak ?? 0,
+    last_active_date: null,
+    date_of_birth: null,
+    gender: null,
+    mobile: null,
+    governorate: null,
+    city: null,
+    user_type: null,
+    school_name: null,
+    faculty_major: null,
+    academic_year: null,
+    employer: null,
+    monthly_income_range: null,
+    financial_goals: [],
+    financial_literacy: null,
+    persona: null,
+    parent_email: null,
+    parent_phone: null,
+    referral_code: null,
+    referred_by_code: null,
+    referral_onboarding_pending: false,
+    profile_completed_at: null,
+    created_at: '',
+    updated_at: '',
+  };
 }
 
 export interface RemoteStockPrice {
@@ -291,6 +331,7 @@ type ApiLeaderboardRow = {
 function apiUserToRemoteProfile(u: ApiUser): RemoteProfile {
   return {
     id: u.id,
+    email: u.email ?? null,
     display_name: u.displayName ?? 'Player',
     avatar: u.avatar ?? 'default',
     level: (u.level ?? 'Beginner') as UserLevel,

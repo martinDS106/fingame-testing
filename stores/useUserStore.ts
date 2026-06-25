@@ -223,15 +223,21 @@ export const useUserStore = create<UserState>()(
         return false;
       },
 
-      hasClaimedReward: (key) => get().claimedRewards.includes(key),
+      hasClaimedReward: (key) => {
+        const { remoteUserId } = get();
+        const scopedKey = remoteUserId ? `${remoteUserId}:${key}` : key;
+        return get().claimedRewards.includes(scopedKey);
+      },
 
       claimRewardOnce: async (key, coins, xp, reason = 'lesson_complete') => {
         if (!key) return false;
-        if (get().claimedRewards.includes(key)) return false;
+        const { remoteUserId } = get();
+        const scopedKey = remoteUserId ? `${remoteUserId}:${key}` : key;
+        if (get().claimedRewards.includes(scopedKey)) return false;
 
         const prevClaimed = get().claimedRewards;
         set((state) => ({
-          claimedRewards: [...state.claimedRewards, key].slice(0, 200),
+          claimedRewards: [...state.claimedRewards, scopedKey].slice(0, 200),
         }));
 
         try {
@@ -358,11 +364,14 @@ export const useUserStore = create<UserState>()(
 
       bindToUser: async (userId, email) => {
         const prevId = get().remoteUserId;
-        const localStreak = {
-          streak: get().streak,
-          longestStreak: get().longestStreak,
-          lastActiveDate: get().lastActiveDate,
-        };
+        const accountChanged = prevId !== userId;
+        const localStreak = accountChanged
+          ? { streak: 0, longestStreak: 0, lastActiveDate: null }
+          : {
+              streak: get().streak,
+              longestStreak: get().longestStreak,
+              lastActiveDate: get().lastActiveDate,
+            };
         set({ remoteUserId: userId, syncStatus: 'syncing' });
 
         try {
@@ -370,11 +379,17 @@ export const useUserStore = create<UserState>()(
 
           if (remote) {
             const merged = remoteProfileToLocal(remote);
-            const streakMerged = mergeStreakFields(localStreak, {
-              streak: merged.streak,
-              longestStreak: merged.longestStreak,
-              lastActiveDate: merged.lastActiveDate,
-            });
+            const streakMerged = accountChanged
+              ? {
+                  streak: merged.streak,
+                  longestStreak: merged.longestStreak,
+                  lastActiveDate: merged.lastActiveDate,
+                }
+              : mergeStreakFields(localStreak, {
+                  streak: merged.streak,
+                  longestStreak: merged.longestStreak,
+                  lastActiveDate: merged.lastActiveDate,
+                });
             set({
               profile: {
                 ...merged.profile,
@@ -396,9 +411,10 @@ export const useUserStore = create<UserState>()(
               lastActiveDate: merged.lastActiveDate,
             };
             if (
-              streakMerged.streak !== remoteStreak.streak ||
-              streakMerged.longestStreak !== remoteStreak.longestStreak ||
-              streakMerged.lastActiveDate !== remoteStreak.lastActiveDate
+              !accountChanged &&
+              (streakMerged.streak !== remoteStreak.streak ||
+                streakMerged.longestStreak !== remoteStreak.longestStreak ||
+                streakMerged.lastActiveDate !== remoteStreak.lastActiveDate)
             ) {
               void pushProfile({
                 streak: streakMerged.streak,
@@ -406,7 +422,7 @@ export const useUserStore = create<UserState>()(
                 last_active_date: streakMerged.lastActiveDate,
               });
             }
-          } else {
+          } else if (!accountChanged) {
             const s = get();
             await pushProfile({
               ...profileToApiPayload(s.profile),
@@ -416,6 +432,8 @@ export const useUserStore = create<UserState>()(
               longest_streak: s.longestStreak,
               last_active_date: s.lastActiveDate,
             });
+            set({ syncStatus: 'synced', lastSyncedAt: Date.now() });
+          } else {
             set({ syncStatus: 'synced', lastSyncedAt: Date.now() });
           }
 
@@ -446,6 +464,10 @@ export const useUserStore = create<UserState>()(
           remoteUserId: null,
           syncStatus: 'offline',
           isAdmin: false,
+          streak: 0,
+          longestStreak: 0,
+          lastActiveDate: null,
+          claimedRewards: [],
         });
       },
 
@@ -545,6 +567,7 @@ export const useUserStore = create<UserState>()(
         isAdmin: state.isAdmin,
         coinsLog: state.coinsLog,
         claimedRewards: state.claimedRewards,
+        remoteUserId: state.remoteUserId,
       }),
     }
   )

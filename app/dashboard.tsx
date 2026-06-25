@@ -1,4 +1,4 @@
-import { useCallback, useMemo, useState } from 'react';
+import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
 import { Snackbar } from 'react-native-paper';
@@ -16,6 +16,7 @@ import { useT } from '@/hooks/useT';
 import { FadeInView } from '@/components/animated';
 import { BottomNav } from '@/components/BottomNav';
 import { CoinsCounter } from '@/components/CoinsCounter';
+import { LeaderboardRow } from '@/components/LeaderboardRow';
 import { ScreenHeader } from '@/components/ScreenHeader';
 import { StreakWidget } from '@/components/StreakWidget';
 import { Button } from '@/components/ui/Button';
@@ -33,24 +34,7 @@ import {
   localeTrailingGroupRowStyle,
 } from '@/lib/rtlStyle';
 import { useContentStore, useUserStore } from '@/stores';
-
-const leaderboard = [
-  { rank: 1, name: 'Ahmed Ali', points: 2450, avatar: '🏆' },
-  { rank: 2, name: 'Sara Mohamed', points: 2120, avatar: '🥈' },
-  { rank: 3, name: 'Omar Hassan', points: 1890, avatar: '🥉' },
-];
-
-function rankBadgeClass(rank: number) {
-  if (rank === 1) return 'bg-accent-100';
-  if (rank === 2) return 'bg-gray-100';
-  return 'bg-orange-100';
-}
-
-function rankTextClass(rank: number) {
-  if (rank === 1) return 'text-accent-700';
-  if (rank === 2) return 'text-gray-700';
-  return 'text-orange-700';
-}
+import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
 
 export default function DashboardScreen() {
   const coins = useUserStore((s) => s.coins);
@@ -77,6 +61,18 @@ export default function DashboardScreen() {
   );
 
   const [rewardMsg, setRewardMsg] = useState<string | null>(null);
+  const [leaderboardRows, setLeaderboardRows] = useState<RemoteLeaderboardEntry[]>([]);
+
+  useEffect(() => {
+    let cancelled = false;
+    void pullLeaderboardTop(3).then((data) => {
+      if (!cancelled) setLeaderboardRows(data);
+    });
+    return () => {
+      cancelled = true;
+    };
+  }, []);
+
   const handleReward = useCallback(
     (r: { awarded: boolean; coins: number; newStreak: number }) => {
       if (r.awarded) {
@@ -438,41 +434,27 @@ export default function DashboardScreen() {
 
           <Card>
             <View className="gap-2">
-              {leaderboard.map((user) => (
-                <View
-                  key={user.rank}
-                  className="gap-3 py-2"
-                  style={[localeIconRowStyle(rtl), { alignItems: 'center' }]}
-                >
-                  <Text style={ta} className="text-2xl">{user.avatar}</Text>
-                  <View style={localeTextBesideIconStyle(rtl)}>
-                    <Text
-                      style={[ta, { alignSelf: 'stretch' }]}
-                      className="text-sm text-gray-900 font-medium"
-                    >
-                      {user.name}
-                    </Text>
-                    <Text
-                      style={[ta, { alignSelf: 'stretch' }]}
-                      className="text-xs text-gray-500"
-                    >
-                      {t('dashboard.points', {
-                        points: user.points.toLocaleString(),
-                      })}
-                    </Text>
-                  </View>
-                  <View
-                    className={`px-3 py-1 rounded-full ${rankBadgeClass(user.rank)}`}
-                  >
-                    <Text
-                      style={ta}
-                      className={`text-sm font-semibold ${rankTextClass(user.rank)}`}
-                    >
-                      #{user.rank}
-                    </Text>
-                  </View>
-                </View>
+              {leaderboardRows.map((user, idx) => (
+                <LeaderboardRow
+                  key={user.user_id}
+                  rtl={rtl}
+                  rank={idx + 1}
+                  displayName={user.display_name}
+                  avatar={user.avatar}
+                  coins={user.coins}
+                  xp={user.xp}
+                  streak={user.streak}
+                  pointsLabel={t('dashboard.points', {
+                    points: (user.coins ?? 0).toLocaleString(),
+                  })}
+                  showXpStreak
+                />
               ))}
+              {leaderboardRows.length === 0 && (
+                <Text style={ta} className="text-sm text-gray-600">
+                  No leaderboard data yet.
+                </Text>
+              )}
             </View>
 
             <View className="mt-4">

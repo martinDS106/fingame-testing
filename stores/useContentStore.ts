@@ -53,6 +53,29 @@ function courseJustCompleted(
   return siblings.every((l) => completedLessonIds.includes(l.id));
 }
 
+async function grantCourseCompletionBonus(
+  courseId: string,
+  courses: Course[],
+): Promise<CourseCompletionEvent | null> {
+  const course = courses.find((c) => c.id === courseId);
+  const bonusCoins = course?.coinReward ?? 0;
+  const userStore = useUserStore.getState();
+  const granted = await userStore.claimRewardOnce(
+    `course_complete:${courseId}`,
+    bonusCoins,
+    100,
+    'lesson_complete',
+  );
+  if (!granted) return null;
+
+  void playCourseCelebrationSound();
+  return {
+    courseId,
+    courseTitle: course?.title ?? 'Course',
+    bonusCoins,
+  };
+}
+
 export interface Course {
   id: string;
   title: string;
@@ -383,60 +406,46 @@ export const useContentStore = create<ContentState>()(
       isVideoWatched: (videoId) => get().watchedVideos.includes(videoId),
 
       markVideoWatched: async (videoId, lessonId) => {
-        if (get().watchedVideos.includes(videoId)) return null;
-        set((state) => ({
-          watchedVideos: [...state.watchedVideos, videoId],
-        }));
-        const userId = useUserStore.getState().remoteUserId;
-        if (userId) {
-          void upsertProgress(userId, 'video', videoId, 100, true);
+        if (!get().watchedVideos.includes(videoId)) {
+          set((state) => ({
+            watchedVideos: [...state.watchedVideos, videoId],
+          }));
+          const userId = useUserStore.getState().remoteUserId;
+          if (userId) {
+            void upsertProgress(userId, 'video', videoId, 100, true);
+          }
         }
         return get().completeLesson(lessonId, 15);
       },
 
       completeLesson: async (lessonId, coinReward = 10) => {
-        if (get().completedLessons.includes(lessonId)) return null;
-
         const lesson = get().lessons.find((l) => l.id === lessonId);
-        const courseId = lesson?.courseId;
-        const nextCompleted = [...get().completedLessons, lessonId];
-        const finishesCourse =
-          !!courseId &&
-          courseJustCompleted(courseId, get().lessons, nextCompleted);
+        if (!lesson) return null;
 
-        set((state) => ({
-          completedLessons: nextCompleted,
-        }));
+        const alreadyDone = get().completedLessons.includes(lessonId);
+        let completedIds = get().completedLessons;
 
-        const userStore = useUserStore.getState();
-        await userStore.addCoins(coinReward, 'lesson_complete');
-        await userStore.addXP(25);
+        if (!alreadyDone) {
+          completedIds = [...completedIds, lessonId];
+          set({ completedLessons: completedIds });
 
-        const userId = userStore.remoteUserId;
-        if (userId) {
-          void upsertProgress(userId, 'lesson', lessonId, 100, true);
+          const userStore = useUserStore.getState();
+          await userStore.addCoins(coinReward, 'lesson_complete');
+          await userStore.addXP(25);
+
+          const userId = userStore.remoteUserId;
+          if (userId) {
+            void upsertProgress(userId, 'lesson', lessonId, 100, true);
+          }
         }
 
-        if (!finishesCourse || !courseId) return null;
+        const courseId = lesson.courseId;
+        if (!courseId) return null;
+        if (!courseJustCompleted(courseId, get().lessons, completedIds)) {
+          return null;
+        }
 
-        const course = get().courses.find((c) => c.id === courseId);
-        const bonusCoins = course?.coinReward ?? 0;
-        const granted = await userStore.claimRewardOnce(
-          `course_complete:${courseId}`,
-          bonusCoins,
-          100,
-          'lesson_complete',
-        );
-
-        if (!granted) return null;
-
-        void playCourseCelebrationSound();
-
-        return {
-          courseId,
-          courseTitle: course?.title ?? 'Course',
-          bonusCoins,
-        };
+        return grantCourseCompletionBonus(courseId, get().courses);
       },
 
       syncFromCloud: async () => {
