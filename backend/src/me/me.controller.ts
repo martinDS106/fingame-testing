@@ -28,6 +28,19 @@ function parseGoals(raw: string[] | undefined): string | null | undefined {
 export class MeController {
   constructor(private readonly prisma: PrismaService) {}
 
+  @Get('referral-code')
+  @UseGuards(JwtAuthGuard)
+  @ApiBearerAuth('access-token')
+  async referralCode(@CurrentUser() user: JwtPayload) {
+    try {
+      const code = await ensureUserReferralCode(this.prisma, user.sub);
+      return { referralCode: code };
+    } catch (err) {
+      console.warn('[me] referral-code failed', err);
+      throw new BadRequestException('Could not load referral code');
+    }
+  }
+
   @Get()
   @UseGuards(JwtAuthGuard)
   @ApiBearerAuth('access-token')

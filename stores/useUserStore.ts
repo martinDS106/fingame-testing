@@ -19,6 +19,8 @@ import {
   pullProfile,
   pushProfile,
   remoteProfileToLocal,
+  fetchApiHealth,
+  fetchMyReferralCode,
 } from '@/lib/syncServiceApi';
 
 export type UserLevel =
@@ -469,18 +471,24 @@ export const useUserStore = create<UserState>()(
         if (!remoteUserId || !isApiConfigured) {
           return { code: null, staleApi: false };
         }
+
+        const health = await fetchApiHealth();
+        const serverOld = health?.ok === true && !health?.referralCodes;
+
         const remote = await pullProfile(remoteUserId);
-        if (!remote) {
-          return { code: null, staleApi: false };
-        }
-        const code = remote.referral_code?.trim() ?? '';
+        let code = remote?.referral_code?.trim() ?? '';
         if (!code) {
-          return { code: null, staleApi: true };
+          code = (await fetchMyReferralCode()) ?? '';
         }
-        set((s) => ({
-          profile: { ...s.profile, referralCode: code },
-        }));
-        return { code, staleApi: false };
+
+        if (code) {
+          set((s) => ({
+            profile: { ...s.profile, referralCode: code },
+          }));
+          return { code, staleApi: false };
+        }
+
+        return { code: null, staleApi: serverOld || !!remote };
       },
     }),
     {

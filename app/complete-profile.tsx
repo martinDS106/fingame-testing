@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useT } from '@/hooks/useT';
+import { getApiBaseUrl } from '@/lib/api';
 import { DEFAULT_AVATAR_ID } from '@/lib/avatarPresets';
 import {
   ACADEMIC_YEARS,
@@ -771,6 +772,13 @@ export default function CompleteProfileScreen() {
               {draft.referralCode ? (
                 <Text style={[ta, { fontSize: 13, color: '#6b7280', marginTop: -8, marginBottom: 8 }]}>
                   {t('profile.myReferralCodeHint')}
+                </Text>
+              ) : null}
+              {referralStaleApi ? (
+                <Text style={[ta, { fontSize: 13, color: '#b45309', marginTop: -8, marginBottom: 8 }]}>
+                  {t('profile.referralCodeServerCheck', {
+                    url: `${getApiBaseUrl()}/health`,
+                  })}
                 </Text>
               ) : null}
             </View>

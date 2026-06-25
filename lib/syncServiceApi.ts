@@ -375,6 +375,33 @@ export async function pullProfile(expectedUserId?: string): Promise<RemoteProfil
   }
 }
 
+export async function fetchApiHealth(): Promise<{
+  ok: boolean;
+  apiVersion?: string;
+  referralCodes?: boolean;
+} | null> {
+  if (!isApiConfigured) return null;
+  try {
+    return await apiGetJson('/health', { auth: false });
+  } catch {
+    return null;
+  }
+}
+
+export async function fetchMyReferralCode(): Promise<string | null> {
+  if (!isApiConfigured) return null;
+  const authed = await ensureApiAccessTokenLoaded();
+  if (!authed) return null;
+  try {
+    const res = await apiGetJson<{ referralCode: string }>('/me/referral-code', {
+      auth: true,
+    });
+    return res.referralCode?.trim() || null;
+  } catch {
+    return null;
+  }
+}
+
 export async function pushProfile(
   payload: Partial<{
     display_name: string;
