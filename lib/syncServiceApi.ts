@@ -1450,6 +1450,25 @@ export async function adminUpdateProfile(
     longest_streak: number;
     last_active_date: string | null;
     is_admin: boolean;
+    mobile: string | null;
+    governorate: string | null;
+    city: string | null;
+    gender: string | null;
+    date_of_birth: string | null;
+    user_type: string | null;
+    school_name: string | null;
+    faculty_major: string | null;
+    academic_year: string | null;
+    employer: string | null;
+    monthly_income_range: string | null;
+    financial_goals: string[];
+    financial_literacy: string | null;
+    persona: string | null;
+    parent_email: string | null;
+    parent_phone: string | null;
+    referred_by_code: string | null;
+    referral_onboarding_pending: boolean;
+    profile_completed_at: string | null;
   }>,
 ): Promise<{ ok: true } | { ok: false; error: string }> {
   if (!isApiConfigured) return { ok: false, error: 'API not configured' };
@@ -1468,6 +1487,25 @@ export async function adminUpdateProfile(
         longestStreak: patch.longest_streak,
         lastActiveDate: patch.last_active_date,
         isAdmin: patch.is_admin,
+        mobile: patch.mobile,
+        governorate: patch.governorate,
+        city: patch.city,
+        gender: patch.gender,
+        dateOfBirth: patch.date_of_birth,
+        userType: patch.user_type,
+        schoolName: patch.school_name,
+        facultyMajor: patch.faculty_major,
+        academicYear: patch.academic_year,
+        employer: patch.employer,
+        monthlyIncomeRange: patch.monthly_income_range,
+        financialGoals: patch.financial_goals,
+        financialLiteracy: patch.financial_literacy,
+        persona: patch.persona,
+        parentEmail: patch.parent_email,
+        parentPhone: patch.parent_phone,
+        referredByCode: patch.referred_by_code,
+        referralOnboardingPending: patch.referral_onboarding_pending,
+        profileCompletedAt: patch.profile_completed_at,
       },
       { auth: true },
     );

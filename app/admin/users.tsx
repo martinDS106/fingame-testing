@@ -11,22 +11,51 @@ import {
 import { router } from 'expo-router';
 import { Pencil, Shield, X } from 'lucide-react-native';
 
-import { ScreenHeader } from '@/components/ScreenHeader';
-import { AdminUserProfileSummary } from '@/components/admin/AdminUserProfileSummary';
+import { AdminUserEditForm } from '@/components/admin/AdminUserEditForm';
 import { AvatarPickerModal } from '@/components/profile/AvatarPickerModal';
 import { ProfileAvatar } from '@/components/profile/ProfileAvatar';
+import { ScreenHeader } from '@/components/ScreenHeader';
 import { Button } from '@/components/ui/Button';
 import { Card, PressableCard } from '@/components/ui/Card';
+import {
+  adminDraftToPatch,
+  remoteProfileToAdminDraft,
+  type AdminUserDraft,
+} from '@/lib/adminUserDraft';
 import { adminPullProfiles, adminUpdateProfile, type RemoteProfile } from '@/lib/syncServiceApi';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 import { colors } from '@/theme';
 import { useUserStore } from '@/stores';
 
-function safeInt(v: string, fallback = 0): number {
-  const n = Number(v);
-  return Number.isFinite(n) ? Math.trunc(n) : fallback;
-}
+const EMPTY_DRAFT: AdminUserDraft = {
+  displayName: '',
+  avatar: 'default',
+  level: 'Beginner',
+  coins: '0',
+  xp: '0',
+  streak: '0',
+  longestStreak: '0',
+  isAdmin: false,
+  mobile: '',
+  governorate: '',
+  city: '',
+  gender: '',
+  dateOfBirth: '',
+  userType: '',
+  schoolName: '',
+  facultyMajor: '',
+  academicYear: '',
+  employer: '',
+  monthlyIncomeRange: '',
+  financialGoals: '',
+  financialLiteracy: '',
+  persona: '',
+  parentEmail: '',
+  parentPhone: '',
+  referredByCode: '',
+  referralOnboardingPending: false,
+};
 
 export default function AdminUsersScreen() {
   const { rtl } = useT();
@@ -41,15 +70,7 @@ export default function AdminUsersScreen() {
   const [editing, setEditing] = useState<RemoteProfile | null>(null);
   const [modalOpen, setModalOpen] = useState(false);
   const [avatarPickerOpen, setAvatarPickerOpen] = useState(false);
-
-  const [draft, setDraft] = useState({
-    displayName: '',
-    avatar: '',
-    level: 'Beginner',
-    coins: '0',
-    xp: '0',
-    isAdmin: false,
-  });
+  const [draft, setDraft] = useState<AdminUserDraft>(EMPTY_DRAFT);
 
   async function refresh() {
     setLoading(true);
@@ -94,28 +115,14 @@ export default function AdminUsersScreen() {
 
   function openEdit(u: RemoteProfile) {
     setEditing(u);
-    setDraft({
-      displayName: u.display_name ?? '',
-      avatar: u.avatar ?? 'default',
-      level: u.level ?? 'Beginner',
-      coins: String(u.coins ?? 0),
-      xp: String(u.xp ?? 0),
-      isAdmin: !!u.is_admin,
-    });
+    setDraft(remoteProfileToAdminDraft(u));
     setModalOpen(true);
   }
 
   async function save() {
     if (!editing) return;
     setLoading(true);
-    const res = await adminUpdateProfile(editing.id, {
-      display_name: draft.displayName.trim() || 'Player',
-      avatar: draft.avatar.trim() || 'default',
-      level: draft.level as any,
-      coins: safeInt(draft.coins, editing.coins ?? 0),
-      xp: safeInt(draft.xp, editing.xp ?? 0),
-      is_admin: draft.isAdmin,
-    });
+    const res = await adminUpdateProfile(editing.id, adminDraftToPatch(draft));
     setLoading(false);
     if (!res.ok) {
       Alert.alert('Save failed', res.error ?? 'Unknown error');
@@ -227,13 +234,13 @@ export default function AdminUsersScreen() {
             <PressableCard key={u.id} onPress={() => openEdit(u)}>
               <View
                 style={rtlRowMerge(rtl, {
-                  alignItems: 'flex-start',
+                  alignItems: 'center',
                   justifyContent: 'space-between',
                   gap: 12,
                 })}
               >
-                <View style={rtlRowMerge(rtl, { alignItems: 'flex-start', gap: 12, flex: 1 })}>
-                  <ProfileAvatar avatar={u.avatar || 'default'} size={44} />
+                <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, flex: 1 })}>
+                  <ProfileAvatar avatar={u.avatar || 'default'} size={40} />
                   <View className="flex-1">
                     <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 8 })}>
                       <Text className="text-gray-900 font-semibold" numberOfLines={1} style={ta}>
@@ -248,9 +255,11 @@ export default function AdminUsersScreen() {
                       )}
                     </View>
                     <Text className="text-xs text-gray-500" numberOfLines={1} style={ta}>
+                      {u.email ?? u.id}
+                    </Text>
+                    <Text className="text-xs text-gray-400" numberOfLines={1} style={ta}>
                       coins: {u.coins} · xp: {u.xp} · 🔥 {u.streak}
                     </Text>
-                    <AdminUserProfileSummary user={u} rtl={rtl} />
                   </View>
                 </View>
 
@@ -289,12 +298,12 @@ export default function AdminUsersScreen() {
           onPress={() => setModalOpen(false)}
         >
           <Pressable
-            className="bg-white rounded-t-3xl p-4"
+            className="bg-white rounded-t-3xl p-4 max-h-[92%]"
             onPress={(e) => e.stopPropagation()}
           >
             <View style={rtlRowMerge(rtl, { alignItems: 'center', justifyContent: 'space-between', marginBottom: 8 })}>
               <Text className="text-lg text-gray-900 font-semibold" style={ta}>
-                Edit user
+                User profile
               </Text>
               <Pressable onPress={() => setModalOpen(false)} hitSlop={8}>
                 <X size={20} color={colors.gray[600]} />
@@ -307,115 +316,16 @@ export default function AdminUsersScreen() {
               showsVerticalScrollIndicator={false}
             >
               {editing && (
-                <Card className="border border-gray-200" padded>
-                  <View style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12, marginBottom: 12 })}>
-                    <ProfileAvatar avatar={editing.avatar || 'default'} size={48} />
-                    <View className="flex-1">
-                      <Text className="text-gray-900 font-semibold" style={ta}>
-                        {editing.display_name}
-                      </Text>
-                      <Text className="text-xs text-gray-500" style={ta}>
-                        {editing.email ?? editing.id}
-                      </Text>
-                    </View>
-                  </View>
-                  <Text className="text-sm text-gray-800 font-semibold mb-2" style={ta}>
-                    Profile & referral (read-only)
-                  </Text>
-                  <AdminUserProfileSummary user={editing} rtl={rtl} compact={false} />
-                </Card>
+                <AdminUserEditForm
+                  rtl={rtl}
+                  editing={editing}
+                  draft={draft}
+                  onChange={(patch) => setDraft((s) => ({ ...s, ...patch }))}
+                  onPickAvatar={() => setAvatarPickerOpen(true)}
+                />
               )}
 
-              <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-1" style={ta}>
-                  display name
-                </Text>
-                <TextInput
-                  value={draft.displayName}
-                  onChangeText={(v) => setDraft((s) => ({ ...s, displayName: v }))}
-                  className="px-3 py-2 rounded-lg border border-gray-200"
-                  style={ta}
-                />
-              </Card>
-
-              <View style={rtlRowMerge(rtl, { gap: 8 })}>
-                <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-2" style={ta}>
-                    avatar
-                  </Text>
-                  <Pressable
-                    onPress={() => setAvatarPickerOpen(true)}
-                    style={rtlRowMerge(rtl, { alignItems: 'center', gap: 12 })}
-                  >
-                    <ProfileAvatar avatar={draft.avatar || 'default'} size={48} />
-                    <Text className="text-sm text-primary-600 font-medium" style={ta}>
-                      Change avatar
-                    </Text>
-                  </Pressable>
-                </Card>
-                <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
-                    level
-                  </Text>
-                  <TextInput
-                    value={draft.level}
-                    onChangeText={(v) => setDraft((s) => ({ ...s, level: v }))}
-                    className="px-3 py-2 rounded-lg border border-gray-200"
-                    style={ta}
-                  />
-                </Card>
-              </View>
-
-              <View style={rtlRowMerge(rtl, { gap: 8 })}>
-                <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
-                    coins
-                  </Text>
-                  <TextInput
-                    value={draft.coins}
-                    onChangeText={(v) => setDraft((s) => ({ ...s, coins: v }))}
-                    keyboardType="numeric"
-                    className="px-3 py-2 rounded-lg border border-gray-200"
-                    style={ta}
-                  />
-                </Card>
-                <Card className="flex-1 border border-gray-200" padded>
-                  <Text className="text-xs text-gray-500 mb-1" style={ta}>
-                    xp
-                  </Text>
-                  <TextInput
-                    value={draft.xp}
-                    onChangeText={(v) => setDraft((s) => ({ ...s, xp: v }))}
-                    keyboardType="numeric"
-                    className="px-3 py-2 rounded-lg border border-gray-200"
-                    style={ta}
-                  />
-                </Card>
-              </View>
-
-              <Card className="border border-gray-200" padded>
-                <Text className="text-xs text-gray-500 mb-2" style={ta}>
-                  admin
-                </Text>
-                <View style={rtlRowMerge(rtl, { gap: 8 })}>
-                  <Button
-                    size="sm"
-                    variant={draft.isAdmin ? 'primary' : 'outline'}
-                    onPress={() => setDraft((s) => ({ ...s, isAdmin: true }))}
-                  >
-                    Yes
-                  </Button>
-                  <Button
-                    size="sm"
-                    variant={!draft.isAdmin ? 'primary' : 'outline'}
-                    onPress={() => setDraft((s) => ({ ...s, isAdmin: false }))}
-                  >
-                    No
-                  </Button>
-                </View>
-              </Card>
-
-              <View style={rtlRowMerge(rtl, { gap: 8 })}>
+              <View style={rtlRowMerge(rtl, { gap: 8, marginTop: 4 })}>
                 <View className="flex-1">
                   <Button
                     variant="outline"
@@ -451,4 +361,3 @@ export default function AdminUsersScreen() {
     </View>
   );
 }
-

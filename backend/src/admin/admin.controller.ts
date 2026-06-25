@@ -29,6 +29,11 @@ import { UpsertQuizDto } from './dto/upsert-quiz.dto';
 import { UpsertQuestionDto } from './dto/upsert-question.dto';
 import { meUserSelect } from '../me/user-select';
 
+function parseGoals(raw: string[] | undefined): string | null | undefined {
+  if (raw === undefined) return undefined;
+  return JSON.stringify(raw);
+}
+
 @ApiTags('Admin')
 @ApiBearerAuth('access-token')
 @Controller('admin')
@@ -160,6 +165,40 @@ export class AdminController {
         : null;
     }
     if (dto.isAdmin !== undefined) data.isAdmin = dto.isAdmin;
+    if (dto.dateOfBirth !== undefined) {
+      data.dateOfBirth = dto.dateOfBirth ? new Date(dto.dateOfBirth) : null;
+    }
+    if (dto.gender !== undefined) data.gender = dto.gender;
+    if (dto.mobile !== undefined) data.mobile = dto.mobile;
+    if (dto.governorate !== undefined) data.governorate = dto.governorate;
+    if (dto.city !== undefined) data.city = dto.city;
+    if (dto.userType !== undefined) data.userType = dto.userType;
+    if (dto.schoolName !== undefined) data.schoolName = dto.schoolName;
+    if (dto.facultyMajor !== undefined) data.facultyMajor = dto.facultyMajor;
+    if (dto.academicYear !== undefined) data.academicYear = dto.academicYear;
+    if (dto.employer !== undefined) data.employer = dto.employer;
+    if (dto.monthlyIncomeRange !== undefined) {
+      data.monthlyIncomeRange = dto.monthlyIncomeRange;
+    }
+    const goalsJson = parseGoals(dto.financialGoals);
+    if (goalsJson !== undefined) data.financialGoals = goalsJson;
+    if (dto.financialLiteracy !== undefined) {
+      data.financialLiteracy = dto.financialLiteracy;
+    }
+    if (dto.persona !== undefined) data.persona = dto.persona;
+    if (dto.parentEmail !== undefined) data.parentEmail = dto.parentEmail;
+    if (dto.parentPhone !== undefined) data.parentPhone = dto.parentPhone;
+    if (dto.referredByCode !== undefined) {
+      data.referredByCode = dto.referredByCode;
+    }
+    if (dto.referralOnboardingPending !== undefined) {
+      data.referralOnboardingPending = dto.referralOnboardingPending;
+    }
+    if (dto.profileCompletedAt !== undefined) {
+      data.profileCompletedAt = dto.profileCompletedAt
+        ? new Date(dto.profileCompletedAt)
+        : null;
+    }
 
     const row = await this.prisma.user.update({
       where: { id },
