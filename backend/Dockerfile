@@ -22,6 +22,6 @@ RUN npm run prisma:generate && npm run build
 ENV NODE_ENV=production
 EXPOSE 3001
 
-# Nest build output is dist/main.js. Seed fills Course/Quiz rows on fresh MySQL (upsert).
-CMD ["sh", "-c", "npx prisma migrate deploy && npm run db:seed && node dist/main.js"]
+# Run migrations on boot; do not seed here (seed takes ~2min and breaks Railway healthcheck).
+CMD ["sh", "-c", "npx prisma migrate deploy && node dist/main.js"]
 
