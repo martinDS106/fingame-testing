@@ -1,5 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, Pressable, ScrollView, Text, View } from 'react-native';
+import { Pressable, ScrollView, Text, View } from 'react-native';
 import { router, useLocalSearchParams } from 'expo-router';
 import { CheckCircle2, HelpCircle, XCircle } from 'lucide-react-native';
 
@@ -9,7 +9,7 @@ import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
-import { showAppNotify } from '@/lib/appNotify';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { useContentStore } from '@/stores';
 
 export default function QuizPlayScreen() {
@@ -138,21 +138,15 @@ export default function QuizPlayScreen() {
       const res = await submitAttempt(quizId, score, total);
       if (!res.ok) {
         submittedRef.current = false;
-        Alert.alert(
-          'Could not save result',
-          res.error || 'Please sign in again.',
-          [{ text: 'OK' }],
-          { cancelable: true },
-        );
+        notifyError('Could not save result', res.error || 'Please sign in again.');
         return;
       }
 
-      showAppNotify({
-        variant: 'reward',
-        title: t('quiz.completeTitle'),
-        message: t('quiz.completeBody', { score, total, coins: res.coinsEarned }),
-        onDismiss: () => router.back(),
-      });
+      notifySuccess(
+        t('quiz.completeTitle'),
+        t('quiz.completeBody', { score, total, coins: res.coinsEarned }),
+      );
+      setTimeout(() => router.back(), 400);
     } finally {
       setSubmitting(false);
     }

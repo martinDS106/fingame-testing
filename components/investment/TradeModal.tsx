@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import {
 } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 import { useT } from '@/hooks/useT';
+import { notifySuccess } from '@/lib/celebration';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl, rtlRow } from '@/lib/rtlStyle';
 
 type TradeMode = 'buy' | 'sell';
@@ -84,7 +84,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
       const reward_xp = Math.round(reward.xp / 10);
       const okCoins = await addCoins(reward_coins, 'simulation_win');
       if (!okCoins) {
-        Alert.alert(
+        notifySuccess(
           t('trade.executed'),
           t('trade.alertBody', {
             action,
@@ -101,7 +101,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
       const okXp = await addXP(reward_xp);
       if (!okXp) {
         await useUserStore.getState().spendCoins(reward_coins, 'simulation_win');
-        Alert.alert(
+        notifySuccess(
           t('trade.executed'),
           t('trade.alertBody', {
             action,
@@ -116,7 +116,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
         return;
       }
 
-      Alert.alert(
+      notifySuccess(
         t('trade.executed'),
         t('trade.alertBody', {
           action,
@@ -124,7 +124,7 @@ export function TradeModal({ stock, onClose }: TradeModalProps) {
           symbol: stock.symbol,
           price: formatEGP(stock.price),
           coins: reward_coins,
-        })
+        }),
       );
       setShares('');
       onClose();

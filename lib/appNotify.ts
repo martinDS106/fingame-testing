@@ -7,6 +7,7 @@ export function showAppNotify(input: {
   variant?: AppNotifyVariant;
   title: string;
   message: string;
+  durationMs?: number;
   onDismiss?: () => void;
 }): void {
   useAppNotifyStore.getState().show({

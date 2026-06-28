@@ -13,6 +13,7 @@ import { formatNumber } from '@/lib/format';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { localizeChallenge } from '@/lib/challengesLocale';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { useChallengesStore, useUserStore, type ChallengeId } from '@/stores';
 
 export default function ChallengeDetailScreen() {
@@ -152,22 +153,17 @@ export default function ChallengeDetailScreen() {
                           void (async () => {
                             const res = await submit(challenge.id, opt.id);
                             if (!res.ok) {
-                              Alert.alert(
+                              notifyError(
                                 t('challenges.error'),
-                                res.reason ?? t('challenges.tryAgain')
+                                res.reason ?? t('challenges.tryAgain'),
                               );
                               return;
                             }
-                            Alert.alert(
+                            notifySuccess(
                               t('challenges.result'),
                               `${opt.explanation}\n\n+${challenge.coinReward} coins · +${challenge.xpReward} XP`,
-                              [
-                                {
-                                  text: t('challenges.backToList'),
-                                  onPress: () => router.replace('/challenges' as never),
-                                },
-                              ]
                             );
+                            setTimeout(() => router.replace('/challenges' as never), 500);
                           })();
                         },
                       },

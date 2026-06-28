@@ -1,7 +1,7 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { ScrollView, Text, View } from 'react-native';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useFocusEffect, useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CheckCircle, Clock, Film } from 'lucide-react-native';
 
@@ -12,14 +12,35 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
-import { showAppNotify } from '@/lib/appNotify';
-import { useContentStore, type CourseCompletionEvent } from '@/stores';
+import {
+  presentCourseCelebration,
+  presentLessonCelebration,
+} from '@/lib/celebration';
+import {
+  queuePendingCelebration,
+  takePendingCelebration,
+} from '@/lib/pendingCelebration';
+import { useContentStore } from '@/stores';
+
+function flushPendingCelebration(
+  t: (key: string, params?: Record<string, string | number>) => string,
+): void {
+  const pending = takePendingCelebration();
+  if (!pending) return;
+  if (pending.kind === 'course') {
+    void presentCourseCelebration(pending.event, t);
+    return;
+  }
+  presentLessonCelebration(pending.coins, t);
+}
 
 export default function LessonPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const router = useRouter();
   const { rtl, t } = useT();
   const ta = rtlTextStyle(rtl);
+  const tRef = useRef(t);
+  tRef.current = t;
 
   const allLessons = useContentStore((s) => s.lessons);
   const allVideos = useContentStore((s) => s.videos);
@@ -32,6 +53,14 @@ export default function LessonPlayerScreen() {
   useEffect(() => {
     void syncFromCloud();
   }, [syncFromCloud]);
+
+  useFocusEffect(
+    useCallback(() => {
+      return () => {
+        flushPendingCelebration(tRef.current);
+      };
+    }, []),
+  );
 
   const lesson = useMemo(
     () => allLessons.find((l) => l.id === id),
@@ -48,7 +77,6 @@ export default function LessonPlayerScreen() {
   const alreadyCompleted = !!lesson && completedLessons.includes(lesson.id);
   const alreadyWatched = !!video && watchedVideos.includes(video.id);
 
-  // expo-video requires a non-null source. Empty string is safer than null.
   const player = useVideoPlayer(video?.url ?? '', (p) => {
     p.loop = false;
     p.muted = false;
@@ -62,32 +90,6 @@ export default function LessonPlayerScreen() {
   const [status, setStatus] = useState<string>('loading');
   const awardedRef = useRef(false);
 
-  const onCourseCompleted = useCallback(
-    (event: CourseCompletionEvent | null) => {
-      if (!event) return;
-      showAppNotify({
-        variant: 'course',
-        title: t('course.completedTitle'),
-        message: event.bonusGranted
-          ? t('course.completedBody', { n: event.bonusCoins })
-          : t('course.completedAlready'),
-      });
-    },
-    [t],
-  );
-
-  const onLessonCompleted = useCallback(
-    (coins: number) => {
-      showAppNotify({
-        variant: 'reward',
-        title: t('lesson.completedTitle'),
-        message: t('lesson.completedBody', { n: coins }),
-      });
-    },
-    [t],
-  );
-
-  // Listen to status and error events on the player.
   useEffect(() => {
     if (!video?.url) return;
 
@@ -103,23 +105,25 @@ export default function LessonPlayerScreen() {
     };
   }, [player, video?.url]);
 
-  // Poll playback position every second.
   useEffect(() => {
     if (!video) return;
 
     const interval = setInterval(() => {
       try {
-        const t = player.currentTime ?? 0;
+        const current = player.currentTime ?? 0;
         const total = player.duration ?? video.durationSeconds;
-        setWatchedSec(t);
+        setWatchedSec(current);
         if (total > 0) setDuration(total);
 
-        if (!awardedRef.current && total > 0 && t / total >= 0.9) {
+        if (!awardedRef.current && total > 0 && current / total >= 0.9) {
           awardedRef.current = true;
           const wasLessonDone = alreadyCompleted;
           void markVideoWatched(video.id, video.lessonId).then((event) => {
-            if (event) onCourseCompleted(event);
-            else if (!wasLessonDone) onLessonCompleted(15);
+            if (event) {
+              queuePendingCelebration({ kind: 'course', event });
+            } else if (!wasLessonDone) {
+              queuePendingCelebration({ kind: 'lesson', coins: 15 });
+            }
           });
         }
       } catch (err) {
@@ -128,7 +132,7 @@ export default function LessonPlayerScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [player, video, markVideoWatched, onCourseCompleted, onLessonCompleted, alreadyCompleted]);
+  }, [player, video, markVideoWatched, alreadyCompleted]);
 
   if (!lesson) {
     return (
@@ -156,9 +160,9 @@ export default function LessonPlayerScreen() {
   const handleManualComplete = async () => {
     const event = await completeLesson(lesson.id, 10);
     if (event) {
-      onCourseCompleted(event);
+      queuePendingCelebration({ kind: 'course', event });
     } else {
-      onLessonCompleted(10);
+      queuePendingCelebration({ kind: 'lesson', coins: 10 });
     }
     router.back();
   };

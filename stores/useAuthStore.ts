@@ -13,6 +13,7 @@ import {
 } from '@/lib/api';
 import { useContentStore } from '@/stores/useContentStore';
 import { useUserStore } from '@/stores/useUserStore';
+import { withNetworkRetry } from '@/lib/withNetworkRetry';
 
 type AuthUser = { id: string; email: string };
 
@@ -73,6 +74,12 @@ let authInitInFlight: Promise<void> | null = null;
 
 export function resetAuthInitialization(): void {
   authInitInFlight = null;
+}
+
+export async function waitForAuthReady(): Promise<void> {
+  if (authInitInFlight) {
+    await authInitInFlight;
+  }
 }
 
 export const useAuthStore = create<AuthState>((set, get) => ({
@@ -165,9 +172,12 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (isApiConfigured) {
     try {
-      const res = await apiPostJson<ApiAuthResponse, { email: string; password: string }>(
-        '/auth/login',
-        { email, password }
+      await waitForAuthReady();
+      const res = await withNetworkRetry(() =>
+        apiPostJson<ApiAuthResponse, { email: string; password: string }>(
+          '/auth/login',
+          { email, password },
+        ),
       );
       await persistApiAuthTokens(res.tokens.accessToken, res.tokens.refreshToken);
       setApiAccessToken(res.tokens.accessToken);
@@ -184,8 +194,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         status: 'authenticated',
         isOfflineMode: false,
       });
-      resetAuthInitialization();
-      await syncUserOnAuth(res.user.id, res.user.email);
+      await withNetworkRetry(() => syncUserOnAuth(res.user.id, res.user.email), 2);
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
@@ -202,14 +211,17 @@ export const useAuthStore = create<AuthState>((set, get) => ({
 
     if (isApiConfigured) {
     try {
-      const res = await apiPostJson<
-        ApiAuthResponse,
-        { email: string; password: string; displayName?: string }
-      >('/auth/signup', {
-        email,
-        password,
-        ...(displayName ? { displayName } : {}),
-      });
+      await waitForAuthReady();
+      const res = await withNetworkRetry(() =>
+        apiPostJson<
+          ApiAuthResponse,
+          { email: string; password: string; displayName?: string }
+        >('/auth/signup', {
+          email,
+          password,
+          ...(displayName ? { displayName } : {}),
+        }),
+      );
 
       await persistApiAuthTokens(res.tokens.accessToken, res.tokens.refreshToken);
       setApiAccessToken(res.tokens.accessToken);
@@ -226,11 +238,16 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         status: 'authenticated',
         isOfflineMode: false,
       });
-      resetAuthInitialization();
+      useUserStore.setState((state) => ({
+        profile: {
+          ...state.profile,
+          referralOnboardingPending: true,
+        },
+      }));
       if (displayName) {
         useUserStore.getState().updateProfile({ name: displayName });
       }
-      await syncUserOnAuth(res.user.id, res.user.email);
+      await withNetworkRetry(() => syncUserOnAuth(res.user.id, res.user.email), 2);
       return { ok: true, needsVerification: false };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Signup failed';

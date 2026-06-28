@@ -15,7 +15,7 @@ import { Link, router } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
-import { useAuthStore } from '@/stores';
+import { useAuthStore, waitForAuthReady } from '@/stores';
 import { isApiConfigured } from '@/lib/api';
 import {
   mergeScrollContentRtl,
@@ -36,6 +36,7 @@ export default function LoginScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const signIn = useAuthStore((s) => s.signInWithEmail);
+  const authStatus = useAuthStore((s) => s.status);
 
   const handleLogin = async () => {
     if (!email.trim() || !password) {
@@ -44,12 +45,18 @@ export default function LoginScreen() {
     }
     setLoading(true);
     setError(null);
-    const result = await signIn(email.trim(), password);
-    setLoading(false);
-    if (result.ok) {
-      router.replace('/dashboard');
-    } else {
-      setError(result.error ?? t('auth.loginFailed'));
+    try {
+      if (authStatus === 'loading') {
+        await waitForAuthReady();
+      }
+      const result = await signIn(email.trim(), password);
+      if (result.ok) {
+        router.replace('/dashboard');
+      } else {
+        setError(result.error ?? t('auth.loginFailed'));
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

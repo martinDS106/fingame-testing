@@ -1,7 +1,6 @@
-import { useState } from 'react';
+import { useEffect, useState } from 'react';
 import {
   ActivityIndicator,
-  Alert,
   Modal,
   Pressable,
   Text,
@@ -11,7 +10,8 @@ import {
 
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/hooks/useT';
-import { showAppNotify } from '@/lib/appNotify';
+import { notifyError, notifySuccess } from '@/lib/celebration';
+import { pullProfile } from '@/lib/syncServiceApi';
 import { rtlTextStyle } from '@/lib/rtlStyle';
 import { useAuthStore, useUserStore } from '@/stores';
 
@@ -26,6 +26,30 @@ export function ReferralOnboardingModal() {
 
   const [code, setCode] = useState('');
   const [busy, setBusy] = useState(false);
+  const [syncing, setSyncing] = useState(false);
+
+  useEffect(() => {
+    if (authStatus !== 'authenticated' || !remoteUserId) return;
+    let cancelled = false;
+    setSyncing(true);
+    void pullProfile(remoteUserId)
+      .then((remote) => {
+        if (cancelled || !remote?.referral_onboarding_pending) return;
+        useUserStore.setState((state) => ({
+          profile: {
+            ...state.profile,
+            referralOnboardingPending: true,
+            referralCode: remote.referral_code ?? state.profile.referralCode,
+          },
+        }));
+      })
+      .finally(() => {
+        if (!cancelled) setSyncing(false);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [authStatus, remoteUserId]);
 
   const visible =
     authStatus === 'authenticated' && !!remoteUserId && pending === true;
@@ -35,34 +59,35 @@ export function ReferralOnboardingModal() {
     const res = await skipReferralOnboarding();
     setBusy(false);
     if (!res.ok) {
-      Alert.alert(t('referral.errorTitle'), res.error ?? '');
+      notifyError(t('referral.errorTitle'), res.error ?? '');
     }
   };
 
   const onApply = async () => {
     const normalized = code.replace(/[^A-Za-z0-9]/g, '').toUpperCase();
     if (normalized.length !== 5) {
-      Alert.alert(t('referral.errorTitle'), t('referral.invalidCode'));
+      notifyError(t('referral.errorTitle'), t('referral.invalidCode'));
       return;
     }
     setBusy(true);
     const res = await applyFriendReferral(normalized);
     setBusy(false);
     if (!res.ok) {
-      Alert.alert(t('referral.errorTitle'), res.error ?? '');
+      notifyError(t('referral.errorTitle'), res.error ?? '');
       return;
     }
     if (res.coins && res.coins > 0) {
-      showAppNotify({
-        variant: 'success',
-        title: t('referral.successTitle'),
-        message: t('referral.successBody', { coins: res.coins }),
-      });
+      notifySuccess(
+        t('referral.successTitle'),
+        t('referral.successBody', { coins: res.coins }),
+      );
     }
   };
 
+  if (!visible) return null;
+
   return (
-    <Modal visible={visible} transparent animationType="fade" onRequestClose={() => void onSkip()}>
+    <Modal visible transparent animationType="fade" onRequestClose={() => void onSkip()}>
       <View
         style={{
           flex: 1,
@@ -93,7 +118,7 @@ export function ReferralOnboardingModal() {
             placeholder={t('referral.placeholder')}
             autoCapitalize="characters"
             maxLength={5}
-            editable={!busy}
+            editable={!busy && !syncing}
             style={{
               borderWidth: 1.5,
               borderColor: '#bfdbfe',
@@ -107,11 +132,11 @@ export function ReferralOnboardingModal() {
               backgroundColor: '#eff6ff',
             }}
           />
-          {busy ? <ActivityIndicator color="#2563eb" /> : null}
-          <Button fullWidth onPress={() => void onApply()} disabled={busy || code.length < 5}>
+          {busy || syncing ? <ActivityIndicator color="#2563eb" /> : null}
+          <Button fullWidth onPress={() => void onApply()} disabled={busy || syncing || code.length < 5}>
             {t('referral.apply')}
           </Button>
-          <Pressable onPress={() => void onSkip()} disabled={busy} style={{ alignItems: 'center' }}>
+          <Pressable onPress={() => void onSkip()} disabled={busy || syncing} style={{ alignItems: 'center' }}>
             <Text style={[ta, { fontSize: 15, color: '#6b7280' }]}>{t('referral.skip')}</Text>
           </Pressable>
         </View>

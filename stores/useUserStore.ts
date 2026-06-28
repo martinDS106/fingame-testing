@@ -394,6 +394,9 @@ export const useUserStore = create<UserState>()(
               profile: {
                 ...merged.profile,
                 email: email ?? merged.profile.email,
+                referralOnboardingPending:
+                  merged.profile.referralOnboardingPending ||
+                  get().profile.referralOnboardingPending,
               },
               coins: merged.coins,
               xp: merged.xp,

@@ -34,7 +34,7 @@ import {
 } from '@/lib/rtlStyle';
 import { useContentStore, useUserStore } from '@/stores';
 import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
-import { showAppNotify } from '@/lib/appNotify';
+import { notifySuccess } from '@/lib/celebration';
 
 export default function DashboardScreen() {
   const coins = useUserStore((s) => s.coins);
@@ -75,11 +75,10 @@ export default function DashboardScreen() {
   const handleReward = useCallback(
     (r: { awarded: boolean; coins: number; newStreak: number }) => {
       if (r.awarded) {
-        showAppNotify({
-          variant: 'reward',
-          title: t('dashboard.rewardTitle'),
-          message: t('dashboard.rewardSnack', { coins: r.coins, streak: r.newStreak }),
-        });
+        notifySuccess(
+          t('dashboard.rewardTitle'),
+          t('dashboard.rewardSnack', { coins: r.coins, streak: r.newStreak }),
+        );
       }
     },
     [t]

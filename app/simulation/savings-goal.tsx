@@ -30,6 +30,7 @@ import {
   rtlTextStyle,
 } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifyError } from '@/lib/celebration';
 import { useBankingStore, type SavingsGoal } from '@/stores';
 
 const EMOJIS = ['🚗', '🏖️', '🏠', '📱', '💍', '🎓', '💼', '✈️'];
@@ -270,7 +271,7 @@ export default function SavingsGoalScreen() {
           if (!contribFor || !checking) return;
           const ok = contributeToGoal(contribFor.id, checking.id, amount);
           if (!ok) {
-            Alert.alert(t('sim.oops'), t('savings.notEnoughChecking'));
+            notifyError(t('sim.oops'), t('savings.notEnoughChecking'));
             return;
           }
           setContribFor(null);

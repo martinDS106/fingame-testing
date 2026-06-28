@@ -7,6 +7,7 @@ export type AppNotifyItem = {
   variant: AppNotifyVariant;
   title: string;
   message: string;
+  durationMs?: number;
   onDismiss?: () => void;
 };
 
@@ -27,11 +28,13 @@ export const useAppNotifyStore = create<AppNotifyState>((set, get) => ({
       hideTimer = null;
     }
 
+    const duration = item.durationMs ?? 4500;
     const next: AppNotifyItem = {
       id: item.id ?? `${Date.now()}`,
       variant: item.variant,
       title: item.title,
       message: item.message,
+      durationMs: duration,
       onDismiss: item.onDismiss,
     };
 
@@ -39,7 +42,7 @@ export const useAppNotifyStore = create<AppNotifyState>((set, get) => ({
 
     hideTimer = setTimeout(() => {
       get().dismiss();
-    }, 4500);
+    }, duration);
   },
 
   dismiss: () => {

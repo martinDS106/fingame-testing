@@ -1,4 +1,4 @@
-import { Alert, Pressable, ScrollView, Text, TextInput, View } from 'react-native';
+import { Pressable, ScrollView, Text, TextInput, View } from 'react-native';
 import { User } from 'lucide-react-native';
 import { useMemo, useState } from 'react';
 import { router } from 'expo-router';
@@ -13,6 +13,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { DEFAULT_AVATAR_ID } from '@/lib/avatarPresets';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useUserStore } from '@/stores';
@@ -44,9 +45,8 @@ export default function EditProfileScreen() {
     if (remoteUserId) {
       await pushSnapshot();
     }
-    Alert.alert(t('rewards.success'), 'Profile updated.', [
-      { text: 'OK', onPress: () => router.back() },
-    ]);
+    notifySuccess(t('rewards.success'), 'Profile updated.');
+    router.back();
   }
 
   return (
@@ -109,7 +109,7 @@ export default function EditProfileScreen() {
                 onPress={async () => {
                   const perm = await ImagePicker.requestMediaLibraryPermissionsAsync();
                   if (!perm.granted) {
-                    Alert.alert('Permission needed', 'Please allow photo access.');
+                    notifyError('Permission needed', 'Please allow photo access.');
                     return;
                   }
                   const res = await ImagePicker.launchImageLibraryAsync({

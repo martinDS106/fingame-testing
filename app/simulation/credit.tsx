@@ -43,6 +43,7 @@ import {
   rtlTextStyle,
 } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import {
   CREDIT_ACTION_DEFINITIONS,
   useCreditStore,
@@ -115,22 +116,22 @@ export default function CreditSimulationScreen() {
         const reward = rewardFor('quiz_correct');
         const okCoins = await addCoins(reward.coins, 'quiz_correct');
         if (!okCoins) {
-          Alert.alert(t('sim.couldNotSaveReward'), t('sim.scoreNotSynced'));
+          notifyError(t('sim.couldNotSaveReward'), t('sim.scoreNotSynced'));
           return;
         }
         const okXp = await addXP(reward.xp);
         if (!okXp) {
           await useUserStore.getState().spendCoins(reward.coins, 'quiz_correct');
-          Alert.alert(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
+          notifyError(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
           return;
         }
       }
 
-      Alert.alert(
+      notifySuccess(
         label,
         `${t('credit.scoreDelta', {
           delta: `${result.delta >= 0 ? '+' : ''}${result.delta}`,
-        })}\n\n${desc}`
+        })}\n\n${desc}`,
       );
     })();
   };
@@ -592,18 +593,18 @@ export default function CreditSimulationScreen() {
           if (!activeCard) return;
           const ok = makePayment(activeCard.id, amount);
           if (!ok.ok) {
-            Alert.alert(t('sim.oops'), ok.reason ?? t('credit.paymentFailed'));
+            notifyError(t('sim.oops'), ok.reason ?? t('credit.paymentFailed'));
             return;
           }
           const fullBalance = activeCard.balance <= amount;
           const actionType = fullBalance ? 'pay_full_balance' : 'pay_on_time';
           const result = applyAction(actionType);
-          Alert.alert(
+          notifySuccess(
             t('credit.paymentMade'),
             `${t('credit.paidAmount', { amount: formatEGP(amount, locale) })}\n\n${t('credit.actionDelta', {
               label: creditActionLabel(actionType, locale),
               delta: `+${result.delta}`,
-            })}`
+            })}`,
           );
           setActiveCard(null);
         }}

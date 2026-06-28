@@ -27,6 +27,7 @@ import { colors } from '@/theme';
 import { formatNumber } from '@/lib/format';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { useMarketplaceStore, useUserStore } from '@/stores';
 
 function ApprovalMeter({ value }: { value: number }) {
@@ -140,7 +141,7 @@ export default function ProductDetailScreen() {
       const appId = submitApplication(product.id);
       const ok = await addCoins(100, 'manual');
       if (!ok) {
-        Alert.alert(
+        notifyError(
           'Could not save reward',
           'Your application was created locally, but the coin reward did not sync.',
         );
@@ -152,13 +153,13 @@ export default function ProductDetailScreen() {
 
   const handleSubmitReview = () => {
     if (!product || reviewInput.trim().length < 5) {
-      Alert.alert('Review too short', 'Please write at least 5 characters.');
+      notifyError('Review too short', 'Please write at least 5 characters.');
       return;
     }
     void (async () => {
       const ok = await addCoins(25, 'manual');
       if (!ok) {
-        Alert.alert(
+        notifyError(
           'Could not save reward',
           'Please sign in again and retry submitting your review.',
         );
@@ -167,7 +168,7 @@ export default function ProductDetailScreen() {
       addReview(product.id, reviewRating, reviewInput.trim());
       setReviewInput('');
       setReviewRating(5);
-      Alert.alert('Thank you!', 'You earned +25 coins for your review.');
+      notifySuccess('Thank you!', 'You earned +25 coins for your review.');
     })();
   };
 

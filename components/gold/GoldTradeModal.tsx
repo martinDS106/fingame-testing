@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Modal,
   Platform,
@@ -22,6 +21,7 @@ import {
 } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 import { useT } from '@/hooks/useT';
+import { notifySuccess } from '@/lib/celebration';
 import {
   rtlRootDirection,
   rtlRowMerge,
@@ -90,7 +90,7 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
       const xpReward = Math.round(reward.xp / 15);
       const okCoins = await addCoins(coinsReward, 'simulation_win');
       if (!okCoins) {
-        Alert.alert(
+        notifySuccess(
           t('trade.executed'),
           t('gold.alertBody', {
             action,
@@ -106,7 +106,7 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
       const okXp = await addXP(xpReward);
       if (!okXp) {
         await useUserStore.getState().spendCoins(coinsReward, 'simulation_win');
-        Alert.alert(
+        notifySuccess(
           t('trade.executed'),
           t('gold.alertBody', {
             action,
@@ -120,14 +120,14 @@ export function GoldTradeModal({ metal, onClose }: GoldTradeModalProps) {
         return;
       }
 
-      Alert.alert(
+      notifySuccess(
         t('trade.executed'),
         t('gold.alertBody', {
           action,
           qty: gramsNum,
           label: metal.label,
           coins: coinsReward,
-        })
+        }),
       );
       setGrams('');
       onClose();

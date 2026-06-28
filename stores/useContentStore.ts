@@ -20,7 +20,6 @@ import {
   type RemoteVideo,
 } from '@/lib/syncServiceApi';
 import { isApiConfigured } from '@/lib/api';
-import { playCourseCelebrationSound } from '@/lib/playCelebrationSound';
 import { useUserStore } from '@/stores/useUserStore';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
@@ -61,8 +60,6 @@ async function grantCourseCompletionBonus(
   const course = courses.find((c) => c.id === courseId);
   const bonusCoins = course?.coinReward ?? 0;
   const userStore = useUserStore.getState();
-
-  void playCourseCelebrationSound();
 
   const granted = await userStore.claimRewardOnce(
     `course_complete:${courseId}`,

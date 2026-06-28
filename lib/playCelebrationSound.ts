@@ -37,9 +37,10 @@ export async function playCourseCelebrationSound(): Promise<void> {
 
     const { sound } = await Audio.Sound.createAsync(
       require('@/assets/sounds/celebration.mp3'),
-      { shouldPlay: true, volume: 1 },
+      { shouldPlay: false, volume: 1 },
     );
     playing = sound;
+    await sound.playAsync();
 
     sound.setOnPlaybackStatusUpdate((status) => {
       if (status.isLoaded && status.didJustFinish) {

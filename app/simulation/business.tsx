@@ -25,6 +25,7 @@ import type { BusinessStepOption } from '@/lib/businessSteps';
 import { rewardFor } from '@/lib/rewards';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import {
   CORP_TAX_RATE,
   VAT_RATE,
@@ -93,7 +94,7 @@ export default function BusinessSimulationScreen() {
               const reward = rewardFor('lesson_complete');
               const okCoins = await addCoins(reward.coins, 'lesson_complete');
               if (!okCoins) {
-                Alert.alert(
+                notifyError(
                   t('sim.couldNotSaveReward'),
                   t('sim.coinsNotSynced'),
                 );
@@ -104,7 +105,7 @@ export default function BusinessSimulationScreen() {
                 await useUserStore
                   .getState()
                   .spendCoins(reward.coins, 'lesson_complete');
-                Alert.alert(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
+                notifyError(t('sim.couldNotSaveXp'), t('sim.xpNotSynced'));
               }
             })();
           },
@@ -144,25 +145,25 @@ export default function BusinessSimulationScreen() {
       const coinDelta = Math.round(reward.coins / 4);
       const ok = await addCoins(coinDelta, 'simulation_win');
       if (!ok) {
-        Alert.alert(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
+        notifyError(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
       }
     })();
 
-    Alert.alert(
+    notifySuccess(
       t('business.monthClosed', { n: report.month }),
       `${t('business.revenue')} ${formatEGP(report.revenue)}\n` +
         `${t('business.expenses')} ${formatEGP(report.expenses)}\n` +
         `${t('business.grossProfit')} ${formatEGP(report.grossProfit)}\n\n` +
         `${t('business.vatLine')} ${formatEGP(report.vatCollected)}\n` +
         `${t('business.corpLine')} ${formatEGP(report.corporateTax)}\n\n` +
-        `${t('business.netProfit')} ${formatEGP(report.netProfit)}`
+        `${t('business.netProfit')} ${formatEGP(report.netProfit)}`,
     );
   };
 
   const handlePayTaxes = () => {
     const due = vatPayable + corpTaxPayable;
     if (due <= 0) {
-      Alert.alert(t('business.noTaxes'), t('business.caughtUp'));
+      notifySuccess(t('business.noTaxes'), t('business.caughtUp'));
       return;
     }
     Alert.alert(
@@ -177,16 +178,16 @@ export default function BusinessSimulationScreen() {
           onPress: () => {
             const res = payTaxes();
             if (!res.ok) {
-              Alert.alert(t('business.notEnoughCash'), res.reason ?? '');
+              notifyError(t('business.notEnoughCash'), res.reason ?? '');
               return;
             }
             void (async () => {
               const ok = await addCoins(20, 'simulation_win');
               if (!ok) {
-                Alert.alert(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
+                notifyError(t('sim.couldNotSaveReward'), t('sim.coinsNotSynced'));
                 return;
               }
-              Alert.alert(
+              notifySuccess(
                 t('business.taxesPaid'),
                 t('business.taxesPaidBody', { amount: formatEGP(res.paid) }),
               );

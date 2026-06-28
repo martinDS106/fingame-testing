@@ -1,6 +1,5 @@
 import { useState } from 'react';
 import {
-  Alert,
   KeyboardAvoidingView,
   Platform,
   Pressable,
@@ -23,7 +22,7 @@ import { Link, router } from 'expo-router';
 
 import { Button } from '@/components/ui/Button';
 import { colors } from '@/theme';
-import { useAuthStore, useUserStore } from '@/stores';
+import { useAuthStore, useUserStore, waitForAuthReady } from '@/stores';
 import { isApiConfigured } from '@/lib/api';
 import {
   mergeScrollContentRtl,
@@ -33,6 +32,7 @@ import {
   rtlTextStyle,
 } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifySuccess } from '@/lib/celebration';
 
 export default function SignupScreen() {
   const { t, rtl } = useT();
@@ -45,6 +45,7 @@ export default function SignupScreen() {
   const [error, setError] = useState<string | null>(null);
 
   const signUp = useAuthStore((s) => s.signUpWithEmail);
+  const authStatus = useAuthStore((s) => s.status);
   const updateProfile = useUserStore((s) => s.updateProfile);
 
   const handleSignup = async () => {
@@ -58,24 +59,26 @@ export default function SignupScreen() {
     }
     setLoading(true);
     setError(null);
-    const result = await signUp(email.trim(), password, name.trim());
-    setLoading(false);
+    try {
+      if (authStatus === 'loading') {
+        await waitForAuthReady();
+      }
+      const result = await signUp(email.trim(), password, name.trim());
+      if (!result.ok) {
+        setError(result.error ?? t('auth.signUpFailed'));
+        return;
+      }
 
-    if (!result.ok) {
-      setError(result.error ?? t('auth.signUpFailed'));
-      return;
-    }
+      updateProfile({ name: name.trim(), email: email.trim() });
 
-    updateProfile({ name: name.trim(), email: email.trim() });
-
-    if (result.needsVerification) {
-      Alert.alert(
-        t('auth.almostThere'),
-        t('auth.verifyEmailBody', { email }),
-        [{ text: t('auth.ok'), onPress: () => router.replace('/(auth)/login') }]
-      );
-    } else {
-      router.replace('/dashboard');
+      if (result.needsVerification) {
+        notifySuccess(t('auth.almostThere'), t('auth.verifyEmailBody', { email }));
+        router.replace('/(auth)/login');
+      } else {
+        router.replace('/dashboard');
+      }
+    } finally {
+      setLoading(false);
     }
   };
 

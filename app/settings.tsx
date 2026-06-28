@@ -19,6 +19,7 @@ import { colors } from '@/theme';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 import { useSettingsStore } from '@/stores/useSettingsStore';
 import { useT } from '@/hooks/useT';
+import { notifyError } from '@/lib/celebration';
 import { LOCALES } from '@/lib/i18n';
 import {
   listRowLeadingStyle,
@@ -157,9 +158,9 @@ export default function SettingsScreen() {
                       await configureNotifications();
                       const ok = await ensureNotificationPermission();
                       if (!ok) {
-                        Alert.alert(
+                        notifyError(
                           t('profile.notifications'),
-                          'Please allow notifications in iOS Settings.'
+                          'Please allow notifications in iOS Settings.',
                         );
                         setNotificationsEnabled(false);
                         return;
@@ -172,7 +173,7 @@ export default function SettingsScreen() {
                     } catch (e) {
                       const msg =
                         e instanceof Error ? e.message : 'Failed to enable notifications.';
-                      Alert.alert(t('profile.notifications'), msg);
+                      notifyError(t('profile.notifications'), msg);
                       setDailyReminderId(null);
                       setNotificationsEnabled(false);
                     }

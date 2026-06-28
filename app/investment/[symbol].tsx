@@ -1,6 +1,5 @@
 import { useMemo, useState } from 'react';
 import {
-  Alert,
   Dimensions,
   Pressable,
   ScrollView,
@@ -27,6 +26,7 @@ import { formatEGP } from '@/lib/format';
 import { useMarketEngine } from '@/hooks/useMarketEngine';
 import { useInvestmentStore, useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
+import { notifySuccess } from '@/lib/celebration';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
 
@@ -118,11 +118,11 @@ export default function StockDetailScreen() {
       const reward = Math.round(rewardFor('simulation_win').coins / 10);
       void (async () => {
         const ok = await addCoins(reward, 'simulation_win');
-        Alert.alert(
+        notifySuccess(
           'Trade executed',
           `${side === 'buy' ? 'Bought' : 'Sold'} ${shares} ${stock.symbol} @ ${formatEGP(
             stock.price
-          )}\n\n${ok ? `+${reward} coins` : 'Trade saved locally, but coin reward did not sync.'}`
+          )}\n\n${ok ? `+${reward} coins` : 'Trade saved locally, but coin reward did not sync.'}`,
         );
       })();
       setSharesStr('');
@@ -141,9 +141,9 @@ export default function StockDetailScreen() {
       setError(res.reason ?? 'Order failed.');
       return;
     }
-    Alert.alert(
+    notifySuccess(
       'Order placed',
-      `${orderType === 'limit' ? 'Limit' : 'Stop-Loss'} ${effectiveSide.toUpperCase()} order for ${shares} ${stock.symbol} at ${formatEGP(trigger)} is open.`
+      `${orderType === 'limit' ? 'Limit' : 'Stop-Loss'} ${effectiveSide.toUpperCase()} order for ${shares} ${stock.symbol} at ${formatEGP(trigger)} is open.`,
     );
     setSharesStr('');
     setTriggerStr('');

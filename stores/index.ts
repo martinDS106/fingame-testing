@@ -65,7 +65,7 @@ export type {
   ApplicationStatus,
 } from './useMarketplaceStore';
 
-export { useAuthStore } from './useAuthStore';
+export { useAuthStore, waitForAuthReady } from './useAuthStore';
 export type { AuthStatus } from './useAuthStore';
 
 export { useLocaleStore } from './useLocaleStore';

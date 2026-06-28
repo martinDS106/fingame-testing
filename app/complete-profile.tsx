@@ -21,6 +21,7 @@ import { Button } from '@/components/ui/Button';
 import { Card } from '@/components/ui/Card';
 import { ProgressBar } from '@/components/ui/ProgressBar';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { getApiBaseUrl } from '@/lib/api';
 import { DEFAULT_AVATAR_ID } from '@/lib/avatarPresets';
 import {
@@ -432,7 +433,7 @@ export default function CompleteProfileScreen() {
   const handleSave = async () => {
     if (!remoteUserId) {
       updateProfile(draft);
-      Alert.alert(t('profile.saved'), t('profile.signInToSave'));
+      notifySuccess(t('profile.saved'), t('profile.signInToSave'));
       router.back();
       return;
     }
@@ -441,10 +442,10 @@ export default function CompleteProfileScreen() {
     const res = await saveExtendedProfile();
     setSaving(false);
     if (!res.ok) {
-      Alert.alert(t('profile.saveFailed'), res.error ?? '');
+      notifyError(t('profile.saveFailed'), res.error ?? '');
       return;
     }
-    Alert.alert(t('profile.saved'));
+    notifySuccess(t('profile.saved'), '');
     router.back();
   };
 

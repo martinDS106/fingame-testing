@@ -1,6 +1,5 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import {
-  Alert,
   Dimensions,
   FlatList,
   Pressable,
@@ -33,6 +32,7 @@ import { useFintokStore, useUserStore } from '@/stores';
 import { rewardFor } from '@/lib/rewards';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { notifyError, notifySuccess } from '@/lib/celebration';
 import { useLocaleStore } from '@/stores/useLocaleStore';
 
 const BOTTOM_NAV_HEIGHT = 72;
@@ -256,7 +256,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
 
   async function submitComment() {
     if (!remoteUserId) {
-      Alert.alert('Sign in required', 'Please sign in to comment.');
+      notifyError('Sign in required', 'Please sign in to comment.');
       return;
     }
     const body = commentDraft.trim();
@@ -274,7 +274,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
       if ((res as any)?.action === (Share as any).dismissedAction) return;
     } catch (e) {
       const msg = e instanceof Error ? e.message : 'Share failed.';
-      Alert.alert('Share', msg);
+      notifyError('Share', msg);
     }
   }
 
@@ -316,7 +316,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
         <Pressable
           onPress={() => {
             if (!remoteUserId) {
-              Alert.alert('Sign in required', 'Please sign in to like videos.');
+              notifyError('Sign in required', 'Please sign in to like videos.');
               return;
             }
             void toggleLike(remoteUserId, videoId);
@@ -349,7 +349,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
           hitSlop={6}
           onPress={() => {
             if (!remoteUserId) {
-              Alert.alert('Sign in required', 'Please sign in to comment.');
+              notifyError('Sign in required', 'Please sign in to comment.');
               return;
             }
             void openComments();
@@ -372,7 +372,7 @@ function VideoItem({ videoId, activeVideoId, forceActive }: VideoItemProps) {
         <Pressable
           onPress={() => {
             if (!remoteUserId) {
-              Alert.alert('Sign in required', 'Please sign in to save videos.');
+              notifyError('Sign in required', 'Please sign in to save videos.');
               return;
             }
             void toggleSave(remoteUserId, videoId);
@@ -655,7 +655,7 @@ export default function FinTokScreen() {
         const okCoins = await addCoins(reward.coins, 'watch_video');
         if (!okCoins) {
           watchedIdsRef.current.delete(id);
-          Alert.alert(
+          notifyError(
             'Could not save reward',
             'Your watch progress was not saved. Please sign in again and retry.',
           );
@@ -665,7 +665,7 @@ export default function FinTokScreen() {
         if (!okXp) {
           watchedIdsRef.current.delete(id);
           await useUserStore.getState().spendCoins(reward.coins, 'watch_video');
-          Alert.alert(
+          notifyError(
             'Could not save XP',
             'Coins were saved, but XP did not sync. Please try again.',
           );
