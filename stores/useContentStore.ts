@@ -41,6 +41,7 @@ export interface CourseCompletionEvent {
   courseTitle: string;
   bonusCoins: number;
   bonusGranted: boolean;
+  alreadyClaimed: boolean;
 }
 
 function courseJustCompleted(
@@ -60,9 +61,20 @@ async function grantCourseCompletionBonus(
   const course = courses.find((c) => c.id === courseId);
   const bonusCoins = course?.coinReward ?? 0;
   const userStore = useUserStore.getState();
+  const rewardKey = `course_complete:${courseId}`;
+
+  if (userStore.hasClaimedReward(rewardKey)) {
+    return {
+      courseId,
+      courseTitle: course?.title ?? 'Course',
+      bonusCoins,
+      bonusGranted: false,
+      alreadyClaimed: true,
+    };
+  }
 
   const granted = await userStore.claimRewardOnce(
-    `course_complete:${courseId}`,
+    rewardKey,
     bonusCoins,
     100,
     'lesson_complete',
@@ -71,8 +83,9 @@ async function grantCourseCompletionBonus(
   return {
     courseId,
     courseTitle: course?.title ?? 'Course',
-    bonusCoins: granted ? bonusCoins : 0,
+    bonusCoins,
     bonusGranted: granted,
+    alreadyClaimed: false,
   };
 }
 
@@ -423,7 +436,13 @@ export const useContentStore = create<ContentState>()(
         if (!lesson) return null;
 
         const alreadyDone = get().completedLessons.includes(lessonId);
-        let completedIds = get().completedLessons;
+        const courseId = lesson.courseId;
+        const lessonIdsBefore = get().completedLessons;
+        const wasCourseCompleteBefore =
+          !!courseId &&
+          courseJustCompleted(courseId, get().lessons, lessonIdsBefore);
+
+        let completedIds = lessonIdsBefore;
 
         if (!alreadyDone) {
           completedIds = [...completedIds, lessonId];
@@ -439,11 +458,11 @@ export const useContentStore = create<ContentState>()(
           }
         }
 
-        const courseId = lesson.courseId;
         if (!courseId) return null;
         if (!courseJustCompleted(courseId, get().lessons, completedIds)) {
           return null;
         }
+        if (wasCourseCompleteBefore) return null;
 
         return grantCourseCompletionBonus(courseId, get().courses);
       },

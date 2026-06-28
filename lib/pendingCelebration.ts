@@ -7,6 +7,14 @@ type PendingCelebration =
 let pending: PendingCelebration | null = null;
 
 export function queuePendingCelebration(item: PendingCelebration): void {
+  if (
+    pending?.kind === 'course' &&
+    item.kind === 'course' &&
+    pending.event.bonusGranted &&
+    !item.event.bonusGranted
+  ) {
+    return;
+  }
   pending = item;
 }
 

@@ -372,7 +372,11 @@ export const useUserStore = create<UserState>()(
               longestStreak: get().longestStreak,
               lastActiveDate: get().lastActiveDate,
             };
-        set({ remoteUserId: userId, syncStatus: 'syncing' });
+        set({
+          remoteUserId: userId,
+          syncStatus: 'syncing',
+          ...(accountChanged ? { claimedRewards: [] } : {}),
+        });
 
         try {
           const remote = await pullProfile(userId);

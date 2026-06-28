@@ -12,9 +12,11 @@ export async function presentCourseCelebration(
   showAppNotify({
     variant: 'course',
     title: t('course.completedTitle'),
-    message: event.bonusGranted
-      ? t('course.completedBody', { n: event.bonusCoins })
-      : t('course.completedAlready'),
+    message: event.alreadyClaimed
+      ? t('course.completedAlready')
+      : event.bonusGranted
+        ? t('course.completedBody', { n: event.bonusCoins })
+        : t('course.completedBody', { n: event.bonusCoins }),
     durationMs: 6000,
   });
 }

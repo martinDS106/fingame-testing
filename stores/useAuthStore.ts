@@ -47,6 +47,68 @@ async function syncUserOnAuth(userId: string | null, email?: string) {
   }
 }
 
+async function applyAuthResponse(
+  res: ApiAuthResponse,
+  opts?: { referralPending?: boolean; displayName?: string },
+): Promise<void> {
+  await persistApiAuthTokens(res.tokens.accessToken, res.tokens.refreshToken);
+  setApiAccessToken(res.tokens.accessToken);
+  setApiRefreshToken(res.tokens.refreshToken);
+
+  const syntheticUser: AuthUser = {
+    id: res.user.id,
+    email: res.user.email,
+  };
+
+  useAuthStore.setState({
+    session: null,
+    user: syntheticUser,
+    status: 'authenticated',
+    isOfflineMode: false,
+  });
+
+  if (opts?.referralPending) {
+    useUserStore.setState((state) => ({
+      profile: {
+        ...state.profile,
+        referralOnboardingPending: true,
+      },
+    }));
+  }
+  if (opts?.displayName) {
+    useUserStore.getState().updateProfile({ name: opts.displayName });
+  }
+
+  try {
+    await withNetworkRetry(() => syncUserOnAuth(res.user.id, res.user.email), 3);
+  } catch (err) {
+    console.warn('[Auth] profile sync after auth failed', err);
+  }
+}
+
+async function loginWithEmail(email: string, password: string): Promise<ApiAuthResponse> {
+  return withNetworkRetry(() =>
+    apiPostJson<ApiAuthResponse, { email: string; password: string }>(
+      '/auth/login',
+      { email, password },
+    ),
+  );
+}
+
+function shouldTryLoginAfterSignupFailure(err: unknown): boolean {
+  if (!(err instanceof Error)) return true;
+  const msg = err.message.toLowerCase();
+  return (
+    msg.includes('network') ||
+    msg.includes('timed out') ||
+    msg.includes('timeout') ||
+    msg.includes('fetch') ||
+    msg.includes('already') ||
+    msg.includes('in use') ||
+    msg.includes('conflict')
+  );
+}
+
 export type AuthStatus = 'loading' | 'authenticated' | 'guest';
 
 interface AuthState {
@@ -114,7 +176,9 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             return;
           }
 
-          const me = await apiGetJson<ApiMeResponse>('/me', { auth: true });
+          const me = await withNetworkRetry(() =>
+            apiGetJson<ApiMeResponse>('/me', { auth: true }),
+          );
           if (!me.user) {
             await clearPersistedApiAccessToken();
             set({
@@ -173,28 +237,8 @@ export const useAuthStore = create<AuthState>((set, get) => ({
     if (isApiConfigured) {
     try {
       await waitForAuthReady();
-      const res = await withNetworkRetry(() =>
-        apiPostJson<ApiAuthResponse, { email: string; password: string }>(
-          '/auth/login',
-          { email, password },
-        ),
-      );
-      await persistApiAuthTokens(res.tokens.accessToken, res.tokens.refreshToken);
-      setApiAccessToken(res.tokens.accessToken);
-      setApiRefreshToken(res.tokens.refreshToken);
-
-      const syntheticUser: AuthUser = {
-        id: res.user.id,
-        email: res.user.email,
-      };
-
-      set({
-        session: null,
-        user: syntheticUser,
-        status: 'authenticated',
-        isOfflineMode: false,
-      });
-      await withNetworkRetry(() => syncUserOnAuth(res.user.id, res.user.email), 2);
+      const res = await loginWithEmail(email, password);
+      await applyAuthResponse(res);
       return { ok: true };
     } catch (err) {
       const msg = err instanceof Error ? err.message : 'Login failed';
@@ -222,34 +266,27 @@ export const useAuthStore = create<AuthState>((set, get) => ({
           ...(displayName ? { displayName } : {}),
         }),
       );
-
-      await persistApiAuthTokens(res.tokens.accessToken, res.tokens.refreshToken);
-      setApiAccessToken(res.tokens.accessToken);
-      setApiRefreshToken(res.tokens.refreshToken);
-
-      const syntheticUser: AuthUser = {
-        id: res.user.id,
-        email: res.user.email,
-      };
-
-      set({
-        session: null,
-        user: syntheticUser,
-        status: 'authenticated',
-        isOfflineMode: false,
+      await applyAuthResponse(res, {
+        referralPending: true,
+        displayName: displayName?.trim() || undefined,
       });
-      useUserStore.setState((state) => ({
-        profile: {
-          ...state.profile,
-          referralOnboardingPending: true,
-        },
-      }));
-      if (displayName) {
-        useUserStore.getState().updateProfile({ name: displayName });
-      }
-      await withNetworkRetry(() => syncUserOnAuth(res.user.id, res.user.email), 2);
       return { ok: true, needsVerification: false };
     } catch (err) {
+      if (shouldTryLoginAfterSignupFailure(err)) {
+        try {
+          const res = await loginWithEmail(email, password);
+          await applyAuthResponse(res, {
+            referralPending: true,
+            displayName: displayName?.trim() || undefined,
+          });
+          return { ok: true, needsVerification: false };
+        } catch (loginErr) {
+          const msg =
+            loginErr instanceof Error ? loginErr.message : 'Signup failed';
+          set({ error: msg });
+          return { ok: false, error: msg };
+        }
+      }
       const msg = err instanceof Error ? err.message : 'Signup failed';
       set({ error: msg });
       return { ok: false, error: msg };
