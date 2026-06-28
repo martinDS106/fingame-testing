@@ -73,7 +73,7 @@ export { useLocaleStore } from './useLocaleStore';
 export { useSettingsStore } from './useSettingsStore';
 
 export { useContentStore } from './useContentStore';
-export type { Course, Lesson, Video, Quiz, Question } from './useContentStore';
+export type { Course, Lesson, Video, Quiz, Question, CourseCompletionEvent } from './useContentStore';
 
 export { useFintokStore } from './useFintokStore';
 

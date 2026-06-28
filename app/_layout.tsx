@@ -9,9 +9,11 @@ import { Stack, useRouter } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { PaperProvider } from 'react-native-paper';
 import { GestureHandlerRootView } from 'react-native-gesture-handler';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import 'react-native-reanimated';
 
 import { ReferralOnboardingModal } from '@/components/ReferralOnboardingModal';
+import { AppNotifyHost } from '@/components/AppNotifyHost';
 import { performDailyCheckIn } from '@/hooks/useDailyCheckIn';
 import { waitForPersistHydration } from '@/lib/waitForStoreHydration';
 import { paperTheme } from '@/theme';
@@ -92,7 +94,8 @@ export default function RootLayout() {
   }, [locale, rtl]);
 
   return (
-    <GestureHandlerRootView style={[{ flex: 1 }, rtlRootDirection(rtl)]}>
+    <SafeAreaProvider>
+      <GestureHandlerRootView style={[{ flex: 1 }, rtlRootDirection(rtl)]}>
       <PaperProvider theme={paperTheme}>
         <StatusBar style="light" backgroundColor="#2563eb" />
         <View style={[{ flex: 1 }, rtlRootDirection(rtl)]} key={locale}>
@@ -115,7 +118,9 @@ export default function RootLayout() {
           </Stack>
         </View>
         <ReferralOnboardingModal />
+        <AppNotifyHost />
       </PaperProvider>
     </GestureHandlerRootView>
+    </SafeAreaProvider>
   );
 }

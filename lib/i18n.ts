@@ -212,6 +212,11 @@ const en: Dict = {
   'course.done': 'Done',
   'course.completedTitle': 'Course Completed!',
   'course.completedBody': "You've earned {n} bonus coins 🎉",
+  'course.completedAlready': 'Course completed! Bonus was already claimed.',
+  'lesson.completedTitle': 'Lesson complete',
+  'lesson.completedBody': '+{n} coins earned',
+  'quiz.completeTitle': 'Quiz complete',
+  'quiz.completeBody': 'Score {score}/{total} · +{coins} coins',
 
   // Trading (stocks)
   'trade.enterValidShares': 'Enter a valid number of shares.',
@@ -370,6 +375,7 @@ const en: Dict = {
   'dashboard.startNow': 'Start Now',
   'dashboard.points': '{points} points',
   'dashboard.joinCompetition': 'Join Competition',
+  'dashboard.rewardTitle': 'Daily reward',
   'dashboard.rewardSnack': '+{coins} coins for today • Streak: {streak} days 🔥',
 
   // Courses
@@ -689,6 +695,11 @@ const ar: Dict = {
   'course.done': 'تم',
   'course.completedTitle': 'تم إكمال الكورس!',
   'course.completedBody': 'كسبت {n} كوينز إضافية 🎉',
+  'course.completedAlready': 'الكورس اكتمل! المكافأة كانت اتاخدت قبل كده.',
+  'lesson.completedTitle': 'الدرس اكتمل',
+  'lesson.completedBody': '+{n} كوينز',
+  'quiz.completeTitle': 'الاختبار اكتمل',
+  'quiz.completeBody': 'النتيجة {score}/{total} · +{coins} كوينز',
 
   // Trading (stocks)
   'trade.enterValidShares': 'اكتب عدد أسهم صحيح.',
@@ -847,6 +858,7 @@ const ar: Dict = {
   'dashboard.startNow': 'ابدأ الآن',
   'dashboard.points': '{points} نقطة',
   'dashboard.joinCompetition': 'شارك في المنافسة',
+  'dashboard.rewardTitle': 'مكافأة يومية',
   'dashboard.rewardSnack': '+{coins} كوينز النهارده • الستريك: {streak} يوم 🔥',
 
   // Courses

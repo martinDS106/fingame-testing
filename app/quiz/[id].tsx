@@ -9,12 +9,13 @@ import { Card } from '@/components/ui/Card';
 import { colors } from '@/theme';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle, mergeScrollContentRtl } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
+import { showAppNotify } from '@/lib/appNotify';
 import { useContentStore } from '@/stores';
 
 export default function QuizPlayScreen() {
   const params = useLocalSearchParams<{ id?: string }>();
   const quizId = (params.id ?? '').toString();
-  const { rtl } = useT();
+  const { rtl, t } = useT();
   const ta = rtlTextStyle(rtl);
 
   const quiz = useContentStore((s) => s.quizFor(quizId));
@@ -146,12 +147,12 @@ export default function QuizPlayScreen() {
         return;
       }
 
-      Alert.alert(
-        'Quiz complete',
-        `Score: ${score}/${total}\n+${res.coinsEarned} coins`,
-        [{ text: 'OK', onPress: () => router.back() }],
-        { cancelable: true },
-      );
+      showAppNotify({
+        variant: 'reward',
+        title: t('quiz.completeTitle'),
+        message: t('quiz.completeBody', { score, total, coins: res.coinsEarned }),
+        onDismiss: () => router.back(),
+      });
     } finally {
       setSubmitting(false);
     }

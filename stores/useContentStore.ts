@@ -41,6 +41,7 @@ export interface CourseCompletionEvent {
   courseId: string;
   courseTitle: string;
   bonusCoins: number;
+  bonusGranted: boolean;
 }
 
 function courseJustCompleted(
@@ -56,23 +57,25 @@ function courseJustCompleted(
 async function grantCourseCompletionBonus(
   courseId: string,
   courses: Course[],
-): Promise<CourseCompletionEvent | null> {
+): Promise<CourseCompletionEvent> {
   const course = courses.find((c) => c.id === courseId);
   const bonusCoins = course?.coinReward ?? 0;
   const userStore = useUserStore.getState();
+
+  void playCourseCelebrationSound();
+
   const granted = await userStore.claimRewardOnce(
     `course_complete:${courseId}`,
     bonusCoins,
     100,
     'lesson_complete',
   );
-  if (!granted) return null;
 
-  void playCourseCelebrationSound();
   return {
     courseId,
     courseTitle: course?.title ?? 'Course',
-    bonusCoins,
+    bonusCoins: granted ? bonusCoins : 0,
+    bonusGranted: granted,
   };
 }
 

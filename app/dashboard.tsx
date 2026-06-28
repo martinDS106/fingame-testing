@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from 'react';
 import { Pressable, ScrollView, Text, View } from 'react-native';
 import { LinearGradient } from 'expo-linear-gradient';
-import { Snackbar } from 'react-native-paper';
 import {
   Award,
   DollarSign,
@@ -35,6 +34,7 @@ import {
 } from '@/lib/rtlStyle';
 import { useContentStore, useUserStore } from '@/stores';
 import { pullLeaderboardTop, type RemoteLeaderboardEntry } from '@/lib/syncServiceApi';
+import { showAppNotify } from '@/lib/appNotify';
 
 export default function DashboardScreen() {
   const coins = useUserStore((s) => s.coins);
@@ -60,7 +60,6 @@ export default function DashboardScreen() {
     [completedLessons, lessonsFor]
   );
 
-  const [rewardMsg, setRewardMsg] = useState<string | null>(null);
   const [leaderboardRows, setLeaderboardRows] = useState<RemoteLeaderboardEntry[]>([]);
 
   useEffect(() => {
@@ -76,9 +75,11 @@ export default function DashboardScreen() {
   const handleReward = useCallback(
     (r: { awarded: boolean; coins: number; newStreak: number }) => {
       if (r.awarded) {
-        setRewardMsg(
-          t('dashboard.rewardSnack', { coins: r.coins, streak: r.newStreak })
-        );
+        showAppNotify({
+          variant: 'reward',
+          title: t('dashboard.rewardTitle'),
+          message: t('dashboard.rewardSnack', { coins: r.coins, streak: r.newStreak }),
+        });
       }
     },
     [t]
@@ -479,20 +480,6 @@ export default function DashboardScreen() {
       </ScrollView>
 
       <BottomNav />
-
-      <Snackbar
-        visible={rewardMsg !== null}
-        onDismiss={() => setRewardMsg(null)}
-        duration={3000}
-        style={{
-          backgroundColor: colors.accent[500],
-          marginBottom: 80,
-        }}
-      >
-        <Text style={ta} className="text-primary-900 font-semibold">
-          {rewardMsg ?? ''}
-        </Text>
-      </Snackbar>
     </View>
   );
 }

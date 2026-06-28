@@ -1,6 +1,6 @@
 import { useVideoPlayer, VideoView } from 'expo-video';
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Alert, ScrollView, Text, View } from 'react-native';
+import { ScrollView, Text, View } from 'react-native';
 import { useLocalSearchParams, useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import { CheckCircle, Clock, Film } from 'lucide-react-native';
@@ -12,7 +12,8 @@ import { ProgressBar } from '@/components/ui/ProgressBar';
 import { colors } from '@/theme';
 import { rtlRootDirection, rtlRowMerge, rtlTextStyle } from '@/lib/rtlStyle';
 import { useT } from '@/hooks/useT';
-import { useContentStore } from '@/stores';
+import { showAppNotify } from '@/lib/appNotify';
+import { useContentStore, type CourseCompletionEvent } from '@/stores';
 
 export default function LessonPlayerScreen() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -62,13 +63,26 @@ export default function LessonPlayerScreen() {
   const awardedRef = useRef(false);
 
   const onCourseCompleted = useCallback(
-    (event: Awaited<ReturnType<typeof completeLesson>>) => {
-      if (event) {
-        Alert.alert(
-          t('course.completedTitle'),
-          t('course.completedBody', { n: event.bonusCoins }),
-        );
-      }
+    (event: CourseCompletionEvent | null) => {
+      if (!event) return;
+      showAppNotify({
+        variant: 'course',
+        title: t('course.completedTitle'),
+        message: event.bonusGranted
+          ? t('course.completedBody', { n: event.bonusCoins })
+          : t('course.completedAlready'),
+      });
+    },
+    [t],
+  );
+
+  const onLessonCompleted = useCallback(
+    (coins: number) => {
+      showAppNotify({
+        variant: 'reward',
+        title: t('lesson.completedTitle'),
+        message: t('lesson.completedBody', { n: coins }),
+      });
     },
     [t],
   );
@@ -102,7 +116,11 @@ export default function LessonPlayerScreen() {
 
         if (!awardedRef.current && total > 0 && t / total >= 0.9) {
           awardedRef.current = true;
-          void markVideoWatched(video.id, video.lessonId).then(onCourseCompleted);
+          const wasLessonDone = alreadyCompleted;
+          void markVideoWatched(video.id, video.lessonId).then((event) => {
+            if (event) onCourseCompleted(event);
+            else if (!wasLessonDone) onLessonCompleted(15);
+          });
         }
       } catch (err) {
         console.warn('[video] poll error', err);
@@ -110,7 +128,7 @@ export default function LessonPlayerScreen() {
     }, 1000);
 
     return () => clearInterval(interval);
-  }, [player, video, markVideoWatched, onCourseCompleted]);
+  }, [player, video, markVideoWatched, onCourseCompleted, onLessonCompleted, alreadyCompleted]);
 
   if (!lesson) {
     return (
@@ -138,12 +156,9 @@ export default function LessonPlayerScreen() {
   const handleManualComplete = async () => {
     const event = await completeLesson(lesson.id, 10);
     if (event) {
-      Alert.alert(
-        t('course.completedTitle'),
-        t('course.completedBody', { n: event.bonusCoins }),
-      );
+      onCourseCompleted(event);
     } else {
-      Alert.alert('Lesson complete', '+10 coins');
+      onLessonCompleted(10);
     }
     router.back();
   };

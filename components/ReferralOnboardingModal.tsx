@@ -11,6 +11,7 @@ import {
 
 import { Button } from '@/components/ui/Button';
 import { useT } from '@/hooks/useT';
+import { showAppNotify } from '@/lib/appNotify';
 import { rtlTextStyle } from '@/lib/rtlStyle';
 import { useAuthStore, useUserStore } from '@/stores';
 
@@ -52,7 +53,11 @@ export function ReferralOnboardingModal() {
       return;
     }
     if (res.coins && res.coins > 0) {
-      Alert.alert(t('referral.successTitle'), t('referral.successBody', { coins: res.coins }));
+      showAppNotify({
+        variant: 'success',
+        title: t('referral.successTitle'),
+        message: t('referral.successBody', { coins: res.coins }),
+      });
     }
   };
 
